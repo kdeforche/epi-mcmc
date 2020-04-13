@@ -52,35 +52,44 @@ calclogl <- function(params) {
     hosp_rate_change <- params[10]
 
     if (beta0 < 0.01) {
-       print(paste("invalid beta0", beta0))
-       return(-Inf)
+        print(paste("invalid beta0", beta0))
+        return(-Inf)
     }
 
     if (betat < 0.01) {
-       print(paste("invalid betat", beta0))
-       return(-Inf)
+        print(paste("invalid betat", betat))
+        return(-Inf)
     }
 
-    if (hosp_rate < 0.0001)
-       return(-Inf)
+    if (hosp_rate < 0.0001) {
+        print(paste("invalid hosp_rate", hosp_rate))
+        return(-Inf)
+    }
 
-    if (died_rate < 0.0001 && betat > 0.2)
-       return(-Inf)
+    if (died_rate < 0.0001 && betat > 0.2) {
+        print(paste("invalid died_rate", died_rate))
+        return(-Inf)
+    }
 
-    if (hosp_latency < 5 || hosp_latency > 30)
-       return(-Inf)
+    if (hosp_latency < 2 || hosp_latency > 30) {
+        print(paste("invalid hosp_latency", hosp_latency))
+        return(-Inf)
+    }
 
-    if (died_latency < 5 || died_latency > 30)
-       return(-Inf)
+    if (died_latency < 2 || died_latency > 30) {
+        print(paste("invalid died_latency", died_latency))
+        return(-Inf)
+    }
 
-    if (Tinf < 1 || Tinf > 20)
-       return(-Inf)
+    if (Tinf < 1.1 || Tinf > 20) {
+        print(paste("invalid Tinf", Tinf))
+        return(-Inf)
+    }
 
-    if (Tinc < 1 || Tinc > 20)
-       return(-Inf)
-
-    if (hosp_rate_change < 0.99)
-       return(-Inf)
+    if (Tinc < 1.1 || Tinc > 20) {
+        print(paste("invalid Tinc", Tinc))
+        return(-Inf)
+    }
 
     state <<- calculateModel(params, FitTotalPeriod)
 

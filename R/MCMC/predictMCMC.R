@@ -20,14 +20,27 @@ all_plots <- function(date_markers) {
     p1 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$deadi, "#3366FF",
                    c("Count", "Deaths per day"), date_markers)
+    dm1 <- numeric(length(p1$data$x))
+    dm1[1:length(p1$data$x)] = NA
+    dm1[1:length(dmorti)] = dmorti
+    p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=1, color="#1144CC")
 
     p2 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$died, "#3366FF",
                    c("Count", "Total deaths"), date_markers)
 
+    dm2 <- numeric(length(p2$data$x))
+    dm2[1:length(p2$data$x)] = NA
+    dm2[1:length(dmort)] = dmort
+    p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2),  size=1, color="#1144CC")
+
     p3 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$hospi, "#FF6633",
-                   c("Count", "New hospitalisations per day"), date_markers)
+                   c("Count", paste(c(HospLabel, "per day"))), date_markers)
+    dm3 <- numeric(length(p3$data$x))
+    dm3[1:length(p3$data$x)] = NA
+    dm3[1:length(dhospi)] = dhospi
+    p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=1, color="#CC4411")
 
     p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { (state$E + state$I)/N * 100 },
@@ -51,7 +64,7 @@ all_plots_jo <- function(date_markers) {
 
     p3 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$j.hospi + state$o.hospi, "#FF6633",
-                   c("Count", "New hospitalisations per day"), date_markers)
+                   c("Count", paste(c(HospLabel, "per day"))), date_markers)
 
     p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { (state$j.E + state$j.I + state$o.E + state$o.I)/N * 100 },
@@ -225,3 +238,21 @@ dev.off()
 ## makePlot(data_sample, c(dstartdate, plot_end_date), function(state) state$o.hospi, "#FF6633",  c("Count", "New hospitalisations per day"))
 
 ## makePlot(data_sample, c(dstartdate, plot_end_date), function(state) (state$j.hospi + state$o.hospi), "#FF6633",  c("Count", "New hospitalisations per day"))
+
+sourceR("models/model.R")
+sourceR("models/model-exiting-lockdown.R")
+
+plot_end_date <- as.Date("2020/11/1")
+
+relax_date <- as.Date("2020/4/14")
+lift_date <- as.Date("2020/8/31")
+
+relax_E = 0.6 # 0 : no lockdown, 1 : lockdown 'lite' as now
+relax_offset <- as.numeric(relax_date - dstartdate) 
+lift_offset <- as.numeric(lift_date - dstartdate) 
+
+if (relax_E == 0)
+    lift_date = relax_date
+
+all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
+

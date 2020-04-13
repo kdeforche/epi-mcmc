@@ -1,24 +1,24 @@
 ## R dir (all scripts)
-Rdir <- "../"
+Rdir <- "../../R/"
 
-## "hosp" data label
-HospLabel <- "New hospitalisations"
+##
+HospLabel <- "Confirmed cases"
 
 ## Model to be used for data fitting (fitMCMC.R, evalMCMC.R)
-fitmodel <- "../models/model.R"
+fitmodel <- "../../R/models/model.R"
 
 ## Data to be used (fitMCMC.R, evalMCMC.R)
-data <- "../data/be/data.R"
+data <- "../../R/data/es/data.R"
 
 ## Output file for MCMC samples (fitMCMC.R)
-outputfile <- "run22a.csv"
+outputfile <- "data/run2.csv"
 truncate <- T # whether the current file should be appended or instead truncated
 
 ## Input file for MCMC samples (evalMCMC.R, predictMCMC.R)
-inputfiles <- c("run22a.csv")
+inputfiles <- c("data/run2.csv")
 
 ## Output directory for graphs, etc... (used by eval.R and predict.R)
-outputdir <- "."
+outputdir <- "results/run1"
 
 ## Sample size used for creating density plots (evalMCMC.R)
 densityPlotSampleSize <- 500
@@ -26,4 +26,4 @@ densityPlotSampleSize <- 500
 ## Sample size used for creating density plots (predictMCMC.R)
 quantilePlotSampleSize <- 50
 
-x11()
+x11(width=15, height=12)

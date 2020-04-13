@@ -41,9 +41,11 @@ N <- 47E6
 #####################
 
 ## Date of lockdown phase (1)
-lockdown_offset <- as.numeric(as.Date("2020/3/13") - dstartdate)
+lockdown_offset <- as.numeric(as.Date("2020/3/15") - dstartdate)
 
 ## over how many days the lockdown is estimated to have occurred (March 30 staying at home)
-lockdown_transition_period <- 17
+lockdown_transition_period <- 15
 
-total_deaths_at_lockdown <- 134
+total_deaths_at_lockdown <- dmort[lockdown_offset]
+
+print(c("total deaths at lockdown", total_deaths_at_lockdown))
