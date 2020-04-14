@@ -2,7 +2,6 @@
 ## Default values for fitting data. You may want to override that in your script.
 ###############
 
-
 ##
 ## How to estimate dispersion parameter (size):
 ## Fit a good model (e.g. from an MCMC batch with low acceptance rate)
@@ -14,7 +13,7 @@
 ## r -> inf : poisson
 ## r -> 1 : var ~ mu^2
 ##
-hosp_nbinom_size = 45
+hosp_nbinom_size = 30
 mort_nbinom_size = 90
 
 ##
@@ -77,7 +76,7 @@ calclogl <- function(params) {
     }
 
     if (died_latency < 2 || died_latency > 30) {
-        print(paste("invalid died_latency", died_latency))
+        ## print(paste("invalid died_latency", died_latency))
         return(-Inf)
     }
 
@@ -91,6 +90,11 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
+    if (hosp_rate_change < 1.0) {
+        print(paste("invalid hosp_rate_change", hosp_rate_change))
+        return(-Inf)
+    }
+
     state <<- calculateModel(params, FitTotalPeriod)
 
     if (state$offset == InvalidDataOffset)
@@ -98,23 +102,26 @@ calclogl <- function(params) {
 
     logl <- 0
 
+    #R0 <- beta0 * Tinf
+
+    #logl <- logl + dnorm(R0, mean=6, sd=0.5, log=T)
+    
     #logl <- logl + dnorm(beta0, mean=0.1, sd=3, log=T)
     #logl <- logl + dnorm(betat, mean=0.1, sd=3, log=T)
-    logl <- logl + dgamma(beta0, 1, 1, log=T)
-    logl <- logl + dgamma(betat, 1, 1, log=T)
+    #logl <- logl + dgamma(beta0, 1, 1, log=T)
+    #logl <- logl + dgamma(betat, 1, 1, log=T)
     #logl <- logl + dgamma(hosp_rate, shape=0.01, rate=1, log=T)
-    #logl <- logl + dnorm(died_rate, 0.007, 0.0025, log=T) # kind of fits Verity q-range
     
-    logl <- logl + dbeta(died_rate, 10.8, 1627, log=T) # estBetaParams(0.0066, 0.002^2)
+    #logl <- logl + dbeta(died_rate, 10.8, 1627, log=T) # estBetaParams(0.0066, 0.002^2)
     #logl <- logl + dbeta(died_rate, 4.8, 722.69, log=T) # estBetaParams(0.0066, 0.003^2)
     #logl <- logl + dbeta(died_rate, 2.697931, 406.0796, log=T) # estBetaParams(0.0066, 0.004^2)
-    #logl <- logl + dbeta(died_rate, 1.7243, 259.53, log=T) # estBetaParams(0.0066, 0.005^2)
+    logl <- logl + dbeta(died_rate, 1.7243, 259.53, log=T) # estBetaParams(0.0066, 0.005^2)
     #logl <- logl + dbeta(died_rate, 0.9, 0.9, log=T) # https://stats.stackexchange.com/questions/297901/choosing-between-uninformative-beta-priors
     logl <- logl + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logl <- logl + dnorm(died_latency, mean=10, sd=20, log=T)
     logl <- logl + dnorm(Tinc, mean=5, sd=3, log=T)
-    logl <- logl + dnorm(Tinf, mean=2, sd=2, log=T)
-    logl <- logl + dnbinom(5, mu=pmax(0.1, mort_lockdown_threshold), size=mort_nbinom_size, log=T)
+    logl <- logl + dnorm(Tinf, mean=5, sd=3, log=T)
+    logl <- logl + dnbinom(total_deaths_at_lockdown, mu=pmax(0.1, mort_lockdown_threshold), size=mort_nbinom_size, log=T)
     logl <- logl + dnorm(hosp_rate_change, mean=1, sd=0.3, log=T)
 
     dstart <- state$offset
@@ -135,7 +142,7 @@ calclogl <- function(params) {
        return(-Inf)
     }
 
-    loglB <- sum(dnbinom(dmorti, mu=pmax(0.1, state$deadi[dstart:dend]), size=mort_nbinom_size, log=T))
+    loglB <- sum(dnbinom(dmorti, mu=pmax(0.1, state$deadi[dstart:dend] / death_underreporting_factor), size=mort_nbinom_size, log=T))
 
     it <<- it + 1
     if (it %% 1000 == 0) {

@@ -56,7 +56,7 @@ graph_daily <- function(state, first, color, last) {
 
     if (first) {
         plot(days[1:len],state$hospi[state$offset:period], type='l', col=hosp_color,
-	     xlab='Date', ylab='Count')
+	     xlab='Date', ylab='Count', ylim=c(0, 800))
     } else {
         lines(days[1:len],state$hospi[state$offset:period], type='l', col=hosp_color)
         ## lines(days[1:len],(state$E[state$offset:period] + state$I[state$offset:period])/N,

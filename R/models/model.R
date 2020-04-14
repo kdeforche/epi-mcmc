@@ -126,6 +126,8 @@ calculateModel <- function(params, period)
 	state$hospi[i] <- if (i == 1) state$hosp[1] else state$hosp[i] - state$hosp[i - 1]
     }
 
+    ## FIXME only applies to Belgian data set -- hospitals reduced the rate at which
+    ## they were accepting elderly people on March 22
     cumDiff <- 0
     inv_hosp_rate_change <- 1 / hosp_rate_change
     for (i in (round(data_offset + 12)):length(state$hospi)) {

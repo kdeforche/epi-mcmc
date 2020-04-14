@@ -11,14 +11,14 @@ fitmodel <- "../../R/models/model.R"
 data <- "../../R/data/es/data.R"
 
 ## Output file for MCMC samples (fitMCMC.R)
-outputfile <- "data/run2.csv"
+outputfile <- "data/run3.csv"
 truncate <- T # whether the current file should be appended or instead truncated
 
 ## Input file for MCMC samples (evalMCMC.R, predictMCMC.R)
-inputfiles <- c("data/run2.csv")
+inputfiles <- c("data/run3.csv")
 
 ## Output directory for graphs, etc... (used by eval.R and predict.R)
-outputdir <- "results/run1"
+outputdir <- "results/run3"
 
 ## Sample size used for creating density plots (evalMCMC.R)
 densityPlotSampleSize <- 500

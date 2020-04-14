@@ -116,6 +116,13 @@ all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
 
 dev.off()
 
+png(paste(outputdir, "/forecast-time.png", sep=""), width=1200, height=1600)
+
+plot_end_date <- as.Date("2020/5/1")
+all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
+
+dev.off()
+
 ######## Simple exiting scenario's
 
 sourceR("models/model-exiting-lockdown.R")
@@ -239,6 +246,9 @@ dev.off()
 
 ## makePlot(data_sample, c(dstartdate, plot_end_date), function(state) (state$j.hospi + state$o.hospi), "#FF6633",  c("Count", "New hospitalisations per day"))
 
+##
+## Spain exiting scenario
+##
 sourceR("models/model.R")
 sourceR("models/model-exiting-lockdown.R")
 
@@ -254,5 +264,16 @@ lift_offset <- as.numeric(lift_date - dstartdate)
 if (relax_E == 0)
     lift_date = relax_date
 
+pdf(paste(outputdir, "/spain-exit-0.6.pdf", sep=""), width=12, height=16)
+
 all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
+
+dev.off()
+
+png(paste(outputdir, "/spain-exit-0.6.png", sep=""), width=1200, height=1600)
+
+all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
+
+dev.off()
+
 

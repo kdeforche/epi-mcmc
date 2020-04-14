@@ -38,6 +38,8 @@ for (i in 1:length(dmort)) {
     dmort[i] <- if (i==1) dmorti[i] else dmort[i - 1] + dmorti[i]
 }
 
+death_underreporting_factor <- 1
+
 #####################
 ## Population size
 #####################
