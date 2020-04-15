@@ -7,8 +7,8 @@ require(gridExtra)
 
 source("settings.R")
 
-source(fitmodel)
 source(data, chdir=T)
+source(fitmodel, chdir=T)
 
 sourceR <- function(file) {
     source(paste(Rdir, file, sep=""))
@@ -35,6 +35,43 @@ all_plots <- function(date_markers) {
 
     p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { state$R/N * 100 }, "#33FF66",
+                   c("Belgian population (%)", "Recovered from disease"), date_markers)
+
+    grid.arrange(p1, p2, p3, p4, p5, nrow=3)
+}
+
+all_plots_age <- function(date_markers) {
+    p1 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+                   function(state) { state$y.deadi + state$o.deadi }, "#3366FF",
+                   c("Count", "Deaths per day"), date_markers)
+    dm1 <- numeric(length(p1$data$x))
+    dm1[1:length(p1$data$x)] = NA
+    dm1[1:length(dmorti)] = dmorti
+    p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=1, color="#1144CC")
+
+    p2 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+                   function(state) { state$y.died + state$o.died }, "#3366FF",
+                   c("Count", "Total deaths"), date_markers)
+
+    dm2 <- numeric(length(p2$data$x))
+    dm2[1:length(p2$data$x)] = NA
+    dm2[1:length(dmort)] = dmort
+    p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2),  size=1, color="#1144CC")
+
+    p3 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+                   function(state) state$y.hospi + state$o.hospi, "#FF6633",
+                   c("Count", paste(c(HospLabel, "per day"))), date_markers)
+    dm3 <- numeric(length(p3$data$x))
+    dm3[1:length(p3$data$x)] = NA
+    dm3[1:length(dhospi)] = dhospi
+    p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=1, color="#CC4411")
+
+    p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+                   function(state) { (state$y.E + state$y.I + state$o.E + state$y.I)/N * 100 },
+                   "#FFFF66", c("Belgian population (%)", "Infected people"), date_markers)
+
+    p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+                   function(state) { (state$y.R + state$o.R)/N * 100 }, "#33FF66",
                    c("Belgian population (%)", "Recovered from disease"), date_markers)
 
     grid.arrange(p1, p2, p3, p4, p5, nrow=3)
@@ -94,11 +131,13 @@ data_sample <- posterior[selection[draws],][0:-1]
 
 ###### Current state
 
-sourceR("models/model.R")
+all_plots <- all_plots_age
+
+##sourceR("models/model.R")
 
 pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
-plot_end_date <- as.Date("2020/5/1")
+plot_end_date <- as.Date("2020/8/1")
 all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
 
 dev.off()

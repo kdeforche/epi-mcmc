@@ -39,105 +39,6 @@ state <- NULL
 ## Iteration counter to log periodically during log likelihood calculations
 it <- 0
 
-calclogl <- function(params) {
-    beta0 <- params[1]
-    betat <- params[2]
-    hosp_rate <- params[3]
-    died_rate <- params[4]
-    hosp_latency <- params[5]
-    died_latency <- params[6]
-    Tinf <- params[7]
-    Tinc <- params[8]
-    mort_lockdown_threshold <- params[9]
-    hosp_rate_change <- params[10]
-
-    if (beta0 < 0.01) {
-       print(paste("invalid beta0", beta0))
-       return(-Inf)
-    }
-
-    if (betat < 0.01) {
-       print(paste("invalid betat", beta0))
-       return(-Inf)
-    }
-
-    if (hosp_rate < 0.0001)
-       return(-Inf)
-
-    if (died_rate < 0.0001 && betat > 0.2)
-       return(-Inf)
-
-    if (hosp_latency < 5 || hosp_latency > 30)
-       return(-Inf)
-
-    if (died_latency < 5 || died_latency > 30)
-       return(-Inf)
-
-    if (Tinf < 1 || Tinf > 20)
-       return(-Inf)
-
-    if (Tinc < 1 || Tinc > 20)
-       return(-Inf)
-
-    if (hosp_rate_change < 0.99)
-       return(-Inf)
-
-    state <<- calculateModel(params, FitTotalPeriod)
-
-    if (state$offset == InvalidDataOffset)
-       return(-Inf)
-
-    logl <- 0
-
-    #logl <- logl + dnorm(beta0, mean=0.1, sd=3, log=T)
-    #logl <- logl + dnorm(betat, mean=0.1, sd=3, log=T)
-    logl <- logl + dgamma(beta0, 1, 1, log=T)
-    logl <- logl + dgamma(betat, 1, 1, log=T)
-    #logl <- logl + dgamma(hosp_rate, shape=0.01, rate=1, log=T)
-    #logl <- logl + dnorm(died_rate, 0.007, 0.0025, log=T) # kind of fits Verity q-range
-    
-    logl <- logl + dbeta(died_rate, 10.8, 1627, log=T) # estBetaParams(0.0066, 0.002^2)
-    #logl <- logl + dbeta(died_rate, 4.8, 722.69, log=T) # estBetaParams(0.0066, 0.003^2)
-    #logl <- logl + dbeta(died_rate, 2.697931, 406.0796, log=T) # estBetaParams(0.0066, 0.004^2)
-    #logl <- logl + dbeta(died_rate, 1.7243, 259.53, log=T) # estBetaParams(0.0066, 0.005^2)
-    #logl <- logl + dbeta(died_rate, 0.9, 0.9, log=T) # https://stats.stackexchange.com/questions/297901/choosing-between-uninformative-beta-priors
-    logl <- logl + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logl <- logl + dnorm(died_latency, mean=10, sd=20, log=T)
-    logl <- logl + dnorm(Tinc, mean=5, sd=3, log=T)
-    logl <- logl + dnorm(Tinf, mean=2, sd=2, log=T)
-    logl <- logl + dnbinom(5, mu=pmax(0.1, mort_lockdown_threshold), size=mort_nbinom_size, log=T)
-    logl <- logl + dnorm(hosp_rate_change, mean=1, sd=0.3, log=T)
-
-    dstart <- state$offset
-    dend <- state$offset + length(dhospi) - 1
-
-    if (dend > length(state$hospi)) {
-       print("=========================== Increase FitTotalPeriod ===================")
-       return(-Inf)
-    }
-
-    dh <- dhospi
-    loglA <- sum(dnbinom(dh, mu=pmax(0.1, state$hospi[dstart:dend]), size=hosp_nbinom_size, log=T))
-
-    dend <- state$offset + length(dmorti) - 1
-
-    if (dend > length(state$deadi)) {
-       print("=========================== Increase FitTotalPeriod ===================")
-       return(-Inf)
-    }
-
-    loglB <- sum(dnbinom(dmorti, mu=pmax(0.1, state$deadi[dstart:dend]), size=mort_nbinom_size, log=T))
-
-    it <<- it + 1
-    if (it %% 1000 == 0) {
-        print(params)
-	print(c(it, logl + loglA + loglB))
-	graphs()
-    }
-
-    logl + loglA + loglB
-}
-
 ##
 ## Graphs used to monitor the MCMC runs
 ##
@@ -153,22 +54,28 @@ graphs <- function() {
          main='Cumulative hospitalisations and deaths')
     lines(days[1:len],state$died[state$offset:(state$offset + len - 1)], type='l', col='blue')
     points(days[1:length(dhospi)],dhosp,col='red')
-    points(days[1:length(dmort)],dmort,col='blue')
+    points(days[1:length(dmort)],y.dmort + o.dmort,col='blue')
     legend("topleft", inset=0.02, legend=c("Hospitalisations", "Deaths"),
 	   col=c("red", "blue"),lty=1)
 
-    period <- length(state$R)
+    period <- length(state$hospi)
     len <- period - state$offset + 1
+    print(c(state$offset, period, len))
     plot(days[1:len],state$hospi[state$offset:period], type='l', col='red',
          xlab='Date', ylab='Count',
          main='New hospitalisations and deaths per day')
-    lines(days[1:len],state$deadi[state$offset:period], type='l', col='blue')
+    lines(days[1:len],state$y.hospi[state$offset:period], type='l', lty=2, col='red')
+    lines(days[1:len],state$o.hospi[state$offset:period], type='l', lty=3, col='red')
+    lines(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='blue')
+    lines(days[1:len],state$o.deadi[state$offset:period], type='l', lty=3, col='blue')
     points(days[1:length(dhospi)],dhospi,col=c("red"))
-    points(days[1:length(dmorti)],dmorti,col=c("blue"))
+    points(days[1:length(dmorti)],y.dmorti,col=c("blue"))
+    points(days[1:length(dmorti)],o.dmorti,col=c("blue"))
     legend("topright", inset=0.02, legend=c("Hospitalisations", "Deaths"),
 	   col=c("red", "blue"),lty=1)
 
-    print(paste("% immune: ", state$R[period]/N))
+    print(paste("% y immune: ", state$y.R[period]/y.N))
+    print(paste("% o immune: ", state$o.R[period]/o.N))
     print(paste("deaths: ", state$died[length(state$died) - 2]))
     print(paste("offset: ", state$offset - state$padding))
 }

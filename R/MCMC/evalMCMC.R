@@ -5,8 +5,8 @@ require(bayestestR)
 
 source("settings.R")
 
-source(fitmodel)
 source(data, chdir=T)
+source(fitmodel, chdir=T)
 
 source(paste(Rdir, "lib/libMCMC.R", sep=""))
 
@@ -23,7 +23,7 @@ posterior <- all
 pess <- ess(posterior)
 pess
 
-plot(ts(subset(posterior, select=c("R0", "Rt", "IFR", "Tinf", "beta0", "betat"))))
+plot(ts(subset(posterior, select=c("y.R0", "y.Rt", "IFR", "Tinf", "betay0", "betayt"))))
 
 # compute credibility intervals
 ci(posterior, method = "HDI", ci=0.01)
@@ -61,7 +61,8 @@ dev.off()
 # from here on only totally random snippets
 #
 
-mcmc_hist(posterior, pars = c("R0", "Rt", "IFR"))
+mcmc_hist(posterior, pars = c("y.R0", "y.Rt", "IFR"))
+
 #mcmc_hist(posterior, pars = c("IFR"), binwidth=0.0001)
 #mcmc_hist(posterior, pars = c("Beta"))
 #mcmc_hist(posterior, pars = c("HL", "DL"), binwidth=0.1)

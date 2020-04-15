@@ -21,12 +21,17 @@ readData <- function(files)
     }
     summary(posterior)
 
-    posterior$R0 = posterior$beta0 * posterior$Tinf
-    posterior$Rt = posterior$betat * posterior$Tinf
+    posterior$y.R0 = posterior$betay0 * posterior$Tinf
+    posterior$y.Rt = posterior$betayt * posterior$Tinf
+    posterior$o.R0 = posterior$betao0 * posterior$Tinf
+    posterior$o.Rt = posterior$betaot * posterior$Tinf
+    posterior$yo.R0 = posterior$betayo0 * posterior$Tinf
+    posterior$yo.Rt = posterior$betayot * posterior$Tinf
     posterior$IFR = exp(posterior$logHR + posterior$logHRDR)
     posterior$HR = exp(posterior$logHR)
-    posterior$WZC = exp(posterior$logWZC)
-    posterior$Et = posterior$Rt / posterior$R0
+    posterior$y.Et = posterior$y.Rt / posterior$y.R0
+    posterior$o.Et = posterior$o.Rt / posterior$o.R0
+    posterior$yo.Et = posterior$yo.Rt / posterior$yo.R0
     posterior
 }
 
@@ -44,7 +49,7 @@ takeAndPad <- function(data, offset, l)
 graph_daily <- function(state, first, color, last) {
     days <- seq(dstartdate, as.Date("2020/5/1"), 1)
 
-    period <- length(state$R)
+    period <- length(state$hospi)
     len <- period - state$offset + 1
 
     hosp_color = color
@@ -81,7 +86,7 @@ graph_daily <- function(state, first, color, last) {
 graph_cum <- function(state, first, color, last) {
     days <- seq(dstartdate, as.Date("2020/8/1"), 1)
 
-    period <- length(state$R)
+    period <- length(state$hospi)
     len <- period - state$offset + 1
 
     mort_color = NULL
@@ -111,6 +116,10 @@ predict_daily_plot <- function(sample, overlay, color) {
         params <- sample[i,]
         params <- transformParams(unlist(params, use.names=FALSE))
         state <- calculateModel(params, 200)
+        state$hosp <- state$y.hosp + state$o.hosp
+        state$died <- state$y.died + state$o.died
+        state$hospi <- state$y.hospi + state$o.hospi
+        state$deadi <- state$y.deadi + state$o.deadi
         graph_daily(state, first, color, i == dim(sample)[1])
         first <- FALSE
     }
