@@ -74,7 +74,7 @@ calculateModel <- function(params, period)
     hosp_cv_profile = calcConvolveProfile(-hosp_latency, 5)
     died_cv_profile = calcConvolveProfile(-died_latency, 5)
 
-    padding = floor(max(hosp_latency, died_latency) * 3)
+    padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
     state <- NULL
     state$S <- rep(N-Initial, padding + period)
@@ -127,8 +127,7 @@ calculateModel <- function(params, period)
     }
 
     ## FIXME only applies to Belgian data set -- hospitals reduced the rate at which
-    ## they were accepting elderly people on March 22 since start 
-    
+    ## they were accepting elderly people on March 22
     cumDiff <- 0
     inv_hosp_rate_change <- 1 / hosp_rate_change
     for (i in (round(data_offset + 12)):length(state$hospi)) {

@@ -83,6 +83,8 @@ barplot(o.dmorti)
 
 print(paste("last day morti: ", dstartdate + length(o.dmorti) - 1))
 
+death_underreporting_factor <- 1
+
 #####################
 ## Population size
 #####################

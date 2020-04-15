@@ -15,9 +15,13 @@ calcloglMCMC <- function(params) {
 
 cn <- fit.paramnames
 
-init <- c(2.3, 0.5, log(0.02), log(0.3), 10, 9, 2, 5, 9, 0)
-scales <- c(0.15, 0.05, 0.05, 0.1, 1, 1, 0.3, 0.3, 0.3, 0.1)
+init <- c(2.3, 0.5, log(0.02), log(0.3), 10, 9, 2, 5, total_deaths_at_lockdown, 0)
+scales <- c(0.15, 0.05, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20, 0.1)
 scale <- 0.15 * scales
+
+source("control.R")
+
+print(c("initial logl: ", calcloglMCMC(init)))
 
 ##
 ## Do a few iterations to check that things are setup properly.
@@ -46,4 +50,5 @@ for (i in 1:10000) {
     colnames(out$batch) <- cn
     plot(ts(out$batch))
     write.table(out$batch, file=outputfile, append=T, quote=F, sep=",", col.name=F)
+    source("control.R")
 }

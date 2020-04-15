@@ -17,48 +17,54 @@ options(scipen=999)
 
 system(paste("mkdir ", outputdir))
 
-# read new data
-all <- readData(inputfiles)
+read <- function() {
+    all <- readData(inputfiles)
 
-posterior <- all
+    posterior <- all
 
-# calculate effective sample sizes.
-pess <- ess(posterior)
-pess
+    print(ess(posterior))
 
 plot(ts(subset(posterior, select=c("y.R0", "y.Rt", "IFR", "Tinf", "betay0", "betayt"))))
 
-# compute credibility intervals
-ci(posterior, method = "HDI", ci=0.01)
-ci(posterior, method = "HDI", ci=0.50)
-ci(posterior, method = "HDI", ci=0.95)
+    ## compute credibility intervals
+    print(ci(posterior, method = "HDI", ci=0.01))
+    print(ci(posterior, method = "HDI", ci=0.50))
+    print(ci(posterior, method = "HDI", ci=0.95))
 
-# sample a subset of data to show in density plots
-selection <- which(posterior[,"IFR"] < 3)
-scount <- length(selection)
-draws <- sample(floor(scount/8):scount, densityPlotSampleSize)
-display_sample <- posterior[selection[draws],][0:-1]
+    posterior
+}
 
-# show daily incidence plots + posterior density
-predict_daily_plot(display_sample, F, NULL)
+densityPlot <- function() {
+    ## sample a subset of data to show in density plots
+    selection <- which(posterior[,"IFR"] < 3)
+    scount <- length(selection)
+    draws <- sample(floor(scount/8):scount, densityPlotSampleSize)
+    display_sample <- posterior[selection[draws],][0:-1]
 
-# alternative, only hospital incidence
-#predict_daily_plot(display_sample, F, alpha("red", 0.1))
-#title('New hospitalisations per outputdir')
-#legend("topleft", inset=0.02, legend=c("Hospitalisations"),
-#       col=c("red"),lty=1)
+    ## show daily incidence plots + posterior density
+    predict_daily_plot(display_sample, F, NULL)
 
-#predict_daily_plot(display_sample, F, alpha("#CCCCCC", 0.1))
-#predict_daily_plot(display_sample, T, alpha("#000066", 0.3))
-#predict_daily_plot(display_sample, T, alpha("#660000", 0.3))
+    ## alternative, only hospital incidence
+    ##predict_daily_plot(display_sample, F, alpha("red", 0.1))
+    ##title('New hospitalisations per outputdir')
+    ##legend("topleft", inset=0.02, legend=c("Hospitalisations"),
+    ##       col=c("red"),lty=1)
 
-png(paste(outputdir, "/forecast-time.png", sep=""), width=500, height=500)
-predict_daily_plot(display_sample, F, NULL)
-dev.off()
+    ##predict_daily_plot(display_sample, F, alpha("#CCCCCC", 0.1))
+    ##predict_daily_plot(display_sample, T, alpha("#000066", 0.3))
+    ##predict_daily_plot(display_sample, T, alpha("#660000", 0.3))
 
-pdf(paste(outputdir, "/forecast-time.pdf", sep=""), width=8, height=8)
-predict_daily_plot(display_sample, F, NULL)
-dev.off()
+    #png(paste(outputdir, "/forecast-time.png", sep=""), width=500, height=500)
+    #predict_daily_plot(display_sample, F, NULL)
+    #dev.off()
+
+    #pdf(paste(outputdir, "/forecast-time.pdf", sep=""), width=8, height=8)
+    #predict_daily_plot(display_sample, F, NULL)
+    #dev.off()
+}
+
+posterior <- read()
+densityPlot()
 
 #
 # from here on only totally random snippets
@@ -94,7 +100,12 @@ ifr_prior2 <- dbeta(s, 4.8, 722.69)
 ifr_prior3 <- dbeta(s, 2.697931, 406.0796)
 ifr_prior4 <- dbeta(s, 1.7243, 259.53)
 ifr_prior5 <- dbeta(s, 10.8, 1627)
-plot(s, ifr_prior5, type='l')
+ifr_prior6 <- dbeta(s, 2.24, 744)
+ifr_prior7 <- dbeta(s, 0.994, 330)
+plot(s, ifr_prior7, type='l')
+lines(s, ifr_prior6, type='l', col='red')
+lines(s, ifr_prior5, type='l', col='blue')
+lines(s, ifr_prior4, type='l', col='green')
 
 mcmc_areas(posterior,
            pars = c("IFR"),

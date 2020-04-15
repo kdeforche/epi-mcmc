@@ -2,7 +2,6 @@
 ## Default values for fitting data. You may want to override that in your script.
 ###############
 
-
 ##
 ## How to estimate dispersion parameter (size):
 ## Fit a good model (e.g. from an MCMC batch with low acceptance rate)
@@ -14,7 +13,7 @@
 ## r -> inf : poisson
 ## r -> 1 : var ~ mu^2
 ##
-hosp_nbinom_size = 45
+hosp_nbinom_size = 30
 mort_nbinom_size = 90
 
 ##

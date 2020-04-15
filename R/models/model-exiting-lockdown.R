@@ -29,7 +29,7 @@ calculateModel <- function(params, period)
     hosp_cv_profile = calcConvolveProfile(-hosp_latency, 5)
     died_cv_profile = calcConvolveProfile(-died_latency, 5)
 
-    padding = floor(max(hosp_latency, died_latency) * 3)
+    padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
     state <- NULL
     state$S <- rep(N-Initial, padding + period)

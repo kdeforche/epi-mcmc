@@ -61,7 +61,7 @@ graph_daily <- function(state, first, color, last) {
 
     if (first) {
         plot(days[1:len],state$hospi[state$offset:period], type='l', col=hosp_color,
-	     xlab='Date', ylab='Count', ylim=c(0, 1000))
+	     xlab='Date', ylab='Count', ylim=c(0, 800))
     } else {
         lines(days[1:len],state$hospi[state$offset:period], type='l', col=hosp_color)
         ## lines(days[1:len],(state$E[state$offset:period] + state$I[state$offset:period])/N,
@@ -125,8 +125,8 @@ predict_daily_plot <- function(sample, overlay, color) {
     }
 
     if (!overlay) {
-        title('New hospitalisations and deaths per day')
-        legend("topleft", inset=0.02, legend=c("Hospitalisations", "Deaths"),
+        title(paste(c(HospLabel, 'and deaths per day')))
+        legend("topleft", inset=0.02, legend=c(HospLabel, "Deaths"),
                col=c("red", "blue"),lty=1)
     }
 }
@@ -187,7 +187,7 @@ makePlot <- function(sample, dateRange, fun, colour, titles, date_markers)
 
     colnames(qd) <- c("q5", "q25", "q50", "q75", "q95")
     qd$x <- seq(dateRange[1], dateRange[1] + dim(qd)[1] - 1, 1)
-
+    
     result <- ggplot(qd) + aes(x = x) +
         geom_ribbon(aes(ymin = q5, ymax=q95), alpha=0.4, fill="grey70") +
         geom_ribbon(aes(ymin = q25, ymax=q75), alpha=0.4, fill="grey60") +
