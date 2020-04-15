@@ -52,6 +52,33 @@ simstep <- function(state, y.beta, o.beta, yo.beta, a, gamma)
     state
 }
 
+calcbetas.age <- function(time, betay0, betayt, betao0, betaot, betayo0, betayot)
+{
+    betai = time - lockdown_offset
+
+    y.beta = o.beta = yo.beta = 0
+    
+    if (betai < 0) {
+        y.beta = betay0
+        o.beta = betao0
+        yo.beta = betayo0
+    } else {
+        if (betai >= lockdown_transition_period) {
+            y.beta = betayt
+            o.beta = betaot
+            yo.beta = betayot
+        } else {
+            fract0 = (lockdown_transition_period - betai) / lockdown_transition_period
+            fractt = betai / lockdown_transition_period
+            y.beta = fract0 * betay0 + fractt * betayt
+            o.beta = fract0 * betao0 + fractt * betaot
+            yo.beta = fract0 * betayo0 + fractt * betayot
+        }
+    }
+
+    c(y.beta, o.beta, yo.beta)
+}
+
 calculateModel <- function(params, period)
 {
     betay0 <- params[1]
@@ -96,7 +123,6 @@ calculateModel <- function(params, period)
 
     state$i <- padding + 1
 
-    beta_transition = 7
     data_offset = InvalidDataOffset
 
     y.hr = y.hosp_rate_factor * hosp_rate
@@ -108,27 +134,9 @@ calculateModel <- function(params, period)
     y.beta = o.beta = yo.beta = 0
     
     for (i in (padding + 1):(padding + period)) {
-        betai = i - data_offset - lockdown_offset
-
-        if (betai < 0) {
-            y.beta = betay0
-            o.beta = betao0
-            yo.beta = betayo0
-	} else {
-            if (betai >= beta_transition) {
-                y.beta = betayt
-                o.beta = betaot
-                yo.beta = betayot
-            } else {
-                fract0 = (beta_transition - betai) / beta_transition
-                fractt = betai / beta_transition
-                y.beta = fract0 * betay0 + fractt * betayt
-                o.beta = fract0 * betao0 + fractt * betaot
-                yo.beta = fract0 * betayo0 + fractt * betayot
-            }
-	}
-
-	state <- simstep(state, y.beta, o.beta, yo.beta, a, gamma)
+        betas = calcbetas.age(i - data_offset, betay0, betayt, betao0, betaot, betayo0, betayot)
+        
+	state <- simstep(state, betas[1], betas[2], betas[3], a, gamma)
 
     	s = convolute(state$y.S, i, hosp_cv_profile)
 	state$y.hosp[i] <- (y.N - s) * y.hr

@@ -189,13 +189,16 @@ makePlot <- function(sample, dateRange, fun, colour, titles, date_markers)
     qd$x <- seq(dateRange[1], dateRange[1] + dim(qd)[1] - 1, 1)
     
     result <- ggplot(qd) + aes(x = x) +
-        geom_ribbon(aes(ymin = q5, ymax=q95), alpha=0.4, fill="grey70") +
-        geom_ribbon(aes(ymin = q25, ymax=q75), alpha=0.4, fill="grey60") +
-        geom_line(aes(y = q50), colour=colour, size = 1) +
+        geom_ribbon(aes(ymin = q5, ymax=q95, fill="grey70"), alpha=0.4) +
+        geom_ribbon(aes(ymin = q25, ymax=q75, fill="grey60"), alpha=0.4) +
+        geom_line(aes(y = q50, linetype='solid'), size = 1, colour=colour) +
         labs(x="Date") +
         labs(y=titles[1]) +
         ggtitle(titles[2]) +
-        scale_x_date(date_breaks="months", date_labels = "%e %b")
+        scale_fill_identity(name='Uncertainty', guide=FALSE, labels=c('90%', '50%')) +
+        scale_x_date(date_breaks="months", date_labels = "%e %b") +
+        theme(legend.position = c(0.8, 0.85)) +
+        guides(linetype=guide_legend(keywidth = 3, keyheight = 1))
 
     for (i in 1:length(date_markers$pos)) {
         pos = date_markers$pos[i]
@@ -203,6 +206,19 @@ makePlot <- function(sample, dateRange, fun, colour, titles, date_markers)
         result = result + geom_vline(xintercept=pos, linetype="dashed",
                                      color=color, size=1.3)
     }
+
+    result
+}
+
+addExtraPlot <- function(plot, sample, dateRange, fun, colour, lty)
+{
+    period <- as.numeric(dateRange[2] - dateRange[1])
+    qd <- data.frame(quantileData(sample, fun, period, c(0.5)))
+
+    colnames(qd) <- c("q50")
+    
+    result <- plot +
+        geom_line(aes(y = qd$q50, linetype = lty), colour=colour, size = 1)
 
     result
 }
