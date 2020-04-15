@@ -5,7 +5,8 @@ require(mcmcse)
 require(bayestestR)
 require(gridExtra)
 
-source("settings.R")
+source("control.R")
+source(settings)
 
 source(data, chdir=T)
 source(fitmodel, chdir=T)
@@ -114,7 +115,7 @@ posterior <- all
 pess <- ess(posterior)
 pess
 
-plot(ts(subset(posterior, select=c("R0", "Rt", "IFR", "Tinf", "beta0", "betat"))))
+plot(ts(subset(posterior, select=c("y.R0", "y.Rt", "IFR", "Tinf", "betay0", "betayt"))))
 
 # compute credibility intervals
 ci(posterior, method = "HDI", ci=0.01)

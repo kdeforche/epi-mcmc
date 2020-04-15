@@ -3,7 +3,10 @@ library("ggplot2")
 require(mcmcse)
 require(bayestestR)
 
-source("settings.R")
+scales <- 1
+
+source("control.R")
+source(settings)
 
 source(data, chdir=T)
 source(fitmodel, chdir=T)
