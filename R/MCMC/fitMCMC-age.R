@@ -1,20 +1,10 @@
 require(mcmc)
 
-scales <- 42
-total_deaths_at_lockdown <- 42
-
 source("control.R")
 
-print(settings)
-
 source(settings)
-
 source(data, chdir=T)
-
-print(total_deaths_at_lockdown)
-
 source(fitmodel, chdir=T)
-
 
 source(paste(Rdir, "lib/libfit.R", sep=""))
 
@@ -63,6 +53,7 @@ for (i in 1:10000) {
     colnames(out$batch) <- cn
     ##plot(ts(out$batch))
     write.table(out$batch, file=outputfile, append=T, quote=F, sep=",", col.name=F)
+
     source("control.R")
 }
 

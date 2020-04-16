@@ -21,17 +21,7 @@ readData <- function(files)
     }
     summary(posterior)
 
-    posterior$y.R0 = posterior$betay0 * posterior$Tinf
-    posterior$y.Rt = posterior$betayt * posterior$Tinf
-    posterior$o.R0 = posterior$betao0 * posterior$Tinf
-    posterior$o.Rt = posterior$betaot * posterior$Tinf
-    posterior$yo.R0 = posterior$betayo0 * posterior$Tinf
-    posterior$yo.Rt = posterior$betayot * posterior$Tinf
-    posterior$IFR = exp(posterior$logHR + posterior$logHRDR)
-    posterior$HR = exp(posterior$logHR)
-    posterior$y.Et = posterior$y.Rt / posterior$y.R0
-    posterior$o.Et = posterior$o.Rt / posterior$o.R0
-    posterior$yo.Et = posterior$yo.Rt / posterior$yo.R0
+    posterior <- invTransformParams(posterior)
     posterior
 }
 
@@ -115,11 +105,7 @@ predict_daily_plot <- function(sample, overlay, color) {
     for (i in 1:(dim(sample)[1])) {
         params <- sample[i,]
         params <- transformParams(unlist(params, use.names=FALSE))
-        state <- calculateModel(params, 200)
-        state$hosp <- state$y.hosp + state$o.hosp
-        state$died <- state$y.died + state$o.died
-        state$hospi <- state$y.hospi + state$o.hospi
-        state$deadi <- state$y.deadi + state$o.deadi
+        state <- calcNominalState(calculateModel(params, 200))
         graph_daily(state, first, color, i == dim(sample)[1])
         first <- FALSE
     }
@@ -141,7 +127,7 @@ predict_cum_plot <- function(sample, overlay, color) {
     for (i in 1:(dim(sample)[1])) {
         params <- sample[i,]
         params <- transformParams(unlist(params, use.names=FALSE))
-        state <- calculateModel(params, 200)
+        state <- calcNominalState(calculateModel(params, 200))
         ests <- c(ests, state$died[length(state$died - 1)])
         graph_cum(state, first, color, i == dim(sample)[1])
         first <- FALSE

@@ -20,8 +20,7 @@ sourceR("lib/libMCMC.R")
 all_plots <- function(date_markers) {
     p1 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$deadi, "#3366FF",
-                   c("Count", "Deaths per day"), date_markers,
-                   list(function(state) state$y.deadi, function(state) state$o.deadi))
+                   c("Count", "Deaths per day"), date_markers)
     dm1 <- numeric(length(p1$data$x))
     dm1[1:length(p1$data$x)] = NA
     dm1[1:length(dmorti)] = dmorti
@@ -194,7 +193,7 @@ posterior <- all
 pess <- ess(posterior)
 pess
 
-plot(ts(subset(posterior, select=c("y.R0", "y.Rt", "IFR", "Tinf", "betay0", "betayt"))))
+plot(ts(subset(posterior, select=keyparamnames)))
 
 # compute credibility intervals
 ci(posterior, method = "HDI", ci=0.01)
@@ -206,14 +205,13 @@ ci(posterior, method = "HDI", ci=0.95)
 ## sample a subset of data to show in density plots
 selection <- which(posterior[,"IFR"] < 3)
 scount <- length(selection)
-draws <- sample(floor(scount/8):scount, 500) # /* quantilePlotSampleSize)
+draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
 data_sample <- posterior[selection[draws],][0:-1]
 
 ###### Current state
 
+## Configure this depending on the model
 all_plots <- all_plots_age
-
-##sourceR("models/model.R")
 
 pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 

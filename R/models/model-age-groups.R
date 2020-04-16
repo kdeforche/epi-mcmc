@@ -1,19 +1,5 @@
 source("model.R")
 
-y.N <- 8.55E6
-o.N <- N - y.N
-
-## Group-specific factors for dead_rate with respect to estimated died_rate
-y.died_rate_factor = 0.09412495/0.66
-o.died_rate_factor = 2.34371716/0.66
-
-## Group-specific factors for hosp_rate with respect to estimated hosp_rate
-y.hosp_rate_factor = 0.09412495/0.66
-o.hosp_rate_factor = 2.34371716/0.66
-
-dmort <- y.dmort + o.dmort
-dmorti <- y.dmorti + o.dmorti
-
 simstep <- function(state, y.beta, o.beta, yo.beta, a, gamma)
 {
     i = state$i
@@ -94,15 +80,18 @@ calculateModel <- function(params, period)
     Tinf <- params[11]
     Tinc <- params[12]
     mort_lockdown_threshold <- params[13]
-    ##hosp_rate_change <- params[14]
 
     a <- 1 / Tinc
     gamma <- 1 / Tinf
 
+    ## convolution profile to infer hospitalisation count
     hosp_cv_profile = calcConvolveProfile(-hosp_latency, 5)
 
+    ## convolution profile to infer dead count
     died_cv_profile = calcConvolveProfile(-died_latency, 5)
 
+    ## additional padding in state vectors to prevent out-of-bounds
+    ## in convolution
     padding = floor(max(hosp_latency, died_latency) * 3)
 
     state <- NULL
@@ -134,7 +123,10 @@ calculateModel <- function(params, period)
     y.beta = o.beta = yo.beta = 0
     
     for (i in (padding + 1):(padding + period)) {
-        betas = calcbetas.age(i - data_offset, betay0, betayt, betao0, betaot, betayo0, betayot)
+        betas = calcbetas.age(i - data_offset,
+                              betay0, betayt,
+                              betao0, betaot,
+                              betayo0, betayot)
         
 	state <- simstep(state, betas[1], betas[2], betas[3], a, gamma)
 
@@ -150,9 +142,6 @@ calculateModel <- function(params, period)
 	r = convolute(state$o.R, i, died_cv_profile)
 	state$o.died[i] <- r * o.dr
 
-        ## assuming lockdown decision was based on a cumulative mort count, with some
-        ## uncertainty on the exact value due to observed cumulative mort count being a
-        ## sample
 	if (data_offset == InvalidDataOffset &&
             (state$y.died[i] + state$o.died[i]) > mort_lockdown_threshold) {
             data_offset = i - lockdown_offset
@@ -179,24 +168,6 @@ calculateModel <- function(params, period)
                             else state$o.hosp[i] - state$o.hosp[i - 1]
     }
 
-    ## cumDiff <- 0
-    ## inv_hosp_rate_change <- 1 / hosp_rate_change
-    ## for (i in (round(data_offset + 12)):length(state$y.hospi)) {
-    ## 	nhospi <- state$y.hospi[i] * inv_hosp_rate_change
-    ##     diff <- nhospi - state$y.hospi[i]
-    ## 	state$y.hospi[i] <- nhospi
-    ##     cumDiff <- cumDiff + diff
-    ##     state$y.hosp[i] <- state$y.hosp[i] + cumDiff
-    ## }
-
-    ## for (i in (round(data_offset + 12)):length(state$o.hospi)) {
-    ## 	nhospi <- state$o.hospi[i] * inv_hosp_rate_change
-    ##     diff <- nhospi - state$o.hospi[i]
-    ## 	state$o.hospi[i] <- nhospi
-    ##     cumDiff <- cumDiff + diff
-    ##     state$o.hosp[i] <- state$o.hosp[i] + cumDiff
-    ## }
-
     state$padding <- padding
     state$offset <- data_offset
 
@@ -212,15 +183,44 @@ transformParams <- function(params)
     result
 }
 
+invTransformParams <- function(posterior)
+{
+    posterior$IFR = exp(posterior$logHR + posterior$logHRDR)
+    posterior$HR = exp(posterior$logHR)
+
+    ## Additional quantitites of interest
+    posterior$y.R0 = posterior$betay0 * posterior$Tinf
+    posterior$y.Rt = posterior$betayt * posterior$Tinf
+    posterior$o.R0 = posterior$betao0 * posterior$Tinf
+    posterior$o.Rt = posterior$betaot * posterior$Tinf
+    posterior$yo.R0 = posterior$betayo0 * posterior$Tinf
+    posterior$yo.Rt = posterior$betayot * posterior$Tinf
+    posterior$y.Et = posterior$y.Rt / posterior$y.R0
+    posterior$o.Et = posterior$o.Rt / posterior$o.R0
+    posterior$yo.Et = posterior$yo.Rt / posterior$yo.R0
+}
+
+calcNominalState <- function(state)
+{
+    state$hosp <- state$y.hosp + state$o.hosp
+    state$died <- state$y.died + state$o.died
+    state$hospi <- state$y.hospi + state$o.hospi
+    state$deadi <- state$y.deadi + state$o.deadi
+
+    state
+}
+
 fit.paramnames <- c("betay0", "betayt",
                     "betao0", "betaot",
                     "betayo0", "betayot",
                     "logHR", "logHRDR", "HL", "DL", "Tinf", "Tinc",
                     "lockdownmort")
 
+## e.g. used for plotting time series to oversee sampling
+keyparamnames <- c("y.R0", "y.Rt", "IFR", "Tinf", "betay0", "betayt")
+
 ## log likelihood function for fitting this model to observed data:
-##   dhospi,
-##   y.dmorti, o.dmorti
+##   dhospi, y.dmorti, o.dmorti
 calclogl <- function(params) {
     betay0 <- params[1]
     betayt <- params[2]
@@ -236,35 +236,28 @@ calclogl <- function(params) {
 
     Tinc <- params[12]
     mort_lockdown_threshold <- params[13]
-    ##hosp_rate_change <- params[14]
 
     if (betay0 < 1E-10) {
-        #print(paste("invalid betay0", betay0))
         return(-Inf)
     }
 
     if (betayt < 1E-10) {
-        #print(paste("invalid betay0", betayt))
         return(-Inf)
     }
 
     if (betao0 < 1E-10) {
-        #print(paste("invalid betao0", betao0))
         return(-Inf)
     }
 
     if (betaot < 1E-10) {
-        #print(paste("invalid betaot", betaot))
         return(-Inf)
     }
 
     if (betayo0 < 1E-10) {
-        #print(paste("invalid betayo0", betayo0))
         return(-Inf)
     }
 
     if (betayot < 1E-10) {
-        #print(paste("invalid betayot", betayot))
         return(-Inf)
     }
 
@@ -284,7 +277,7 @@ calclogl <- function(params) {
     }
 
     if (died_latency < 2 || died_latency > 30) {
-        ## print(paste("invalid died_latency", died_latency))
+        print(paste("invalid died_latency", died_latency))
         return(-Inf)
     }
 
@@ -298,39 +291,51 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    ##if (hosp_rate_change < 1.0) {
-    ##    print(paste("invalid hosp_rate_change", hosp_rate_change))
-    ##    return(-Inf)
-    ##}
-
     state <<- calculateModel(params, FitTotalPeriod)
     
     if (state$offset == InvalidDataOffset)
        return(-Inf)
 
-    logl <- 0
+    logPriorP <- 0
 
-    #R0 <- beta0 * Tinf
+    ##
+    ## Only informative priors are applied
+    ##
 
-    #logl <- logl + dnorm(R0, mean=6, sd=0.5, log=T)
-    
-    #logl <- logl + dnorm(beta0, mean=0.1, sd=3, log=T)
-    #logl <- logl + dnorm(betat, mean=0.1, sd=3, log=T)
-    #logl <- logl + dgamma(beta0, 1, 1, log=T)
-    #logl <- logl + dgamma(betat, 1, 1, log=T)
-    #logl <- logl + dgamma(hosp_rate, shape=0.01, rate=1, log=T)
-    
-    logl <- logl + dbeta(died_rate, 10.8, 1627, log=T) # estBetaParams(0.0066, 0.002^2)
-    #logl <- logl + dbeta(died_rate, 4.8, 722.69, log=T) # estBetaParams(0.0066, 0.003^2)
-    #logl <- logl + dbeta(died_rate, 2.697931, 406.0796, log=T) # estBetaParams(0.0066, 0.004^2)
-    #logl <- logl + dbeta(died_rate, 1.7243, 259.53, log=T) # estBetaParams(0.0066, 0.005^2)
-    #logl <- logl + dbeta(died_rate, 0.9, 0.9, log=T) # https://stats.stackexchange.com/questions/297901/choosing-between-uninformative-beta-priors
-    logl <- logl + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logl <- logl + dnorm(died_latency, mean=10, sd=20, log=T)
-    logl <- logl + dnorm(Tinc, mean=5, sd=3, log=T)
-    logl <- logl + dnorm(Tinf, mean=5, sd=3, log=T)
-    logl <- logl + dnbinom(total_deaths_at_lockdown, mu=pmax(0.1, mort_lockdown_threshold), size=mort_nbinom_size, log=T)
-    #logl <- logl + dnorm(hosp_rate_change, mean=1, sd=0.3, log=T)
+    ## Priors on IFR:
+    ##  IFR can typically not be inferred from the data
+    ##  Here we list IFR's based on Verity et al., with different variances
+
+    ## estBetaParams(0.0066, 0.002^2)
+    logPriorP <- logPriorP + dbeta(died_rate, 10.8, 1627, log=T)
+
+    ## estBetaParams(0.0066, 0.003^2)
+    ## logPriorP <- logPriorP + dbeta(died_rate, 4.8, 722.69, log=T)
+
+    ## estBetaParams(0.0066, 0.004^2)
+    ## logPriorP <- logPriorP + dbeta(died_rate, 2.697931, 406.0796, log=T)
+
+    ## estBetaParams(0.0066, 0.005^2)
+    ## logPriorP <- logPriorP + dbeta(died_rate, 1.7243, 259.53, log=T)
+
+    ##
+    ## These two may not be needed
+    ##
+    logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
+
+    ##
+    ## Based on literature estimates
+    ##
+    logPriorP <- logPriorP + dnorm(Tinc, mean=5, sd=3, log=T)
+    logPriorP <- logPriorP + dnorm(Tinf, mean=5, sd=3, log=T)
+
+    ##
+    ## Total deaths at lockdown is also the result of an observation
+    ##
+
+    loglLD <- dnbinom(total_deaths_at_lockdown, mu=pmax(0.1, mort_lockdown_threshold),
+                      size=mort_nbinom_size, log=T)
 
     dstart <- state$offset
     dend <- state$offset + length(dhospi) - 1
@@ -340,7 +345,7 @@ calclogl <- function(params) {
        return(-Inf)
     }
 
-    loglA <- sum(dnbinom(dhospi,
+    loglH <- sum(dnbinom(dhospi,
                          mu=pmax(0.1, state$y.hospi[dstart:dend] +
                                       state$o.hospi[dstart:dend]),
                          size=hosp_nbinom_size, log=T))
@@ -352,24 +357,26 @@ calclogl <- function(params) {
        return(-Inf)
     }
 
-    y.loglB <- sum(dnbinom(y.dmorti,
-                           mu=pmax(0.1, state$y.deadi[dstart:dend] / death_underreporting_factor),
+    y.loglD <- sum(dnbinom(y.dmorti,
+                           mu=pmax(0.1, state$y.deadi[dstart:dend] /
+                                        death_underreporting_factor),
                            size=mort_nbinom_size, log=T))
 
-    o.loglB <- sum(dnbinom(o.dmorti,
-                           mu=pmax(0.1, state$o.deadi[dstart:dend] / death_underreporting_factor),
+    o.loglD <- sum(dnbinom(o.dmorti,
+                           mu=pmax(0.1, state$o.deadi[dstart:dend] /
+                                        death_underreporting_factor),
                            size=mort_nbinom_size, log=T))
 
     it <<- it + 1
+
+    result <- logPriorP + loglLD + loglH + y.loglD + o.loglD
+    
     if (it %% 1000 == 0) {
         print(params)
-	print(c(it, logl + loglA + y.loglB + o.loglB))
-        state$hosp <<- state$y.hosp + state$o.hosp
-        state$died <<- state$y.died + state$o.died
-        state$hospi <<- state$y.hospi + state$o.hospi
-        state$deadi <<- state$y.deadi + state$o.deadi
+	print(c(it, result))
+        state <<- calcNominalState(state)
 	graphs()
     }
 
-    logl + loglA + y.loglB + o.loglB
+    result
 }

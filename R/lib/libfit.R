@@ -53,28 +53,43 @@ graphs <- function() {
          main='Cumulative hospitalisations and deaths')
     lines(days[1:len],state$died[state$offset:(state$offset + len - 1)], type='l', col='blue')
     points(days[1:length(dhospi)],dhosp,col='red')
-    points(days[1:length(dmort)],y.dmort + o.dmort,col='blue')
+    points(days[1:length(dmort)],dmort,col='blue')
     legend("topleft", inset=0.02, legend=c("Hospitalisations", "Deaths"),
 	   col=c("red", "blue"),lty=1)
 
     period <- length(state$hospi)
     len <- period - state$offset + 1
-    print(c(state$offset, period, len))
     plot(days[1:len],state$hospi[state$offset:period], type='l', col='red',
          xlab='Date', ylab='Count',
          main='New hospitalisations and deaths per day')
-    lines(days[1:len],state$y.hospi[state$offset:period], type='l', lty=2, col='red')
-    lines(days[1:len],state$o.hospi[state$offset:period], type='l', lty=3, col='red')
-    lines(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='blue')
-    lines(days[1:len],state$o.deadi[state$offset:period], type='l', lty=3, col='blue')
+
+    if ("y.hospi" %in% state) {
+        lines(days[1:len],state$y.hospi[state$offset:period], type='l', lty=2, col='red')
+        lines(days[1:len],state$o.hospi[state$offset:period], type='l', lty=3, col='red')
+        lines(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='blue')
+        lines(days[1:len],state$o.deadi[state$offset:period], type='l', lty=3, col='blue')
+    } else {
+        lines(days[1:len],state$deadi[state$offset:period], type='l', col='blue')
+    }
+
     points(days[1:length(dhospi)],dhospi,col=c("red"))
-    points(days[1:length(dmorti)],y.dmorti,col=c("blue"))
-    points(days[1:length(dmorti)],o.dmorti,col=c("blue"))
+
+    if (exists(y.dmorti)) {
+        points(days[1:length(dmorti)],y.dmorti,col=c("blue"))
+        points(days[1:length(dmorti)],o.dmorti,col=c("blue"))
+    } else {
+        points(days[1:length(dmorti)],dmorti,col=c("blue"))
+    }
+
     legend("topright", inset=0.02, legend=c("Hospitalisations", "Deaths"),
 	   col=c("red", "blue"),lty=1)
 
-    print(paste("% y immune: ", state$y.R[period]/y.N))
-    print(paste("% o immune: ", state$o.R[period]/o.N))
+    if ("R" %in% state) {
+        print(paste("% immune: ", state$R[period]/y.N))
+    } else {
+        print(paste("% y immune: ", state$y.R[period]/y.N))
+        print(paste("% o immune: ", state$o.R[period]/o.N))
+    }
     print(paste("deaths: ", state$died[length(state$died) - 2]))
     print(paste("offset: ", state$offset - state$padding))
 }

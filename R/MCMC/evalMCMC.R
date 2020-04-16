@@ -3,14 +3,15 @@ library("ggplot2")
 require(mcmcse)
 require(bayestestR)
 
-scales <- 1
-
+## Read control file
 source("control.R")
-source(settings)
 
+## Load settings, data, and fitmodel (defined in control.R)
+source(settings)
 source(data, chdir=T)
 source(fitmodel, chdir=T)
 
+## Load library functions
 source(paste(Rdir, "lib/libMCMC.R", sep=""))
 
 options(scipen=999)
@@ -24,7 +25,7 @@ read <- function() {
 
     print(ess(posterior))
 
-plot(ts(subset(posterior, select=c("y.R0", "y.Rt", "IFR", "Tinf", "betay0", "betayt"))))
+    plot(ts(subset(posterior, select=keyparamnames)
 
     ## compute credibility intervals
     print(ci(posterior, method = "HDI", ci=0.01))
@@ -70,7 +71,7 @@ densityPlot()
 # from here on only totally random snippets
 #
 
-mcmc_hist(posterior, pars = c("y.R0", "y.Rt", "IFR"))
+mcmc_hist(posterior, pars = keyparamnames)
 
 #mcmc_hist(posterior, pars = c("IFR"), binwidth=0.0001)
 #mcmc_hist(posterior, pars = c("Beta"))
