@@ -44,6 +44,8 @@ it <- 0
 graphs <- function() {
     par(mfrow=c(1,2))
 
+    print(names(state))
+    
     days <- seq(dstartdate, dstartdate + length(dhosp) + 30, 1)
 
     len <- 40
@@ -63,7 +65,7 @@ graphs <- function() {
          xlab='Date', ylab='Count',
          main='New hospitalisations and deaths per day')
 
-    if ("y.hospi" %in% state) {
+    if ("y.hospi" %in% names(state)) {
         lines(days[1:len],state$y.hospi[state$offset:period], type='l', lty=2, col='red')
         lines(days[1:len],state$o.hospi[state$offset:period], type='l', lty=3, col='red')
         lines(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='blue')
@@ -72,19 +74,20 @@ graphs <- function() {
         lines(days[1:len],state$deadi[state$offset:period], type='l', col='blue')
     }
 
-    points(days[1:length(dhospi)],dhospi,col=c("red"))
-
-    if (exists(y.dmorti)) {
+    if (exists("y.dmorti")) {
         points(days[1:length(dmorti)],y.dmorti,col=c("blue"))
         points(days[1:length(dmorti)],o.dmorti,col=c("blue"))
+        points(days[1:length(dhospi)],y.dhospi,col=c("red"))
+        points(days[1:length(dhospi)],o.dhospi,col=c("red"))
     } else {
         points(days[1:length(dmorti)],dmorti,col=c("blue"))
+        points(days[1:length(dhospi)],dhospi,col=c("red"))
     }
 
     legend("topright", inset=0.02, legend=c("Hospitalisations", "Deaths"),
 	   col=c("red", "blue"),lty=1)
 
-    if ("R" %in% state) {
+    if ("R" %in% names(state)) {
         print(paste("% immune: ", state$R[period]/y.N))
     } else {
         print(paste("% y immune: ", state$y.R[period]/y.N))

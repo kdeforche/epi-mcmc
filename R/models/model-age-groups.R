@@ -80,6 +80,9 @@ calculateModel <- function(params, period)
     Tinf <- params[11]
     Tinc <- params[12]
     mort_lockdown_threshold <- params[13]
+    o.hosp_rate_factor = params[14]
+
+    y.hosp_rate_factor = 1
 
     a <- 1 / Tinc
     gamma <- 1 / Tinf
@@ -179,6 +182,7 @@ transformParams <- function(params)
     result = params
     result[8] = exp(params[7] + params[8])
     result[7] = exp(params[7])
+    result[14] = exp(params[14])
 
     result
 }
@@ -187,6 +191,7 @@ invTransformParams <- function(posterior)
 {
     posterior$IFR = exp(posterior$logHR + posterior$logHRDR)
     posterior$HR = exp(posterior$logHR)
+    posterior$fHo = exp(posterior$logfHo)
 
     ## Additional quantitites of interest
     posterior$y.R0 = posterior$betay0 * posterior$Tinf
@@ -198,6 +203,8 @@ invTransformParams <- function(posterior)
     posterior$y.Et = posterior$y.Rt / posterior$y.R0
     posterior$o.Et = posterior$o.Rt / posterior$o.R0
     posterior$yo.Et = posterior$yo.Rt / posterior$yo.R0
+
+    posterior
 }
 
 calcNominalState <- function(state)
@@ -214,13 +221,13 @@ fit.paramnames <- c("betay0", "betayt",
                     "betao0", "betaot",
                     "betayo0", "betayot",
                     "logHR", "logHRDR", "HL", "DL", "Tinf", "Tinc",
-                    "lockdownmort")
+                    "lockdownmort", "logfHo")
 
 ## e.g. used for plotting time series to oversee sampling
 keyparamnames <- c("y.R0", "y.Rt", "IFR", "Tinf", "betay0", "betayt")
 
 ## log likelihood function for fitting this model to observed data:
-##   dhospi, y.dmorti, o.dmorti
+##   y.dhospi, o.dhospi, y.dmorti, o.dmorti
 calclogl <- function(params) {
     betay0 <- params[1]
     betayt <- params[2]
@@ -233,7 +240,6 @@ calclogl <- function(params) {
     hosp_latency <- params[9]
     died_latency <- params[10]
     Tinf <- params[11]
-
     Tinc <- params[12]
     mort_lockdown_threshold <- params[13]
 
@@ -345,10 +351,12 @@ calclogl <- function(params) {
        return(-Inf)
     }
 
-    loglH <- sum(dnbinom(dhospi,
-                         mu=pmax(0.1, state$y.hospi[dstart:dend] +
-                                      state$o.hospi[dstart:dend]),
-                         size=hosp_nbinom_size, log=T))
+    y.loglH <- sum(dnbinom(y.dhospi,
+                           mu=pmax(0.1, state$y.hospi[dstart:dend]),
+                           size=hosp_nbinom_size, log=T))
+    o.loglH <- sum(dnbinom(o.dhospi,
+                           mu=pmax(0.1, state$o.hospi[dstart:dend]),
+                           size=hosp_nbinom_size, log=T))
 
     dend <- state$offset + length(y.dmorti) - 1
 
@@ -369,7 +377,7 @@ calclogl <- function(params) {
 
     it <<- it + 1
 
-    result <- logPriorP + loglLD + loglH + y.loglD + o.loglD
+    result <- logPriorP + loglLD + y.loglH + o.loglH + y.loglD + o.loglD
     
     if (it %% 1000 == 0) {
         print(params)

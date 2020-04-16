@@ -1,9 +1,10 @@
 require(mcmc)
 
-source("settings.R")
+source("control.R")
 
-source(fitmodel)
+source(settings)
 source(data, chdir=T)
+source(fitmodel, chdir=T)
 
 source(paste(Rdir, "lib/libfit.R", sep=""))
 

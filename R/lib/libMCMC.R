@@ -19,7 +19,7 @@ readData <- function(files)
             posterior <- rbind(posterior, posteriorb)
         }
     }
-    summary(posterior)
+    print(summary(posterior))
 
     posterior <- invTransformParams(posterior)
     posterior

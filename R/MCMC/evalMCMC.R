@@ -25,7 +25,7 @@ read <- function() {
 
     print(ess(posterior))
 
-    plot(ts(subset(posterior, select=keyparamnames)
+    plot(ts(subset(posterior, select=keyparamnames)))
 
     ## compute credibility intervals
     print(ci(posterior, method = "HDI", ci=0.01))
