@@ -240,7 +240,7 @@ labels <- c("0", "01", "02", "03", "04", "05", "06", "07", "08", "09")
 
 i = 1
 for (r in seq(0,0.9,0.1)) {
-    relax.start_date <- as.Date("2020/5/18")
+    relax.start_date <- as.Date("2020/5/4")
     relax.end_date <- as.Date("2020/8/1")
 
     relax.measures.y.E = r

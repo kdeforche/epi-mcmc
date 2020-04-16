@@ -12,7 +12,7 @@ calcbetas.age.relax <- function(time, betay0, betayt, betao0, betaot, betayo0, b
         return(calcbetas.age.orig(time, betay0, betayt, betao0, betaot, betayo0, betayot))
 
     if (time > relax.end)
-        c(betay0, betao0, betayo0)
+        return(c(betay0, betao0, betayo0))
     
     y.beta = max(0.001, relax.measures.y.E * betayt + (1 - relax.measures.y.E) * betay0)
     o.beta = max(0.001, relax.measures.o.E * betaot + (1 - relax.measures.o.E) * betao0)
