@@ -89,9 +89,9 @@ o.dmorti = o.dmorti + floor((1 - yfract) * na.dmorti$x)
 ## estimated from the epidemiological report
 ## 
 
-o.wzcmorti = c(0, 0, 0, 0, 2, 1, 1, 2, 4, 10, 9, 12, 21, 19, 12, 24, 25,
-               40, 44, 45, 48, 53, 100, 70, 103, 127, 102, 146, 179, 205,
-               160, 192, 150, 180, 10, 2)
+o.wzcmorti = c(0, 0, 0, 0, 2, 1, 1, 2, 3, 10, 9, 12, 21, 19, 12, 24, 25,
+               40, 49, 52, 48, 57, 120, 72, 110, 130, 107, 153, 179, 195,
+               167, 203, 170, 230, 155, 155, 27, 5)
 
 print(paste("last day o.wzcmorti: ", dstartdate + length(o.wzcmorti) - 1))
 

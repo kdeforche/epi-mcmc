@@ -296,12 +296,12 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (o.hosp_latency < 2 || o.hosp_latency > 30) {
+    if (o.hosp_latency < -2 || o.hosp_latency > 30) {
         print(paste("invalid o.hosp_latency", o.hosp_latency))
         return(-Inf)
     }
 
-    if (o.died_latency < 2 || o.died_latency > 30) {
+    if (o.died_latency < -2 || o.died_latency > 30) {
         print(paste("invalid o.died_latency", o.died_latency))
         return(-Inf)
     }
@@ -332,7 +332,7 @@ calclogl <- function(params) {
     ##  Here we list IFR's based on Verity et al., with different variances
 
     ## estBetaParams(0.0066, 0.002^2)
-    logPriorP <- logPriorP + dbeta(died_rate, 10.8, 1627, log=T)
+    ## logPriorP <- logPriorP + dbeta(died_rate, 10.8, 1627, log=T)
 
     ## estBetaParams(0.0066, 0.003^2)
     ## logPriorP <- logPriorP + dbeta(died_rate, 4.8, 722.69, log=T)
@@ -341,7 +341,7 @@ calclogl <- function(params) {
     ## logPriorP <- logPriorP + dbeta(died_rate, 2.697931, 406.0796, log=T)
 
     ## estBetaParams(0.0066, 0.005^2)
-    ## logPriorP <- logPriorP + dbeta(died_rate, 1.7243, 259.53, log=T)
+    logPriorP <- logPriorP + dbeta(died_rate, 1.7243, 259.53, log=T)
 
     ##
     ## These two may not be needed
