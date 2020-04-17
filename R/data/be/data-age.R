@@ -44,10 +44,21 @@ for (i in 1:dim(hosp_week_age_statistics)[1]) {
 
 bucket_50.79.y = 50/(50 + 62)
 hosp_week_age_statistics$y = hosp_week_age_statistics[,1] + hosp_week_age_statistics[,2] * bucket_50.79.y
-hosp_week_age_statistics$index = 1:dim(hosp_week_age_statistics)[1] * 7 - 2
+hosp_week_age_statistics$index = 1:dim(hosp_week_age_statistics)[1] * 7 - 5
 
 model <- lm(y ~ poly(index, 2), data=hosp_week_age_statistics)
 yf <- data.frame(index=seq(1:length(dhospi)))
+
+pdf("hosp-age.pdf", width=8, height=6)
+
+plot(dstartdate + (yf$index - 1), predict(model, yf) * 100, type='l', ylim=c(0, 100), xlab="Date", ylab="Fraction of hospitalisations", main="Distribution of hospitalisations in younger and older groups", col='blue')
+points(dstartdate + (hosp_week_age_statistics$index - 1), hosp_week_age_statistics$y * 100, col='blue')
+lines(dstartdate + (yf$index - 1), 100 - predict(model, yf) * 100, type='l', col='darkgreen')
+points(dstartdate + (hosp_week_age_statistics$index - 1), 100 - hosp_week_age_statistics$y * 100, col='darkgreen')
+legend("topleft", inset=0.02, legend=c("< 65", ">= 65"),
+       col=c("blue", "darkgreen"),lty=1)
+
+dev.off()
 
 y.dhospi = round(dhospi * predict(model, yf))
 o.dhospi = dhospi - y.dhospi

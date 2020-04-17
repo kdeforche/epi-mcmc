@@ -75,12 +75,14 @@ calculateModel <- function(params, period)
     betayot <- params[6]
     hosp_rate <- params[7]
     died_rate <- params[8]
-    hosp_latency <- params[9]
-    died_latency <- params[10]
-    Tinf <- params[11]
-    Tinc <- params[12]
-    mort_lockdown_threshold <- params[13]
-    o.hosp_rate_factor = params[14]
+    y.hosp_latency <- params[9]
+    y.died_latency <- params[10]
+    o.hosp_latency <- params[11]
+    o.died_latency <- params[12]
+    Tinf <- params[13]
+    Tinc <- params[14]
+    mort_lockdown_threshold <- params[15]
+    o.hosp_rate_factor = params[16]
 
     y.hosp_rate_factor = 1
 
@@ -88,14 +90,17 @@ calculateModel <- function(params, period)
     gamma <- 1 / Tinf
 
     ## convolution profile to infer hospitalisation count
-    hosp_cv_profile = calcConvolveProfile(-hosp_latency, 5)
+    y.hosp_cv_profile = calcConvolveProfile(-y.hosp_latency, 5)
+    o.hosp_cv_profile = calcConvolveProfile(-o.hosp_latency, 5)
 
     ## convolution profile to infer dead count
-    died_cv_profile = calcConvolveProfile(-died_latency, 5)
+    y.died_cv_profile = calcConvolveProfile(-y.died_latency, 5)
+    o.died_cv_profile = calcConvolveProfile(-o.died_latency, 5)
 
     ## additional padding in state vectors to prevent out-of-bounds
     ## in convolution
-    padding = floor(max(hosp_latency, died_latency) * 3)
+    padding = max(-y.hosp_cv_profile$kbegin, -y.died_cv_profile$kbegin,
+                  -o.hosp_cv_profile$kbegin, -o.died_cv_profile$kbegin) + 1
 
     state <- NULL
 
@@ -133,16 +138,16 @@ calculateModel <- function(params, period)
         
 	state <- simstep(state, betas[1], betas[2], betas[3], a, gamma)
 
-    	s = convolute(state$y.S, i, hosp_cv_profile)
+    	s = convolute(state$y.S, i, y.hosp_cv_profile)
 	state$y.hosp[i] <- (y.N - s) * y.hr
 
-	r = convolute(state$y.R, i, died_cv_profile)
+	r = convolute(state$y.R, i, y.died_cv_profile)
 	state$y.died[i] <- r * y.dr
 
-    	s = convolute(state$o.S, i, hosp_cv_profile)
+    	s = convolute(state$o.S, i, o.hosp_cv_profile)
 	state$o.hosp[i] <- (o.N - s) * o.hr
 
-	r = convolute(state$o.R, i, died_cv_profile)
+	r = convolute(state$o.R, i, o.died_cv_profile)
 	state$o.died[i] <- r * o.dr
 
 	if (data_offset == InvalidDataOffset &&
@@ -182,7 +187,7 @@ transformParams <- function(params)
     result = params
     result[8] = exp(params[7] + params[8])
     result[7] = exp(params[7])
-    result[14] = exp(params[14])
+    result[16] = exp(params[16])
 
     result
 }
@@ -220,7 +225,9 @@ calcNominalState <- function(state)
 fit.paramnames <- c("betay0", "betayt",
                     "betao0", "betaot",
                     "betayo0", "betayot",
-                    "logHR", "logHRDR", "HL", "DL", "Tinf", "Tinc",
+                    "logHR", "logHRDR",
+                    "y.HL", "y.DL", "o.HL", "o.DL",
+                    "Tinf", "Tinc",
                     "lockdownmort", "logfHo")
 
 ## e.g. used for plotting time series to oversee sampling
@@ -237,11 +244,13 @@ calclogl <- function(params) {
     betayot <- params[6]
     hosp_rate <- params[7]
     died_rate <- params[8]
-    hosp_latency <- params[9]
-    died_latency <- params[10]
-    Tinf <- params[11]
-    Tinc <- params[12]
-    mort_lockdown_threshold <- params[13]
+    y.hosp_latency <- params[9]
+    y.died_latency <- params[10]
+    o.hosp_latency <- params[11]
+    o.died_latency <- params[12]
+    Tinf <- params[13]
+    Tinc <- params[14]
+    mort_lockdown_threshold <- params[15]
 
     if (betay0 < 1E-10) {
         return(-Inf)
@@ -277,13 +286,23 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (hosp_latency < 2 || hosp_latency > 30) {
-        print(paste("invalid hosp_latency", hosp_latency))
+    if (y.hosp_latency < 2 || y.hosp_latency > 30) {
+        print(paste("invalid y.hosp_latency", y.hosp_latency))
         return(-Inf)
     }
 
-    if (died_latency < 2 || died_latency > 30) {
-        print(paste("invalid died_latency", died_latency))
+    if (y.died_latency < 2 || y.died_latency > 30) {
+        print(paste("invalid y.died_latency", y.died_latency))
+        return(-Inf)
+    }
+
+    if (o.hosp_latency < 2 || o.hosp_latency > 30) {
+        print(paste("invalid o.hosp_latency", o.hosp_latency))
+        return(-Inf)
+    }
+
+    if (o.died_latency < 2 || o.died_latency > 30) {
+        print(paste("invalid o.died_latency", o.died_latency))
         return(-Inf)
     }
 
@@ -327,8 +346,11 @@ calclogl <- function(params) {
     ##
     ## These two may not be needed
     ##
-    logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
+    logPriorP <- logPriorP + dnorm(y.hosp_latency, mean=10, sd=20, log=T)
+    logPriorP <- logPriorP + dnorm(y.died_latency, mean=10, sd=20, log=T)
+
+    logPriorP <- logPriorP + dnorm(o.hosp_latency, mean=10, sd=20, log=T)
+    logPriorP <- logPriorP + dnorm(o.died_latency, mean=10, sd=20, log=T)
 
     ##
     ## Based on literature estimates

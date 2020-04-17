@@ -44,8 +44,6 @@ it <- 0
 graphs <- function() {
     par(mfrow=c(1,2))
 
-    print(names(state))
-    
     days <- seq(dstartdate, dstartdate + length(dhosp) + 30, 1)
 
     len <- 40
