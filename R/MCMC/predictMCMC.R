@@ -180,35 +180,35 @@ all_plots_age <- function(date_markers) {
 
 options(scipen=999)
 
+readSample <- function() {
+    all <- readData(inputfiles)
+
+    posterior <- all
+
+    print(ess(posterior))
+
+    plot(ts(subset(posterior, select=keyparamnames)))
+
+    ## compute credibility intervals
+    print(ci(posterior, method = "HDI", ci=0.01))
+    print(ci(posterior, method = "HDI", ci=0.50))
+    print(ci(posterior, method = "HDI", ci=0.95))
+
+    posterior
+
+    selection <- which(posterior[,"IFR"] < 3)
+    scount <- length(selection)
+    draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
+    data_sample <- posterior[selection[draws],][0:-1]
+
+    data_sample
+}
+
 outputdir <- "output"
 
 system(paste("mkdir ", outputdir))
 
-# read new data
-all <- readData(inputfiles)
-
-posterior <- all
-
-# calculate effective sample sizes.
-pess <- ess(posterior)
-pess
-
-plot(ts(subset(posterior, select=keyparamnames)))
-
-# compute credibility intervals
-ci(posterior, method = "HDI", ci=0.01)
-ci(posterior, method = "HDI", ci=0.50)
-ci(posterior, method = "HDI", ci=0.95)
-
-###### Create sample
-
-## sample a subset of data to show in density plots
-selection <- which(posterior[,"IFR"] < 3)
-scount <- length(selection)
-draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
-data_sample <- posterior[selection[draws],][0:-1]
-
-###### Current state
+data_sample <- readSample()
 
 ## Configure this depending on the model
 all_plots <- all_plots_age
@@ -239,7 +239,7 @@ labels <- c("0", "01", "02", "03", "04", "05", "06", "07", "08", "09")
 i = 1
 for (r in seq(0,0.9,0.1)) {
     relax.start_date <- as.Date("2020/5/4")
-    relax.end_date <- as.Date("2020/8/1")
+    relax.end_date <- as.Date("2020/12/1")
 
     relax.measures.y.E = r
     relax.start <- as.numeric(relax.start_date - dstartdate) 

@@ -28,9 +28,9 @@ read <- function() {
     plot(ts(subset(posterior, select=keyparamnames)))
 
     ## compute credibility intervals
-    print(ci(posterior, method = "HDI", ci=0.01))
-    print(ci(posterior, method = "HDI", ci=0.50))
-    print(ci(posterior, method = "HDI", ci=0.95))
+    print(data.frame(ci(posterior, method = "HDI", ci=0.01)))
+    print(data.frame(ci(posterior, method = "HDI", ci=0.50)))
+    print(data.frame(ci(posterior, method = "HDI", ci=0.95)))
 
     posterior
 }
@@ -78,11 +78,20 @@ mcmc_hist(posterior, pars = keyparamnames)
 #mcmc_hist(posterior, pars = c("HL", "DL"), binwidth=0.1)
 #mcmc_hist(posterior, pars = c("WZC"))
 
+png("Rt.png", width=500, height=500)
+pdf(paste(outputdir, "/Rt.pdf", sep=""), width=6, height=6)
+mcmc_intervals(posterior, pars=rev(c("y.R0", "o.R0", "yo.R0", "y.Rt", "o.Rt", "yo.Rt")),
+               prob = 0.5, prob_outer = 0.95) +
+    scale_x_continuous(name="Reproduction number", breaks=1:6) +
+    scale_y_discrete("", labels=rev(c("R0,y", "R0,o", "R0,yo", "Rt,y", "Rt,o", "Rt,yo"))) +
+    geom_vline(xintercept=1.0, linetype="dashed", color='red', size=1.3)
+dev.off()
+
 mcmc_areas(posterior, pars = c("R0"), prob = 0.8)
 
 mcmc_areas(posterior,
-           pars = c("Rt"),
-           prob = 0.8) + scale_x_continuous(name="", limits=c(0, 3))
+           pars = c("y.R0", "y.Rt"),
+           prob = 0.8)
 
 png("Rt.png", width=500, height=500)
 pdf(paste(outputdir, "/Rt.pdf", sep=""), width=4, height=4)
