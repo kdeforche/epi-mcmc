@@ -144,8 +144,16 @@ calculateModel <- function(params, period)
     state
 }
 
+calcNominalState <- function(state)
+{
+    state
+}
+
 fit.paramnames <- c("beta0", "betat", "logHR", "logHRDR", "HL", "DL", "Tinf", "Tinc",
                     "lockdownmort", "logWZC")
+
+## e.g. used for plotting time series to oversee sampling
+keyparamnames <- c("R0", "Rt", "IFR", "Tinf", "beta0", "betat")
 
 transformParams <- function(params)
 {
@@ -156,6 +164,21 @@ transformParams <- function(params)
 
     result
 }
+
+invTransformParams <- function(posterior)
+{
+    posterior$IFR = exp(posterior$logHR + posterior$logHRDR)
+    posterior$HR = exp(posterior$logHR)
+    posterior$WZC = exp(posterior$logWZC)
+
+    ## Additional quantitites of interest
+    posterior$R0 = posterior$beta0 * posterior$Tinf
+    posterior$Rt = posterior$betat * posterior$Tinf
+    posterior$Et = posterior$Rt / posterior$R0
+
+    posterior
+}
+
 
 ## log likelihood function for fitting this model to observed data:
 ##   dhospi and dmorti

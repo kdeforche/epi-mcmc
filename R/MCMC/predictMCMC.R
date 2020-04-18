@@ -211,7 +211,7 @@ system(paste("mkdir ", outputdir))
 data_sample <- readSample()
 
 ## Configure this depending on the model
-all_plots <- all_plots_age
+## all_plots <- all_plots_age
 
 pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
@@ -231,6 +231,8 @@ dev.off()
 sourceR("models/model-exiting-age-groups.R")
 
 plot_end_date <- as.Date("2020/11/1")
+
+## quantilePlotSampleSize <- 500
 
 calcbetas.age <- calcbetas.age.relax
 

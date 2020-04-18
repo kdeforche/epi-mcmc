@@ -86,7 +86,7 @@ graphs <- function() {
 	   col=c("red", "blue"),lty=1)
 
     if ("R" %in% names(state)) {
-        print(paste("% immune: ", state$R[period]/y.N))
+        print(paste("% immune: ", state$R[period]/N))
     } else {
         print(paste("% y immune: ", state$y.R[period]/y.N))
         print(paste("% o immune: ", state$o.R[period]/o.N))
