@@ -10,6 +10,8 @@ source(paste(Rdir, "lib/libfit.R", sep=""))
 
 options(scipen=999)
 
+source("control.R")
+
 calcloglMCMC <- function(params) {
     return(calclogl(transformParams(params)))
 }
@@ -35,16 +37,12 @@ colnames(batch) <- cn
 ##
 it <- 0
 
-if (truncate) {
-    write.csv(batch, file=outputfile)
-}
-
 for (i in 1:10000) {
     out <<- MCMC.add.samples(out, n=1E4)
     batch <- data.frame(out$samples[seq(1, nrow(out$samples), 1E2), ])
     colnames(batch) <- cn
     plot(ts(subset(batch, select=fitkeyparamnames)))
-    write.table(batch, file=outputfile, append=T, quote=F, sep=",", col.name=F)
+    write.csv(batch, file=outputfile)
 }
 
 #iterate()
