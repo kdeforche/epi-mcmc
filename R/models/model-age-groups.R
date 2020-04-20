@@ -1,36 +1,98 @@
 source("model.R")
+require(Rcpp)
+
+cppFunction('NumericVector odesimstepc(double yS, double yE, double yI, double yR, double oS, double oE, double oI, double oR, double ybeta, double obeta, double yobeta, double a, double gamma, int yN, int oN) {
+
+   double ygot_infected = std::min(1.0, ybeta * yI / yN) * yS;
+   double ygot_infectious = a * yE;
+   double ygot_removed = gamma * yI;
+
+   double ydeltaS = -ygot_infected;
+   double ydeltaE = ygot_infected - ygot_infectious;
+   double ydeltaI = ygot_infectious - ygot_removed;
+   double ydeltaR = ygot_removed;
+
+   double ogot_infected = std::min(1.0, obeta * oI / oN + yobeta * yI / yN) * oS;
+   double ogot_infectious = a * oE;
+   double ogot_removed = gamma * oI;
+
+   double odeltaS = -ogot_infected;
+   double odeltaE = ogot_infected - ogot_infectious;
+   double odeltaI = ogot_infectious - ogot_removed;
+   double odeltaR = ogot_removed;
+
+   NumericVector out(8);
+
+   out[0] = ydeltaS;
+   out[1] = ydeltaE;
+   out[2] = ydeltaI;
+   out[3] = ydeltaR;
+
+   out[4] = odeltaS;
+   out[5] = odeltaE;
+   out[6] = odeltaI;
+   out[7] = odeltaR;
+
+   return out;
+}')
+
+ode.simstep <- function(i, state.seir, parameters) {
+    with(as.list(c(state.seir, parameters)), {
+        y.got_infected = y.beta * y.I * y.S / y.N
+        y.got_infectious = a * y.E
+        y.got_removed = gamma * y.I
+
+        y.deltaS = -y.got_infected
+        y.deltaE = y.got_infected - y.got_infectious
+        y.deltaI = y.got_infectious - y.got_removed
+        y.deltaR = y.got_removed
+
+        o.got_infected = (o.beta * o.I + yo.beta * y.I) * o.S / o.N
+        o.got_infectious = a * o.E
+        o.got_removed = gamma * o.I
+
+        o.deltaS = -o.got_infected
+        o.deltaE = o.got_infected - o.got_infectious
+        o.deltaI = o.got_infectious - o.got_removed
+        o.deltaR = o.got_removed
+
+        c(y.deltaS, y.deltaE, y.deltaI, y.deltaR,
+          o.deltaS, o.deltaE, o.deltaI, o.deltaR)
+    })
+}
+
+ode.simstep <- function(state, i, y.beta, o.beta, yo.beta, a, gamma)
+{
+    state.seir <- as.list(state)
+    names(state.seir) <- c("y.S", "y.E", "y.I", "y.R",
+                           "o.S", "o.E", "o.I", "o.R")
+
+    delta = ode.simstep(i, state.seir, list(y.beta = y.beta,
+                                            o.beta = o.beta,
+                                            yo.beta = yo.beta,
+                                            a = a,
+                                            gamma = gamma))
+
+    state + delta
+}
 
 simstep <- function(state, y.beta, o.beta, yo.beta, a, gamma)
 {
     i = state$i
 
-    y.got_infected = y.beta * state$y.I[i] * state$y.S[i] / y.N
-    y.got_infectious = a * state$y.E[i]
-    y.got_removed = gamma * state$y.I[i]
+    deltas <- odesimstepc(state$y.S[i], state$y.E[i], state$y.I[i], state$y.R[i],
+                          state$o.S[i], state$o.E[i], state$o.I[i], state$o.R[i],
+                          y.beta, o.beta, yo.beta, a, gamma, y.N, o.N)
 
-    y.deltaS = -y.got_infected
-    y.deltaE = y.got_infected - y.got_infectious
-    y.deltaI = y.got_infectious - y.got_removed
-    y.deltaR = y.got_removed
+    state$y.S[i + 1] = state$y.S[i] + deltas[1]
+    state$y.E[i + 1] = state$y.E[i] + deltas[2]
+    state$y.I[i + 1] = state$y.I[i] + deltas[3]
+    state$y.R[i + 1] = state$y.R[i] + deltas[4]
 
-    state$y.S[i + 1] = state$y.S[i] + y.deltaS
-    state$y.E[i + 1] = state$y.E[i] + y.deltaE
-    state$y.I[i + 1] = state$y.I[i] + y.deltaI
-    state$y.R[i + 1] = state$y.R[i] + y.deltaR
-
-    o.got_infected = (o.beta * state$o.I[i] + yo.beta * state$y.I[i]) * state$o.S[i] / o.N
-    o.got_infectious = a * state$o.E[i]
-    o.got_removed = gamma * state$o.I[i]
-
-    o.deltaS = -o.got_infected
-    o.deltaE = o.got_infected - o.got_infectious
-    o.deltaI = o.got_infectious - o.got_removed
-    o.deltaR = o.got_removed
-
-    state$o.S[i + 1] = state$o.S[i] + o.deltaS
-    state$o.E[i + 1] = state$o.E[i] + o.deltaE
-    state$o.I[i + 1] = state$o.I[i] + o.deltaI
-    state$o.R[i + 1] = state$o.R[i] + o.deltaR
+    state$o.S[i + 1] = state$o.S[i] + deltas[5]
+    state$o.E[i + 1] = state$o.E[i] + deltas[6]
+    state$o.I[i + 1] = state$o.I[i] + deltas[7]
+    state$o.R[i + 1] = state$o.R[i] + deltas[8]
 
     i = i + 1
     state$i = i
@@ -74,16 +136,17 @@ calculateModel <- function(params, period)
     betayo0 <- params[5]
     betayot <- params[6]
     hosp_rate <- params[7]
-    died_rate <- params[8]
-    y.hosp_latency <- params[9]
-    y.died_latency <- params[10]
-    o.hosp_latency <- params[11]
-    o.died_latency <- params[12]
-    Tinf <- params[13]
-    Tinc <- params[14]
-    mort_lockdown_threshold <- params[15]
-    o.hosp_rate_factor = params[16]
+    y.died_rate <- params[8]
+    o.died_rate <- params[9]
+    y.hosp_latency <- params[10]
+    y.died_latency <- params[11]
+    o.hosp_latency <- params[12]
+    o.died_latency <- params[13]
+    Tinf <- params[14]
+    Tinc <- params[15]
+    mort_lockdown_threshold <- params[16]
 
+    o.hosp_rate_factor = params[17] * o.died_rate / y.died_rate
     y.hosp_rate_factor = 1
 
     a <- 1 / Tinc
@@ -123,58 +186,46 @@ calculateModel <- function(params, period)
     data_offset = InvalidDataOffset
 
     y.hr = y.hosp_rate_factor * hosp_rate
-    y.dr = y.died_rate_factor * died_rate
-
     o.hr = o.hosp_rate_factor * hosp_rate
-    o.dr = o.died_rate_factor * died_rate
+
+    y.dr = y.died_rate
+    o.dr = o.died_rate
 
     y.beta = o.beta = yo.beta = 0
-    
-    for (i in (padding + 1):(padding + period)) {
-        betas = calcbetas.age(i - data_offset,
-                              betay0, betayt,
-                              betao0, betaot,
-                              betayo0, betayot)
-        
-	state <- simstep(state, betas[1], betas[2], betas[3], a, gamma)
 
-    	s = convolute(state$y.S, i, y.hosp_cv_profile)
-	state$y.hosp[i] <- (y.N - s) * y.hr
+    if (Tinf > 1 && Tinc > 1) {
+        for (i in (padding + 1):(padding + period)) {
+            betas = calcbetas.age(i - data_offset,
+                                  betay0, betayt,
+                                  betao0, betaot,
+                                  betayo0, betayot)
+            
+            state <- simstep(state, betas[1], betas[2], betas[3], a, gamma)
 
-	r = convolute(state$y.R, i, y.died_cv_profile)
-	state$y.died[i] <- r * y.dr
+            s = convolute(state$y.S, i, y.hosp_cv_profile)
+            state$y.hosp[i] <- (y.N - s) * y.hr
 
-    	s = convolute(state$o.S, i, o.hosp_cv_profile)
-	state$o.hosp[i] <- (o.N - s) * o.hr
+            r = convolute(state$y.R, i, y.died_cv_profile)
+            state$y.died[i] <- r * y.dr
 
-	r = convolute(state$o.R, i, o.died_cv_profile)
-	state$o.died[i] <- r * o.dr
+            s = convolute(state$o.S, i, o.hosp_cv_profile)
+            state$o.hosp[i] <- (o.N - s) * o.hr
 
-	if (data_offset == InvalidDataOffset &&
-            (state$y.died[i] + state$o.died[i]) > mort_lockdown_threshold) {
-            data_offset = i - lockdown_offset
-	}
+            r = convolute(state$o.R, i, o.died_cv_profile)
+            state$o.died[i] <- r * o.dr
+
+            if (data_offset == InvalidDataOffset &&
+                (state$y.died[i] + state$o.died[i]) > mort_lockdown_threshold) {
+                data_offset = i - lockdown_offset
+            }
+        }
     }
 
-    state$y.deadi <- numeric(length(state$y.died))
-    state$y.hospi <- numeric(length(state$y.hosp))
+    state$y.deadi <- c(state$y.died[1], diff(state$y.died))
+    state$y.hospi <- c(state$y.hosp[1], diff(state$y.hosp))
 
-    for (i in (padding + 1):(padding + period)) {
-    	state$y.deadi[i] <- if (i == 1) state$y.died[1]
-                            else state$y.died[i] - state$y.died[i - 1]
-	state$y.hospi[i] <- if (i == 1) state$y.hosp[1]
-                            else state$y.hosp[i] - state$y.hosp[i - 1]
-    }
-
-    state$o.deadi <- numeric(length(state$o.died))
-    state$o.hospi <- numeric(length(state$o.hosp))
-
-    for (i in (padding + 1):(padding + period)) {
-    	state$o.deadi[i] <- if (i == 1) state$o.died[1]
-                            else state$o.died[i] - state$o.died[i - 1]
-	state$o.hospi[i] <- if (i == 1) state$o.hosp[1]
-                            else state$o.hosp[i] - state$o.hosp[i - 1]
-    }
+    state$o.deadi <- c(state$o.died[1], diff(state$o.died))
+    state$o.hospi <- c(state$o.hosp[1], diff(state$o.hosp))
 
     state$padding <- padding
     state$offset <- data_offset
@@ -185,17 +236,25 @@ calculateModel <- function(params, period)
 transformParams <- function(params)
 {
     result = params
-    result[8] = exp(params[7] + params[8])
+    ## result[1] = exp(params[1])
+    ## result[2] = exp(params[2])
+    ## result[3] = exp(params[3])
+    ## result[4] = exp(params[4])
+    ## result[5] = exp(params[5])
+    ## result[6] = exp(params[6])
+    result[8] = exp(params[8] + params[7])
+    result[9] = exp(params[9] + params[7])
     result[7] = exp(params[7])
-    result[16] = exp(params[16])
+    result[17] = exp(params[17])
 
     result
 }
 
 invTransformParams <- function(posterior)
 {
-    posterior$IFR = exp(posterior$logHR + posterior$logHRDR)
     posterior$HR = exp(posterior$logHR)
+    posterior$y.IFR = exp(posterior$logHRyDR + posterior$logHR)
+    posterior$o.IFR = exp(posterior$logHRoDR + posterior$logHR)
     posterior$fHo = exp(posterior$logfHo)
 
     ## Additional quantitites of interest
@@ -208,6 +267,7 @@ invTransformParams <- function(posterior)
     posterior$y.Et = posterior$y.Rt / posterior$y.R0
     posterior$o.Et = posterior$o.Rt / posterior$o.R0
     posterior$yo.Et = posterior$yo.Rt / posterior$yo.R0
+    posterior$y.H = posterior$HR * posterior$fHo
 
     posterior
 }
@@ -225,13 +285,14 @@ calcNominalState <- function(state)
 fit.paramnames <- c("betay0", "betayt",
                     "betao0", "betaot",
                     "betayo0", "betayot",
-                    "logHR", "logHRDR",
+                    "logHR", "logHRyDR", "logHRoDR",
                     "y.HL", "y.DL", "o.HL", "o.DL",
                     "Tinf", "Tinc",
                     "lockdownmort", "logfHo")
 
 ## e.g. used for plotting time series to oversee sampling
-keyparamnames <- c("y.R0", "y.Rt", "IFR", "Tinf", "betay0", "betayt")
+keyparamnames <- c("y.R0", "y.Rt", "y.IFR", "o.IFR", "Tinf", "betay0", "betayt")
+fitkeyparamnames <- c("betay0", "betayt", "betao0", "logHR", "logHRyDR", "logHRoDR", "Tinf", "Tinc")
 
 ## log likelihood function for fitting this model to observed data:
 ##   y.dhospi, o.dhospi, y.dmorti, o.dmorti
@@ -243,46 +304,43 @@ calclogl <- function(params) {
     betayo0 <- params[5]
     betayot <- params[6]
     hosp_rate <- params[7]
-    died_rate <- params[8]
-    y.hosp_latency <- params[9]
-    y.died_latency <- params[10]
-    o.hosp_latency <- params[11]
-    o.died_latency <- params[12]
-    Tinf <- params[13]
-    Tinc <- params[14]
-    mort_lockdown_threshold <- params[15]
+    y.died_rate <- params[8]
+    o.died_rate <- params[9]
+    y.hosp_latency <- params[10]
+    y.died_latency <- params[11]
+    o.hosp_latency <- params[12]
+    o.died_latency <- params[13]
+    Tinf <- params[14]
+    Tinc <- params[15]
+    mort_lockdown_threshold <- params[16]
 
     if (betay0 < 1E-10) {
+        ## print(paste("invalid betay0", betay0))
         return(-Inf)
     }
 
     if (betayt < 1E-10) {
+        ## print(paste("invalid betayt", betayt))
         return(-Inf)
     }
 
     if (betao0 < 1E-10) {
+        ## print(paste("invalid betao0", betao0))
         return(-Inf)
     }
 
     if (betaot < 1E-10) {
+        ## print(paste("invalid betaot", betaot))
         return(-Inf)
     }
 
     if (betayo0 < 1E-10) {
+        ## print(paste("invalid betayo0", betayo0))
         return(-Inf)
     }
 
     if (betayot < 1E-10) {
-        return(-Inf)
-    }
-
-    if (hosp_rate < 0.0001) {
-        print(paste("invalid hosp_rate", hosp_rate))
-        return(-Inf)
-    }
-
-    if (died_rate < 0.0001) {
-        print(paste("invalid died_rate", died_rate))
+        ## print(paste("invalid betayot", betayot))
         return(-Inf)
     }
 
@@ -296,33 +354,33 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (o.hosp_latency < -2 || o.hosp_latency > 30) {
+    if (o.hosp_latency < -20 || o.hosp_latency > 30) {
         print(paste("invalid o.hosp_latency", o.hosp_latency))
         return(-Inf)
     }
 
-    if (o.died_latency < -2 || o.died_latency > 30) {
+    if (o.died_latency < -20 || o.died_latency > 30) {
         print(paste("invalid o.died_latency", o.died_latency))
-        return(-Inf)
-    }
-
-    if (Tinf < 1.1 || Tinf > 20) {
-        #print(paste("invalid Tinf", Tinf))
-        return(-Inf)
-    }
-
-    if (Tinc < 1.1 || Tinc > 20) {
-        print(paste("invalid Tinc", Tinc))
         return(-Inf)
     }
 
     state <<- calculateModel(params, FitTotalPeriod)
     
     if (state$offset == InvalidDataOffset)
-       return(-Inf)
+        state$offset = 1
 
     logPriorP <- 0
 
+    ##
+    ## Also put here rather uninformative priors to avoid complete flatness
+    ##
+    logPriorP <- logPriorP + dnorm(betay0, 1, 10, log=T)
+    logPriorP <- logPriorP + dnorm(betayt, 1, 10, log=T)
+    logPriorP <- logPriorP + dnorm(betao0, 1, 10, log=T)
+    logPriorP <- logPriorP + dnorm(betaot, 1, 10, log=T)
+    logPriorP <- logPriorP + dnorm(betayo0, 1, 10, log=T)
+    logPriorP <- logPriorP + dnorm(betayot, 1, 10, log=T)
+    
     ##
     ## Only informative priors are applied
     ##
@@ -341,16 +399,24 @@ calclogl <- function(params) {
     ## logPriorP <- logPriorP + dbeta(died_rate, 2.697931, 406.0796, log=T)
 
     ## estBetaParams(0.0066, 0.005^2)
-    logPriorP <- logPriorP + dbeta(died_rate, 1.7243, 259.53, log=T)
+    ##logPriorP <- logPriorP + dbeta(died_rate, 1.7243, 259.53, log=T)
 
     ##
-    ## These two may not be needed
-    ##
-    logPriorP <- logPriorP + dnorm(y.hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(y.died_latency, mean=10, sd=20, log=T)
+    ##logPriorP <- logPriorP + dbeta(y.died_rate, 1.263586, 1402.721, log=T)
+    ##logPriorP <- logPriorP + dbeta(o.died_rate, 1.31346, 54.81763, log=T)
 
-    logPriorP <- logPriorP + dnorm(o.hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(o.died_latency, mean=10, sd=20, log=T)
+    ## estBetaParams(0.0009, 0.0002^2)
+    ## logPriorP <- logPriorP + dbeta(y.died_rate, 8.991, 9981.009, log=T)
+    ## estBetaParams(0.0009, 0.0005^2)
+    logPriorP <- logPriorP + dbeta(y.died_rate, 3.236, 3592.524, log=T)
+    ## estBetaParams(0.03, 0.01^2)
+    logPriorP <- logPriorP + dbeta(o.died_rate, 8.7, 281.3, log=T)
+    
+    logPriorP <- logPriorP + dnorm(y.hosp_latency, mean=10, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(y.died_latency, mean=10, sd=5, log=T)
+
+    logPriorP <- logPriorP + dnorm(o.hosp_latency, mean=10, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(o.died_latency, mean=10, sd=5, log=T)
 
     ##
     ## Based on literature estimates
@@ -369,8 +435,9 @@ calclogl <- function(params) {
     dend <- state$offset + length(dhospi) - 1
 
     if (dend > length(state$y.hospi)) {
-       print("=========================== Increase FitTotalPeriod ===================")
-       return(-Inf)
+        print("=========================== Increase FitTotalPeriod ===================")
+        dend <- length(state$y.hospi)
+        dstart <- dend - length(dhospi) + 1
     }
 
     y.loglH <- sum(dnbinom(y.dhospi,
@@ -384,7 +451,8 @@ calclogl <- function(params) {
 
     if (dend > length(state$y.deadi)) {
        print("=========================== Increase FitTotalPeriod ===================")
-       return(-Inf)
+       dend <- length(state$y.deadi)
+       dstart <- dend - length(y.dmorti) + 1
     }
 
     y.loglD <- sum(dnbinom(y.dmorti,
@@ -407,6 +475,6 @@ calclogl <- function(params) {
         state <<- calcNominalState(state)
 	graphs()
     }
-
+    
     result
 }

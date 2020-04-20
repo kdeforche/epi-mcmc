@@ -91,7 +91,7 @@ o.dmorti = o.dmorti + floor((1 - yfract) * na.dmorti$x)
 
 o.wzcmorti = c(0, 0, 0, 0, 2, 1, 1, 2, 3, 10, 9, 12, 21, 19, 12, 24, 25,
                40, 49, 52, 48, 57, 120, 72, 110, 130, 107, 153, 179, 195,
-               167, 203, 170, 230, 155, 155, 27, 5)
+               167, 203, 170, 230, 155, 165, 146, 148, 110, 27, 5)
 
 print(paste("last day o.wzcmorti: ", dstartdate + length(o.wzcmorti) - 1))
 
@@ -116,6 +116,22 @@ death_underreporting_factor <- 1
 dmort <- y.dmort + o.dmort
 dmorti <- y.dmorti + o.dmorti
 
+## remove two days of data
+
+## y.dmorti <- y.dmorti[1:(length(y.dmorti) - 2)]
+## o.dmorti <- o.dmorti[1:(length(o.dmorti) - 2)]
+## dmorti <- dmorti[1:(length(dmorti) - 2)]
+
+## y.dhospi <- y.dhospi[1:(length(y.dhospi) - 2)]
+## o.dhospi <- o.dhospi[1:(length(o.dhospi) - 2)]
+## dhospi <- dhospi[1:(length(dhospi) - 2)]
+
+## y.dmort <- y.dmort[1:(length(y.dmort) - 2)]
+## o.dmort <- o.dmort[1:(length(o.dmort) - 2)]
+## dmort <- dmort[1:(length(dmort) - 2)]
+
+## dhosp <- dhosp[1:(length(dhosp) - 2)]
+
 ########################
 ## Age group demography 
 ########################
@@ -124,5 +140,18 @@ y.N <- 8.55E6
 o.N <- N - y.N
 
 ## Group-specific factors for dead_rate with respect to estimated died_rate
-y.died_rate_factor = 0.09412495/0.66
-o.died_rate_factor = 2.34371716/0.66
+
+## y.died_rate_factor * y.N + o.died_rate_factor * o.N ~ N
+## o.died_rate_factor = (N - y.drf * y.N) / o.N
+
+## actually for <60 vs >= 60 ...
+## 0.0009 (0.0005 - 0.0018)
+## estBetaParams(0.0009, 0.0008^2) -> 1.263586, 1402.721
+## 0.0234 (0.015 - 0.05)
+## estBetaParams(0.0234, 0.02^2) -> 1.31346, 54.81763
+
+##y.died_rate_factor = 0.09412495/0.66
+##o.died_rate_factor = 2.34371716/0.66
+
+##y.died_rate_factor = 0.09412495/0.66 / 4
+##o.died_rate_factor = (N - y.died_rate_factor * y.N) / o.N

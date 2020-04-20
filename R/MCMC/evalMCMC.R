@@ -28,16 +28,16 @@ read <- function() {
     plot(ts(subset(posterior, select=keyparamnames)))
 
     ## compute credibility intervals
-    print(data.frame(ci(posterior, method = "HDI", ci=0.01)))
-    print(data.frame(ci(posterior, method = "HDI", ci=0.50)))
-    print(data.frame(ci(posterior, method = "HDI", ci=0.95)))
+    print(data.frame(ci(posterior, ci=0.01)))
+    print(data.frame(ci(posterior, ci=0.50)))
+    print(data.frame(ci(posterior, ci=0.95)))
 
     posterior
 }
 
 densityPlot <- function() {
     ## sample a subset of data to show in density plots
-    selection <- which(posterior[,"IFR"] < 3)
+    selection <- which(posterior[,"y.IFR"] < 3)
     scount <- length(selection)
     draws <- sample(floor(scount/8):scount, densityPlotSampleSize)
     display_sample <- posterior[selection[draws],][0:-1]
@@ -104,7 +104,7 @@ mcmc_areas(posterior,
            pars = c("Tinc", "Tinf"),
            prob = 0.8) + scale_x_continuous(name="", limits=c(0, 20))
 
-s <- seq(0.0001, 0.015, 0.0001)
+s <- seq(0.00001, 0.035, 0.00001)
 ifr_prior1 <- dnorm(s, 0.007, 0.0025)
 ifr_prior2 <- dbeta(s, 4.8, 722.69)
 ifr_prior3 <- dbeta(s, 2.697931, 406.0796)
@@ -112,7 +112,10 @@ ifr_prior4 <- dbeta(s, 1.7243, 259.53)
 ifr_prior5 <- dbeta(s, 10.8, 1627)
 ifr_prior6 <- dbeta(s, 2.24, 744)
 ifr_prior7 <- dbeta(s, 0.994, 330)
-plot(s, ifr_prior7, type='l')
+y.ifr_prior <- dbeta(s, 1.263586, 1402.721)
+o.ifr_prior <- dbeta(s, 1.31346, 54.81763)
+plot(s, y.ifr_prior, type='l')
+lines(s, o.ifr_prior, type='l')
 lines(s, ifr_prior6, type='l', col='red')
 lines(s, ifr_prior5, type='l', col='blue')
 lines(s, ifr_prior4, type='l', col='green')

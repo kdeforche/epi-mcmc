@@ -3,8 +3,8 @@ Initial <- 1
 
 calcConvolveProfile <- function(latency, latency_sd)
 {
-    kbegin = floor(latency - latency_sd * 1.5)
     kend = min(0, ceiling(latency + latency_sd * 1.5))
+    kbegin = min(kend - 1, floor(latency - latency_sd * 1.5))
 
     result = NULL
     result$kbegin = kbegin
@@ -30,7 +30,7 @@ convolute <- function(values, i, profile)
     (profile$values %*% values[i1:i2])[1,1]
 }
 
-simstep <- function(state, deltaT, N, beta, a, gamma)
+simstep <- function(state, N, beta, a, gamma)
 {
     i = state$i
     got_infected = beta * state$I[i] / N * state$S[i]
@@ -42,10 +42,10 @@ simstep <- function(state, deltaT, N, beta, a, gamma)
     deltaI = got_infectious - got_removed
     deltaR = got_removed
 
-    state$S[i + 1] = state$S[i] + deltaS * deltaT
-    state$E[i + 1] = state$E[i] + deltaE * deltaT
-    state$I[i + 1] = state$I[i] + deltaI * deltaT
-    state$R[i + 1] = state$R[i] + deltaR * deltaT
+    state$S[i + 1] = state$S[i] + deltaS
+    state$E[i + 1] = state$E[i] + deltaE
+    state$I[i + 1] = state$I[i] + deltaI
+    state$R[i + 1] = state$R[i] + deltaR
 
     i = i + 1
     state$i = i
@@ -102,7 +102,7 @@ calculateModel <- function(params, period)
             }
 	}
 
-	state <- simstep(state, 1, N, beta, a, gamma)
+	state <- simstep(state, N, beta, a, gamma)
 
     	s = convolute(state$S, i, hosp_cv_profile)
 	state$hosp[i] <- (N - s) * hosp_rate

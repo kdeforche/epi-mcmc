@@ -19,7 +19,7 @@ sourceR("lib/libMCMC.R")
 
 all_plots <- function(date_markers) {
     p1 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state) state$deadi, "#3366FF",
+                   function(state) state$y.deadi, "#3366FF",
                    c("Count", "Deaths per day"), date_markers)
     dm1 <- numeric(length(p1$data$x))
     dm1[1:length(p1$data$x)] = NA
@@ -190,13 +190,13 @@ readSample <- function() {
     plot(ts(subset(posterior, select=keyparamnames)))
 
     ## compute credibility intervals
-    print(ci(posterior, method = "HDI", ci=0.01))
-    print(ci(posterior, method = "HDI", ci=0.50))
-    print(ci(posterior, method = "HDI", ci=0.95))
+    print(data.frame(ci(posterior, ci=0.01)))
+    print(data.frame(ci(posterior, ci=0.50)))
+    print(data.frame(ci(posterior, ci=0.95)))
 
     posterior
 
-    selection <- which(posterior[,"IFR"] < 3)
+    selection <- which(posterior[,"y.IFR"] < 3)
     scount <- length(selection)
     draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
     data_sample <- posterior[selection[draws],][0:-1]
@@ -211,7 +211,7 @@ system(paste("mkdir ", outputdir))
 data_sample <- readSample()
 
 ## Configure this depending on the model
-## all_plots <- all_plots_age
+all_plots <- all_plots_age
 
 pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
@@ -232,11 +232,13 @@ sourceR("models/model-exiting-age-groups.R")
 
 plot_end_date <- as.Date("2020/11/1")
 
-## quantilePlotSampleSize <- 500
+## quantilePlotSampleSize <- 50
 
 calcbetas.age <- calcbetas.age.relax
 
 labels <- c("0", "01", "02", "03", "04", "05", "06", "07", "08", "09")
+
+r <- 0.5
 
 i = 1
 for (r in seq(0,0.9,0.1)) {
@@ -247,8 +249,9 @@ for (r in seq(0,0.9,0.1)) {
     relax.start <- as.numeric(relax.start_date - dstartdate) 
     relax.end <- as.numeric(relax.end_date - dstartdate) 
 
-    pdf(paste(outputdir, "/young-relax-exit", labels[i], "-",
-              relax.start, "-", relax.end, ".pdf", sep=""), width=12, height=16)
+    pdf(paste(outputdir, "/young-relax-exit.pdf", sep=""), width=12, height=16)
+    ##pdf(paste(outputdir, "/young-relax-exit", labels[i], "-",
+    ##          relax.start, "-", relax.end, ".pdf", sep=""), width=12, height=16)
 
     all_plots(data.frame(pos=c(relax.start_date, relax.end_date), color=c("#888800", "#008800")))
 
