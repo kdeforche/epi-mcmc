@@ -405,12 +405,17 @@ calclogl <- function(params) {
     ##logPriorP <- logPriorP + dbeta(y.died_rate, 1.263586, 1402.721, log=T)
     ##logPriorP <- logPriorP + dbeta(o.died_rate, 1.31346, 54.81763, log=T)
 
-    ## estBetaParams(0.0009, 0.0002^2)
-    logPriorP <- logPriorP + dbeta(y.died_rate, 8.991, 9981.009, log=T)
-    ## estBetaParams(0.0009, 0.0005^2)
-    ## logPriorP <- logPriorP + dbeta(y.died_rate, 3.236, 3592.524, log=T)
+    ## Stronger priors based on Verity
+    ## estBetaParams(0.0009, 0.0003^2)
+    ## logPriorP <- logPriorP + dbeta(y.died_rate, 8.991, 9981.009, log=T)
     ## estBetaParams(0.03, 0.01^2)
-    logPriorP <- logPriorP + dbeta(o.died_rate, 8.7, 281.3, log=T)
+    ## logPriorP <- logPriorP + dbeta(o.died_rate, 8.7, 281.3, log=T)
+
+    ## Weaker priors based on Verity
+    ## estBetaParams(0.0009, 0.0005^2)
+    logPriorP <- logPriorP + dbeta(y.died_rate, 3.236, 3592.524, log=T)
+    ## estBetaParams(0.03, 0.016^2)
+    logPriorP <- logPriorP + dbeta(o.died_rate, 3.113, 100.6, log=T)
     
     logPriorP <- logPriorP + dnorm(y.hosp_latency, mean=10, sd=5, log=T)
     logPriorP <- logPriorP + dnorm(y.died_latency, mean=10, sd=5, log=T)
