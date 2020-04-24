@@ -121,8 +121,8 @@ lines(s, ifr_prior5, type='l', col='blue')
 lines(s, ifr_prior4, type='l', col='green')
 
 mcmc_areas(posterior,
-           pars = c("IFR"),
-           prob = 0.8) + scale_x_continuous(name="IFR", limits=c(0, 0.015))
+           pars = c("y.IFR"),
+           prob = 0.8) + scale_x_continuous(name="y.IFR", limits=c(0, 0.015))
 #lines(s, ifr_prior1, type='l', col='red')
 #lines(s, ifr_prior2, type='l', col='blue')
 #lines(s, ifr_prior3, type='l', col='gray')

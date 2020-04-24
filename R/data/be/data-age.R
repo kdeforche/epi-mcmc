@@ -25,6 +25,7 @@ source("data.R")
 ## 22-28/3 : 17 58 26
 ## 29-04/4 : 15 56 29
 ## 05-11/4 : 13 51 36
+## 12-18/4 : 13 46 40
 ##
 ## 50-59: 32
 ## 60-69: 36 
@@ -34,9 +35,9 @@ source("data.R")
 ## -> should increase hospitalisations for < 65 vs for > 65y and thus
 ##    predict higher number of 
 
-hosp_week_age_statistics <- data.frame(r0.49 = c(20, 18, 17, 15, 13))
-hosp_week_age_statistics$r50.79 = c(55, 59, 58, 56, 51)
-hosp_week_age_statistics$r80 = c(25, 25, 26, 29, 36)
+hosp_week_age_statistics <- data.frame(r0.49 = c(20, 18, 17, 15, 13, 13))
+hosp_week_age_statistics$r50.79 = c(55, 59, 58, 56, 51, 46)
+hosp_week_age_statistics$r80 = c(25, 25, 26, 29, 36, 40)
 
 for (i in 1:dim(hosp_week_age_statistics)[1]) {
     hosp_week_age_statistics[i,] <- hosp_week_age_statistics[i,] / sum(hosp_week_age_statistics[i,])
@@ -90,10 +91,12 @@ o.dmorti = o.dmorti + floor((1 - yfract) * na.dmorti$x)
 ## 
 
 o.wzcmorti = c(0, 0, 0, 0, 2, 1, 1, 2, 3, 10, 9, 12, 21, 19, 12, 24, 25,
-               40, 49, 52, 48, 57, 120, 72, 110, 130, 107, 153, 179, 195,
-               167, 203, 170, 230, 155, 165, 146, 148, 110, 27, 5)
+               40, 49, 52, 48, 57, 120, 74, 117, 137, 107, 153, 182, 199,
+               170, 207, 182, 230, 155, 165, 149, 153, 117, 130, 125, 120,
+               58, 26, 0)
 
 print(paste("last day o.wzcmorti: ", dstartdate + length(o.wzcmorti) - 1))
+print(paste("last day o.dmorti: ", dstartdate + length(o.dmorti) - 1))
 
 o.dmorti = o.dmorti - o.wzcmorti
 
@@ -105,9 +108,9 @@ y.dmort <- cumsum(y.dmorti)
 o.dmort <- cumsum(o.dmorti)
 
 par(nrow=3)
-barplot(y.dmorti + o.dmorti)
 barplot(y.dmorti)
 barplot(o.dmorti)
+barplot(y.dmorti + o.dmorti)
 
 print(paste("last day morti: ", dstartdate + length(o.dmorti) - 1))
 

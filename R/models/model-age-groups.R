@@ -267,7 +267,7 @@ invTransformParams <- function(posterior)
     posterior$y.Et = posterior$y.Rt / posterior$y.R0
     posterior$o.Et = posterior$o.Rt / posterior$o.R0
     posterior$yo.Et = posterior$yo.Rt / posterior$yo.R0
-    posterior$y.H = posterior$HR * posterior$fHo
+    posterior$o.H = posterior$HR / posterior$fHo
 
     posterior
 }
@@ -389,33 +389,17 @@ calclogl <- function(params) {
     ##  IFR can typically not be inferred from the data
     ##  Here we list IFR's based on Verity et al., with different variances
 
-    ## estBetaParams(0.0066, 0.002^2)
-    ## logPriorP <- logPriorP + dbeta(died_rate, 10.8, 1627, log=T)
-
-    ## estBetaParams(0.0066, 0.003^2)
-    ## logPriorP <- logPriorP + dbeta(died_rate, 4.8, 722.69, log=T)
-
-    ## estBetaParams(0.0066, 0.004^2)
-    ## logPriorP <- logPriorP + dbeta(died_rate, 2.697931, 406.0796, log=T)
-
-    ## estBetaParams(0.0066, 0.005^2)
-    ##logPriorP <- logPriorP + dbeta(died_rate, 1.7243, 259.53, log=T)
-
-    ##
-    ##logPriorP <- logPriorP + dbeta(y.died_rate, 1.263586, 1402.721, log=T)
-    ##logPriorP <- logPriorP + dbeta(o.died_rate, 1.31346, 54.81763, log=T)
-
     ## Stronger priors based on Verity
     ## estBetaParams(0.0009, 0.0003^2)
-    ## logPriorP <- logPriorP + dbeta(y.died_rate, 8.991, 9981.009, log=T)
+    logPriorP <- logPriorP + dbeta(y.died_rate, 8.991, 9981.009, log=T)
     ## estBetaParams(0.03, 0.01^2)
-    ## logPriorP <- logPriorP + dbeta(o.died_rate, 8.7, 281.3, log=T)
+    logPriorP <- logPriorP + dbeta(o.died_rate, 8.7, 281.3, log=T)
 
     ## Weaker priors based on Verity
     ## estBetaParams(0.0009, 0.0005^2)
-    logPriorP <- logPriorP + dbeta(y.died_rate, 3.236, 3592.524, log=T)
+    ##logPriorP <- logPriorP + dbeta(y.died_rate, 3.236, 3592.524, log=T)
     ## estBetaParams(0.03, 0.016^2)
-    logPriorP <- logPriorP + dbeta(o.died_rate, 3.113, 100.6, log=T)
+    ##logPriorP <- logPriorP + dbeta(o.died_rate, 3.113, 100.6, log=T)
     
     logPriorP <- logPriorP + dnorm(y.hosp_latency, mean=10, sd=5, log=T)
     logPriorP <- logPriorP + dnorm(y.died_latency, mean=10, sd=5, log=T)

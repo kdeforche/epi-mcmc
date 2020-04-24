@@ -145,6 +145,8 @@ all_plots_age <- function(date_markers) {
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
 
+    # p3 <- p3 + scale_y_continuous(limits=c(0, 2500))
+
     ## Plot 4 : infected people
     
     p4 <- makePlot(data_sample, dateRange,
@@ -226,6 +228,26 @@ all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
 
 dev.off()
 
+######## No measures were taken
+
+sourceR("models/model-exiting-age-groups.R")
+
+calcbetas.age <- calcbetas.age.relax
+
+plot_end_date <- as.Date("2020/6/1")
+relax.start_date <- as.Date("2020/3/11")
+relax.end_date <- as.Date("2020/12/1")
+
+relax.measures.y.E = 0
+relax.measures.o.E = 0
+relax.measures.yo.E = 0
+relax.start <- as.numeric(relax.start_date - dstartdate) 
+relax.end <- as.numeric(relax.end_date - dstartdate) 
+
+pdf(paste(outputdir, "/no-lockdown.pdf", sep=""), width=12, height=16)
+all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
+dev.off()
+
 ######## Simple exiting scenario's
 
 sourceR("models/model-exiting-age-groups.R")
@@ -238,10 +260,13 @@ calcbetas.age <- calcbetas.age.relax
 
 labels <- c("0", "01", "02", "03", "04", "05", "06", "07", "08", "09")
 
-r <- 0.5
+r <- 0.85
+r <- 0.8
+r <- 0
 
 i = 1
 for (r in seq(0,0.9,0.1)) {
+    # relax.start_date <- as.Date("2020/4/16")
     relax.start_date <- as.Date("2020/5/4")
     relax.end_date <- as.Date("2020/12/1")
 
@@ -249,7 +274,8 @@ for (r in seq(0,0.9,0.1)) {
     relax.start <- as.numeric(relax.start_date - dstartdate) 
     relax.end <- as.numeric(relax.end_date - dstartdate) 
 
-    pdf(paste(outputdir, "/young-relax-exit.pdf", sep=""), width=12, height=16)
+    pdf(paste(outputdir, "/full-exit-zoom.pdf", sep=""), width=12, height=16)
+    ##pdf(paste(outputdir, "/young-relax0-exit.pdf", sep=""), width=12, height=16)
     ##pdf(paste(outputdir, "/young-relax-exit", labels[i], "-",
     ##          relax.start, "-", relax.end, ".pdf", sep=""), width=12, height=16)
 
@@ -259,6 +285,51 @@ for (r in seq(0,0.9,0.1)) {
     
     dev.off()
 }
+
+######## Experiment scenario's
+
+## One weekend relaxed
+
+plot_end_date <- as.Date("2020/6/1")
+
+## quantilePlotSampleSize <- 50
+
+calcbetas.age.experiment <- function(time, betay0, betayt, betao0, betaot, betayo0, betayot)
+{
+    if (time < relax.start)
+        return(calcbetas.age.orig(time, betay0, betayt, betao0, betaot, betayo0, betayot))
+
+    if (time > relax.end)
+        return(calcbetas.age.orig(time, betay0, betayt, betao0, betaot, betayo0, betayot))
+    
+    y.beta = max(0.001, relax.measures.y.E * betayt + (1 - relax.measures.y.E) * betay0)
+    o.beta = max(0.001, relax.measures.o.E * betaot + (1 - relax.measures.o.E) * betao0)
+    yo.beta = max(0.001, relax.measures.yo.E * betayot + (1 - relax.measures.yo.E)
+                  * betayo0)
+
+    c(y.beta, o.beta, yo.beta)
+}
+
+
+calcbetas.age <- calcbetas.age.experiment
+
+relax.start_date <- as.Date("2020/5/3")
+relax.end_date <- as.Date("2020/5/5")
+
+relax.measures.y.E = 0
+relax.measures.o.E = 0
+relax.measures.yo.E = 0
+
+relax.start <- as.numeric(relax.start_date - dstartdate) 
+relax.end <- as.numeric(relax.end_date - dstartdate) 
+
+pdf(paste(outputdir, "/experiment", sep=""), width=12, height=16)
+
+all_plots(data.frame(pos=c(relax.start_date, relax.end_date), color=c("#888800", "#008800")))
+    
+dev.off()
+
+
 
 ######## Lockdowns Wuhan style
 
