@@ -401,11 +401,11 @@ calclogl <- function(params) {
     ## estBetaParams(0.03, 0.016^2)
     ##logPriorP <- logPriorP + dbeta(o.died_rate, 3.113, 100.6, log=T)
     
-    logPriorP <- logPriorP + dnorm(y.hosp_latency, mean=10, sd=5, log=T)
-    logPriorP <- logPriorP + dnorm(y.died_latency, mean=10, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(y.hosp_latency, mean=10, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(y.died_latency, mean=10, sd=10, log=T)
 
-    logPriorP <- logPriorP + dnorm(o.hosp_latency, mean=10, sd=5, log=T)
-    logPriorP <- logPriorP + dnorm(o.died_latency, mean=10, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(o.hosp_latency, mean=10, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(o.died_latency, mean=10, sd=10, log=T)
 
     ##
     ## Based on literature estimates

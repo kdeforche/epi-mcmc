@@ -166,18 +166,22 @@ quantileData <- function(sample, fun, period, quantiles)
 ##
 ## Creates a banded plot of the given fun, over the given period, for te posterior state sample 
 ##
-makePlot <- function(sample, dateRange, fun, colour, titles, date_markers)
+
+grey95 <- "grey70"
+grey75 <- "grey60"
+
+makePlot <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
 {
     period <- as.numeric(dateRange[2] - dateRange[1])
     qd <- data.frame(quantileData(sample, fun, period, c(0.05, 0.25, 0.5, 0.75, 0.95)))
 
     colnames(qd) <- c("q5", "q25", "q50", "q75", "q95")
     qd$x <- seq(dateRange[1], dateRange[1] + dim(qd)[1] - 1, 1)
-    
+
     result <- ggplot(qd) + aes(x = x) +
-        geom_ribbon(aes(ymin = q5, ymax=q95, fill="grey70"), alpha=0.4) +
-        geom_ribbon(aes(ymin = q25, ymax=q75, fill="grey60"), alpha=0.4) +
-        geom_line(aes(y = q50, linetype='solid'), size = 1, colour=colour) +
+        geom_ribbon(aes(ymin = q5, ymax=q95, fill=grey95), alpha=0.4) +
+        geom_ribbon(aes(ymin = q25, ymax=q75, fill=grey75), alpha=0.4) +
+        geom_line(aes(y = q50), linetype=lty, size = 1, colour=colour) +
         labs(x="Date") +
         labs(y=titles[1]) +
         ggtitle(titles[2]) +
@@ -205,6 +209,36 @@ addExtraPlot <- function(plot, sample, dateRange, fun, colour, lty)
     
     result <- plot +
         geom_line(aes(y = qd$q50, linetype = lty), colour=colour, size = 1)
+
+    result
+}
+
+addExtraPlotQ <- function(plot, sample, dateRange, fun, colour, lty)
+{
+    period <- as.numeric(dateRange[2] - dateRange[1])
+    qd <- data.frame(quantileData(sample, fun, period, c(0.05, 0.25, 0.5, 0.75, 0.95)))
+
+    colnames(qd) <- c("q5", "q25", "q50", "q75", "q95")
+    
+    result <- plot +
+        geom_ribbon(aes(ymin = qd$q5, ymax=qd$q95, fill=grey95), alpha=0.4) +
+        geom_ribbon(aes(ymin = qd$q25, ymax=qd$q75, fill=grey75), alpha=0.4) +
+        geom_line(aes(y = qd$q50), linetype = lty, colour=colour, size = 1)
+
+    result
+}
+
+addExtraPlotQ2 <- function(plot, sample, dateRange, fun, colour, lty)
+{
+    period <- as.numeric(dateRange[2] - dateRange[1])
+    qd <- data.frame(quantileData(sample, fun, period, c(0.05, 0.25, 0.5, 0.75, 0.95)))
+
+    colnames(qd) <- c("cq5", "cq25", "cq50", "cq75", "cq95")
+    
+    result <- plot +
+        geom_ribbon(aes(ymin = qd$cq5, ymax=qd$cq95, fill="grey70"), alpha=0.4) +
+        geom_ribbon(aes(ymin = qd$cq25, ymax=qd$cq75, fill="grey60"), alpha=0.4) +
+        geom_line(aes(y = qd$cq50), linetype = lty, colour=colour, size = 1)
 
     result
 }

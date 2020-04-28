@@ -9,6 +9,23 @@ source("control.R")
 source(settings)
 
 source(data, chdir=T)
+
+trimData <- function(count) {
+    y.dmorti <<- y.dmorti[1:(length(y.dmorti) - count)]
+    o.dmorti <<- o.dmorti[1:(length(o.dmorti) - count)]
+    dmorti <<- dmorti[1:(length(dmorti) - count)]
+
+    y.dhospi <<- y.dhospi[1:(length(y.dhospi) - count)]
+    o.dhospi <<- o.dhospi[1:(length(o.dhospi) - count)]
+    dhospi <<- dhospi[1:(length(dhospi) - count)]
+
+    y.dmort <<- y.dmort[1:(length(y.dmort) - count)]
+    o.dmort <<- o.dmort[1:(length(o.dmort) - count)]
+    dmort <<- dmort[1:(length(dmort) - count)]
+
+    dhosp <<- dhosp[1:(length(dhosp) - count)]
+}
+
 source(fitmodel, chdir=T)
 
 sourceR <- function(file) {
@@ -20,7 +37,7 @@ sourceR("lib/libMCMC.R")
 all_plots <- function(date_markers) {
     p1 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$y.deadi, "#3366FF",
-                   c("Count", "Deaths per day"), date_markers)
+                   c("Count", "Deaths per day"), date_markers, 'solid')
     dm1 <- numeric(length(p1$data$x))
     dm1[1:length(p1$data$x)] = NA
     dm1[1:length(dmorti)] = dmorti
@@ -28,7 +45,7 @@ all_plots <- function(date_markers) {
 
     p2 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$died, "#3366FF",
-                   c("Count", "Total deaths"), date_markers)
+                   c("Count", "Total deaths"), date_markers, 'solid')
 
     dm2 <- numeric(length(p2$data$x))
     dm2[1:length(p2$data$x)] = NA
@@ -37,7 +54,7 @@ all_plots <- function(date_markers) {
 
     p3 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$hospi, "#FF6633",
-                   c("Count", paste(c(HospLabel, "per day"))), date_markers)
+                   c("Count", paste(c(HospLabel, "per day"))), date_markers, 'solid')
     dm3 <- numeric(length(p3$data$x))
     dm3[1:length(p3$data$x)] = NA
     dm3[1:length(dhospi)] = dhospi
@@ -45,11 +62,11 @@ all_plots <- function(date_markers) {
 
     p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { (state$E + state$I)/N * 100 },
-                   "#FFFF66", c("Belgian population (%)", "Infected people"), date_markers)
+                   "#FFFF66", c("Belgian population (%)", "Infected people"), date_markers, 'solid')
 
     p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { state$R/N * 100 }, "#33FF66",
-                   c("Belgian population (%)", "Recovered from disease"), date_markers)
+                   c("Belgian population (%)", "Recovered from disease"), date_markers, 'solid')
 
     grid.arrange(p1, p2, p3, p4, p5, nrow=3)
 }
@@ -63,7 +80,7 @@ all_plots_age <- function(date_markers) {
     
     p1 <- makePlot(data_sample, dateRange,
                    function(state) { state$y.deadi + state$o.deadi }, "#3366FF",
-                   c("Count", "Deaths per day (excl. WZC)"), date_markers)
+                   c("Count", "Deaths per day (excl. WZC)"), date_markers, 'solid')
     dm1 <- numeric(length(p1$data$x))
     dm1[1:length(p1$data$x)] = NA
     dm1[1:length(dmorti)] = dmorti
@@ -96,7 +113,7 @@ all_plots_age <- function(date_markers) {
     
     p2 <- makePlot(data_sample, dateRange,
                    function(state) { state$y.died + state$o.died }, "#3366FF",
-                   c("Count", "Total deaths (excl. WZC)"), date_markers)
+                   c("Count", "Total deaths (excl. WZC)"), date_markers, 'solid')
 
     dm2 <- numeric(length(p2$data$x))
     dm2[1:length(p2$data$x)] = NA
@@ -130,7 +147,7 @@ all_plots_age <- function(date_markers) {
 
     p3 <- makePlot(data_sample, dateRange,
                    function(state) state$y.hospi + state$o.hospi, "#FF6633",
-                   c("Count", paste(c(HospLabel, "per day"))), date_markers)
+                   c("Count", paste(c(HospLabel, "per day"))), date_markers, 'solid')
     dm3 <- numeric(length(p3$data$x))
     dm3[1:length(p3$data$x)] = NA
     dm3[1:length(dhospi)] = dhospi
@@ -150,8 +167,8 @@ all_plots_age <- function(date_markers) {
     ## Plot 4 : infected people
     
     p4 <- makePlot(data_sample, dateRange,
-                   function(state) { (state$y.E + state$y.I + state$o.E + state$y.I)/N * 100 },
-                   "#A67514", c("Population group (%)", "Infected people (excl. WZC)"), date_markers)
+                   function(state) { (state$y.E + state$y.I + state$o.E + state$o.I)/N * 100 },
+                   "#A67514", c("Population group (%)", "Infected people (excl. WZC)"), date_markers, 'solid')
 
     ## Add y/o curves
     p4 <- addExtraPlot(p4, data_sample, dateRange, function(state) { (state$y.E + state$y.I)/y.N * 100 }, "#A67514", "dashed")
@@ -166,7 +183,7 @@ all_plots_age <- function(date_markers) {
 
     p5 <- makePlot(data_sample, dateRange,
                    function(state) { (state$y.R + state$o.R)/N * 100 }, "#33CC66",
-                   c("Population group (%)", "Recovered from disease (excl. WZC)"), date_markers)
+                   c("Population group (%)", "Recovered from disease (excl. WZC)"), date_markers, 'solid')
 
     ## Add y/o curves
     p5 <- addExtraPlot(p5, data_sample, dateRange, function(state) { state$y.R/y.N * 100 }, "#33CC66", "dashed")
@@ -210,6 +227,8 @@ outputdir <- "output"
 
 system(paste("mkdir ", outputdir))
 
+# trimData(4)
+
 data_sample <- readSample()
 
 ## Configure this depending on the model
@@ -218,7 +237,7 @@ all_plots <- all_plots_age
 pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
 plot_end_date <- as.Date("2020/6/1")
-all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
+all_plots(data.frame(pos=c(as.Date("2020/4/21")), color=c("red")))
 
 dev.off()
 
@@ -274,16 +293,16 @@ for (r in seq(0,0.9,0.1)) {
     relax.start <- as.numeric(relax.start_date - dstartdate) 
     relax.end <- as.numeric(relax.end_date - dstartdate) 
 
-    pdf(paste(outputdir, "/full-exit-zoom.pdf", sep=""), width=12, height=16)
-    ##pdf(paste(outputdir, "/young-relax0-exit.pdf", sep=""), width=12, height=16)
+    ##pdf(paste(outputdir, "/full-exit-zoom.pdf", sep=""), width=12, height=16)
+    pdf(paste(outputdir, "/young-relax0-exit.pdf", sep=""), width=12, height=16)
     ##pdf(paste(outputdir, "/young-relax-exit", labels[i], "-",
     ##          relax.start, "-", relax.end, ".pdf", sep=""), width=12, height=16)
 
     all_plots(data.frame(pos=c(relax.start_date, relax.end_date), color=c("#888800", "#008800")))
 
-    i = i + 1
-    
     dev.off()
+
+    i = i + 1
 }
 
 ######## Experiment scenario's
@@ -398,3 +417,4 @@ all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")
 dev.off()
 
 
+###
