@@ -62,11 +62,11 @@ all_plots <- function(date_markers) {
 
     p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { (state$E + state$I)/N * 100 },
-                   "#FFFF66", c("Belgian population (%)", "Infected people"), date_markers, NULL)
+                   "#FFFF66", c(paste(country_adjective, "population (%)"), "Infected people"), date_markers, NULL)
 
     p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { state$R/N * 100 }, "#33FF66",
-                   c("Belgian population (%)", "Recovered from disease"), date_markers, NULL)
+                   c(paste(country_adjective, "population (%)"), "Recovered from disease"), date_markers, NULL)
 
     grid.arrange(p1, p2, p3, p4, p5, nrow=3)
 }

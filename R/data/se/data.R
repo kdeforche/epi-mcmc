@@ -33,6 +33,8 @@ death_underreporting_factor <- 1
 
 N <- 11.2E6
 
+country_adjective <- "Swedish"
+
 #####################
 ## Lockdown measures
 #####################

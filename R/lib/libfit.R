@@ -59,6 +59,14 @@ graphs <- function() {
 
     period <- length(state$hospi)
     len <- period - state$offset + 1
+
+    if (len < 2) {
+        plot(days[1:5], state$hospi[1:5], type='l', col='red',
+             xlab='Date', ylab='Count',
+             main='New hospitalisations and deaths per day')
+        return (0)
+    }
+
     plot(days[1:len],state$hospi[state$offset:period], type='l', col='red',
          xlab='Date', ylab='Count',
          main='New hospitalisations and deaths per day')

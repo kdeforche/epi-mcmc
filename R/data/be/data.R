@@ -42,6 +42,7 @@ death_underreporting_factor <- 1
 #####################
 
 N <- 11.5E6
+country_adjective <- "Belgian"
 
 #####################
 ## Lockdown measures

@@ -87,6 +87,10 @@ graph_cum <- function(state, first, color, last) {
     period <- length(state$hospi)
     len <- period - state$offset + 1
 
+    if (len < 2) {
+        return(0)
+    }
+
     mort_color = NULL
     if (is.null(color)) {
         mort_color = alpha("blue", 0.1)
