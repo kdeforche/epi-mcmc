@@ -28,8 +28,12 @@ readData <- function(files)
 takeAndPad <- function(data, offset, l)
 {
     result <- data[offset:(min(l,length(data)))]
-    if (length(result != l))
-        result <- c(result, rep(NA, l - length(result)))
+    if (length(result) != l) {
+        if (l > length(result))
+            result <- c(result, rep(NA, l - length(result)))
+        else
+            result <- result[1:l]
+    }
     result
 }
 
@@ -42,6 +46,10 @@ graph_daily <- function(state, first, color, last) {
     period <- length(state$hospi)
     len <- period - state$offset + 1
 
+    if (len < 2) {
+        return(0)
+    }
+    
     hosp_color = color
     mort_color = NULL
     if (is.null(color)) {
@@ -180,8 +188,14 @@ makePlot <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
 
     result <- ggplot(qd) + aes(x = x) +
         geom_ribbon(aes(ymin = q5, ymax=q95, fill=grey95), alpha=0.4) +
-        geom_ribbon(aes(ymin = q25, ymax=q75, fill=grey75), alpha=0.4) +
-        geom_line(aes(y = q50), linetype=lty, size = 1, colour=colour) +
+        geom_ribbon(aes(ymin = q25, ymax=q75, fill=grey75), alpha=0.4)
+
+    if (is.null(lty))
+        result <- result + geom_line(aes(y = q50), size = 1, colour=colour)
+    else
+        result <- result + geom_line(aes(y = q50, linetype = lty), size = 1, colour=colour)
+
+    result <- result +
         labs(x="Date") +
         labs(y=titles[1]) +
         ggtitle(titles[2]) +

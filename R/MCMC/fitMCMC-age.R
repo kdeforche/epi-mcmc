@@ -44,5 +44,3 @@ for (i in 1:10000) {
     plot(ts(subset(batch, select=fitkeyparamnames)))
     write.csv(batch, file=outputfile)
 }
-
-#iterate()

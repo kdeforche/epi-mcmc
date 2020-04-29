@@ -236,12 +236,6 @@ calculateModel <- function(params, period)
 transformParams <- function(params)
 {
     result = params
-    ## result[1] = exp(params[1])
-    ## result[2] = exp(params[2])
-    ## result[3] = exp(params[3])
-    ## result[4] = exp(params[4])
-    ## result[5] = exp(params[5])
-    ## result[6] = exp(params[6])
     result[8] = exp(params[8] + params[7])
     result[9] = exp(params[9] + params[7])
     result[7] = exp(params[7])

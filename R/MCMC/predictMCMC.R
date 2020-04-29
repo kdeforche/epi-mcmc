@@ -36,8 +36,8 @@ sourceR("lib/libMCMC.R")
 
 all_plots <- function(date_markers) {
     p1 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state) state$y.deadi, "#3366FF",
-                   c("Count", "Deaths per day"), date_markers, 'solid')
+                   function(state) state$deadi, "#3366FF",
+                   c("Count", "Deaths per day"), date_markers, NULL)
     dm1 <- numeric(length(p1$data$x))
     dm1[1:length(p1$data$x)] = NA
     dm1[1:length(dmorti)] = dmorti
@@ -45,7 +45,7 @@ all_plots <- function(date_markers) {
 
     p2 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$died, "#3366FF",
-                   c("Count", "Total deaths"), date_markers, 'solid')
+                   c("Count", "Total deaths"), date_markers, NULL)
 
     dm2 <- numeric(length(p2$data$x))
     dm2[1:length(p2$data$x)] = NA
@@ -54,7 +54,7 @@ all_plots <- function(date_markers) {
 
     p3 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$hospi, "#FF6633",
-                   c("Count", paste(c(HospLabel, "per day"))), date_markers, 'solid')
+                   c("Count", paste(c(HospLabel, "per day"))), date_markers, NULL)
     dm3 <- numeric(length(p3$data$x))
     dm3[1:length(p3$data$x)] = NA
     dm3[1:length(dhospi)] = dhospi
@@ -62,11 +62,11 @@ all_plots <- function(date_markers) {
 
     p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { (state$E + state$I)/N * 100 },
-                   "#FFFF66", c("Belgian population (%)", "Infected people"), date_markers, 'solid')
+                   "#FFFF66", c("Belgian population (%)", "Infected people"), date_markers, NULL)
 
     p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { state$R/N * 100 }, "#33FF66",
-                   c("Belgian population (%)", "Recovered from disease"), date_markers, 'solid')
+                   c("Belgian population (%)", "Recovered from disease"), date_markers, NULL)
 
     grid.arrange(p1, p2, p3, p4, p5, nrow=3)
 }
@@ -215,7 +215,7 @@ readSample <- function() {
 
     posterior
 
-    selection <- which(posterior[,"y.IFR"] < 3)
+    selection <- 1:dim(posterior)[1]
     scount <- length(selection)
     draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
     data_sample <- posterior[selection[draws],][0:-1]
@@ -229,6 +229,7 @@ system(paste("mkdir ", outputdir))
 
 # trimData(4)
 
+quantilePlotSampleSize <- 500
 data_sample <- readSample()
 
 ## Configure this depending on the model
@@ -236,7 +237,7 @@ all_plots <- all_plots_age
 
 pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
-plot_end_date <- as.Date("2020/6/1")
+plot_end_date <- as.Date("2020/8/1")
 all_plots(data.frame(pos=c(as.Date("2020/4/28")), color=c("red")))
 
 dev.off()
