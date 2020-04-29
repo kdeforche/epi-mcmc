@@ -229,7 +229,7 @@ system(paste("mkdir ", outputdir))
 
 # trimData(4)
 
-quantilePlotSampleSize <- 500
+quantilePlotSampleSize <- 1500
 data_sample <- readSample()
 
 ## Configure this depending on the model

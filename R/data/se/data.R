@@ -15,6 +15,8 @@ dhospi <- aggregate(se.case$Total, by=list(date=se.case$Date), FUN=sum)$x
 dhospi <- dhospi[27:length(dhospi)]
 dstartdate <- as.Date("2020-02-26")
 
+dhospi <- c(1, 1, 8, 3, 0, 5, 13, 30, 25, 59, 33, 46, 101, 98, 196, 151, 152, 71, 69, 83, 119, 145, 143, 180, 134, 117, 182, 230, 314, 286, 366, 300, 281, 415, 475, 486, 554, 601, 357, 340, 389, 738, 655, 645, 454, 395, 464, 437, 479, 604, 623, 688, 532, 389, 462, 709, 721, 748, 770, 474, 299, 543, 744) # from wikipedia
+
 dhosp <- cumsum(dhospi)
 
 se.mort <- read.csv("covid19_sweden_new_deaths.csv")
