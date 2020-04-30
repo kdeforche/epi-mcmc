@@ -34,8 +34,8 @@ simstep <- function(state, N, Ne, beta, a, gamma)
 {
     i = state$i
 
-    I = N - state$S[i]    
-    got_infected = beta * state$I[i] * max(0, (Ne - I) / N)
+    I = N - state$S[i]
+    got_infected = N / Ne * beta * state$I[i] * max(0, (Ne - I) / N)
     got_infectious = a * state$E[i]
     got_removed = gamma * state$I[i]
 
