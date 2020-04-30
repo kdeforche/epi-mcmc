@@ -30,10 +30,12 @@ convolute <- function(values, i, profile)
     (profile$values %*% values[i1:i2])[1,1]
 }
 
-simstep <- function(state, N, beta, a, gamma)
+simstep <- function(state, N, Ne, beta, a, gamma)
 {
     i = state$i
-    got_infected = beta * state$I[i] / N * state$S[i]
+
+    I = N - state$S[i]    
+    got_infected = beta * state$I[i] * max(0, (Ne - I) / N)
     got_infectious = a * state$E[i]
     got_removed = gamma * state$I[i]
 
@@ -64,7 +66,9 @@ calculateModel <- function(params, period)
     Tinf <- params[7]
     Tinc <- params[8]
     mort_lockdown_threshold <- params[9]
+    Nef <- params[10]
 
+    Ne <- N * Nef
     a <- 1 / Tinc
     gamma <- 1 / Tinf
 
@@ -100,7 +104,7 @@ calculateModel <- function(params, period)
                 }
             }
 
-            state <- simstep(state, N, beta, a, gamma)
+            state <- simstep(state, N, Ne, beta, a, gamma)
 
             s = convolute(state$S, i, hosp_cv_profile)
             state$hosp[i] <- (N - s) * hosp_rate
@@ -154,9 +158,9 @@ invTransformParams <- function(posterior)
 }
 
 fit.paramnames <- c("beta0", "betat", "logHR", "logHRDR", "HL", "DL",
-                    "Tinf", "Tinc", "lockdownmort")
-keyparamnames <- c("R0", "Rt", "IFR", "Tinf", "Tinc", "beta0", "betat")
-fitkeyparamnames <- c("beta0", "betat", "logHR", "logHRDR", "Tinf", "Tinc")
+                    "Tinf", "Tinc", "lockdownmort", "Nef")
+keyparamnames <- c("R0", "Rt", "IFR", "Tinf", "Tinc", "beta0", "betat", "Nef")
+fitkeyparamnames <- c("beta0", "betat", "logHR", "logHRDR", "Tinf", "Tinc", "Nef")
 
 ## log likelihood function for fitting this model to observed data:
 ##   dhospi and dmorti
@@ -170,6 +174,11 @@ calclogl <- function(params) {
     Tinf <- params[7]
     Tinc <- params[8]
     mort_lockdown_threshold <- params[9]
+    Nef <- params[10]
+
+    if (Nef < 0 || Nef > 1) {
+        return(-Inf)
+    }
 
     if (beta0 < 1E-10) {
         ## print(paste("invalid beta0", beta0))

@@ -18,8 +18,8 @@ calcloglMCMC <- function(params) {
 
 cn <- fit.paramnames
 
-init <- c(2.3, 0.5, log(0.02), log(0.3), 10, 9, 2, 5, total_deaths_at_lockdown)
-scales <- c(0.15, 0.05, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20)
+init <- c(2.3, 0.5, log(0.02), log(0.3), 10, 9, 2, 5, total_deaths_at_lockdown, 0.8)
+scales <- c(0.15, 0.05, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20, 0.01)
 
 print(c("initial logl: ", calcloglMCMC(init)))
 

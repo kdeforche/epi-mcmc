@@ -33,8 +33,7 @@ death_underreporting_factor <- 1
 ## Population size
 #####################
 
-#N <- 11.2E6
-N <- 5E6
+N <- 11.2E6
 
 country_adjective <- "Swedish"
 
