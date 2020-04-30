@@ -233,11 +233,11 @@ quantilePlotSampleSize <- 1500
 data_sample <- readSample()
 
 ## Configure this depending on the model
-all_plots <- all_plots_age
+# all_plots <- all_plots_age
 
 pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
-plot_end_date <- as.Date("2020/7/1")
+plot_end_date <- as.Date("2020/9/1")
 all_plots(data.frame(pos=c(as.Date("2020/4/28")), color=c("red")))
 
 dev.off()

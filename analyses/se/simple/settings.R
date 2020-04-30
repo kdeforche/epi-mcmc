@@ -11,10 +11,11 @@ fitmodel <- "../../../../R/models/model.R"
 data <- "../../../../R/data/se/data.R"
 
 ## Output file for MCMC samples (fitMCMC.R)
-outputfile <- "run3.csv"
+outputfile <- "run4.csv"
 
 ## Input file for MCMC samples (evalMCMC.R, predictMCMC.R)
-inputfiles <- c("run3.csv", "1/run3.csv", "2/run3.csv", "3/run3.csv", "4/run3.csv", "5/run3.csv", "6/run3.csv")
+inputfiles <- c("run4.csv", "1/run4.csv", "2/run4.csv", "3/run4.csv", "4/run4.csv", "5/run4.csv", "6/run4.csv")
+#inputfiles <- c(outputfile)
 
 ## Output directory for graphs, etc... (used by eval.R and predict.R)
 outputdir <- "results"
