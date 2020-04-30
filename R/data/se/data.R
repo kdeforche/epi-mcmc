@@ -42,11 +42,12 @@ country_adjective <- "Swedish"
 #####################
 
 ## Date of lockdown phase
-lockdown_offset <- as.numeric(as.Date("2020/3/10") - dstartdate)
+## Estimated from Google Mobility Report (with bias for Stockholm county)
+lockdown_offset <- as.numeric(as.Date("2020/3/09") - dstartdate)
 
 ## over how many days the lockdown is estimated to have occurred
-## Wikipedia: March 10 (first announcements) to March 24 (restaurant rules) 
-lockdown_transition_period <- 14
+## taking into account also Wikipedia restaurant rules (March 24...)
+lockdown_transition_period <- 10
 
 ## how many deaths at date of lockdown
 total_deaths_at_lockdown <- 1
