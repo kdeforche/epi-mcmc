@@ -7,7 +7,6 @@ require(bayestestR)
 source("settings.R")
 
 ## Load data, and fitmodel (defined in control.R)
-source(settings)
 source(data, chdir=T)
 source(fitmodel, chdir=T)
 
