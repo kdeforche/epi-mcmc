@@ -58,6 +58,27 @@ simstep <- function(state, N, Ne, beta, a, gamma)
     state
 }
 
+calcbeta <- function(time, beta0, betat)
+{
+    betai = time - lockdown_offset
+
+    beta = 0
+    
+    if (betai < 0) {
+        beta = beta0
+    } else {
+        if (betai >= lockdown_transition_period) {
+            beta = betat
+        } else {
+            fract0 = (lockdown_transition_period - betai) / lockdown_transition_period
+            fractt = betai / lockdown_transition_period
+            beta = fract0 * beta0 + fractt * betat
+        }
+    }
+
+    beta
+}
+
 calculateModel <- function(params, period)
 {
     beta0 <- params[1]
@@ -96,18 +117,7 @@ calculateModel <- function(params, period)
     if (Tinf > 1 && Tinc > 1) {
         beta = beta0	
         for (i in (padding + 1):(padding + period)) {
-            betai = i - data_offset - lockdown_offset
-            if (betai < 0) {
-                beta = beta0
-            } else {
-                if (betai >= lockdown_transition_period) {
-                    beta = betat
-                } else {
-                    fract0 = (lockdown_transition_period - betai) / lockdown_transition_period
-                    fractt = betai / lockdown_transition_period
-                    beta = fract0 * beta0 + fractt * betat
-                }
-            }
+            beta = calcbeta(i - data_offset, beta0, betat)
 
             state <- simstep(state, N, Ne, beta, a, gamma)
 
