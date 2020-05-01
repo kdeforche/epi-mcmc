@@ -271,7 +271,8 @@ dev.off()
 
 ######## Simple exiting scenario's
 
-sourceR("models/model-exiting-age-groups.R")
+##sourceR("models/model-exiting-age-groups.R")
+source("models/model-exiting.R")
 
 plot_end_date <- as.Date("2020/11/1")
 
@@ -291,7 +292,8 @@ for (r in seq(0,0.9,0.1)) {
     relax.start_date <- as.Date("2020/5/4")
     relax.end_date <- as.Date("2020/12/1")
 
-    relax.measures.y.E = r
+    ##relax.measures.y.E = r
+    relax.measures.E = r
     relax.start <- as.numeric(relax.start_date - dstartdate) 
     relax.end <- as.numeric(relax.end_date - dstartdate) 
 
