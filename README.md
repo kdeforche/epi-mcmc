@@ -94,6 +94,9 @@ for both groups.
 |:--------:|---------------------------------------------------|
 | Nef      | Factor (0 - 1) of Ne relative to N                |
 
+An example output of this model, fitting the Swedish data, is briefly described here:
+https://twitter.com/houterkabouter/status/1256123165346062336?s=20
+
 ### Age-structured model
 
 This model is implemented as 'R/models/model-age.R'
