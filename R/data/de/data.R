@@ -19,8 +19,6 @@ dmorti <- c(0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 1, 2, 0, 3, 4, 1, 0, 0, 8, 11, 16, 8, 
 
 dmort <- cumsum(dmorti)
 
-death_underreporting_factor <- 1
-
 #####################
 ## Population size
 #####################

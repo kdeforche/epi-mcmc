@@ -31,11 +31,7 @@ dmort <- cumsum(dmorti)
 
 ## all data series are now from 10/3
 
-death_underreporting_factor <- 1
-
 print(paste("last day morti: ", dstartdate + length(dmorti) - 1))
-
-death_underreporting_factor <- 1
 
 #####################
 ## Population size

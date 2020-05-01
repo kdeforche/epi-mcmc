@@ -252,8 +252,7 @@ calclogl <- function(params) {
     }
 
     loglD <- sum(dnbinom(dmorti,
-                         mu=pmax(0.1, state$deadi[dstart:dend] / death_underreporting_factor),
-                         size=mort_nbinom_size, log=T))
+                         mu=pmax(0.1, state$deadi[dstart:dend]), size=mort_nbinom_size, log=T))
 
     it <<- it + 1
 

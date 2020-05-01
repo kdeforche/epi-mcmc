@@ -27,8 +27,6 @@ dmorti <- c(rep(0, 14), dmorti)
 
 dmort <- cumsum(dmorti)
 
-death_underreporting_factor <- 1
-
 #####################
 ## Population size
 #####################
