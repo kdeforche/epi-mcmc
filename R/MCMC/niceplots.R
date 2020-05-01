@@ -5,8 +5,7 @@ require(mcmcse)
 require(bayestestR)
 require(gridExtra)
 
-source("control.R")
-source(settings)
+source("settings.R")
 
 source(data, chdir=T)
 source(fitmodel, chdir=T)

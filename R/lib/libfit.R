@@ -42,6 +42,11 @@ it <- 0
 ## Graphs used to monitor the MCMC runs
 ##
 graphs <- function() {
+    ## only if a device is open already
+    if (.Device == "null device") {
+        return(0)
+    }
+   
     par(mfrow=c(1,2))
 
     days <- seq(dstartdate, dstartdate + length(dhosp) + 30, 1)

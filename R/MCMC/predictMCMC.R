@@ -5,8 +5,7 @@ require(mcmcse)
 require(bayestestR)
 require(gridExtra)
 
-source("control.R")
-source(settings)
+source("settings.R")
 
 source(data, chdir=T)
 
@@ -206,7 +205,7 @@ readSample <- function() {
 
     print(ess(posterior))
 
-    plot(ts(subset(posterior, select=keyparamnames)))
+    ##plot(ts(subset(posterior, select=keyparamnames)))
 
     ## compute credibility intervals
     print(data.frame(ci(posterior, ci=0.01)))
@@ -225,11 +224,13 @@ readSample <- function() {
 
 outputdir <- "output"
 
+source("settings.R")
+
 system(paste("mkdir ", outputdir))
 
 # trimData(4)
 
-quantilePlotSampleSize <- 1500
+#quantilePlotSampleSize <- 1500
 data_sample <- readSample()
 
 ## Configure this depending on the model
@@ -238,7 +239,7 @@ data_sample <- readSample()
 pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
 plot_end_date <- as.Date("2020/9/1")
-all_plots(data.frame(pos=c(as.Date("2020/4/28")), color=c("red")))
+all_plots(data.frame(pos=c(as.Date("2020/5/1")), color=c("red")))
 
 dev.off()
 

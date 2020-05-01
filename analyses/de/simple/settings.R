@@ -26,4 +26,11 @@ densityPlotSampleSize <- 500
 ## Sample size used for creating density plots (predictMCMC.R)
 quantilePlotSampleSize <- 50
 
-x11(width=15, height=12)
+FitTotalPeriod <- 130
+
+hosp_nbinom_size = 15
+mort_nbinom_size = 50
+
+if (.Device == "null device") {
+    x11(width=15, height=12)
+}

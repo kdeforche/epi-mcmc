@@ -3,10 +3,10 @@ library("ggplot2")
 require(mcmcse)
 require(bayestestR)
 
-## Read control file
-source("control.R")
+## Read settings file
+source("settings.R")
 
-## Load settings, data, and fitmodel (defined in control.R)
+## Load data, and fitmodel (defined in control.R)
 source(settings)
 source(data, chdir=T)
 source(fitmodel, chdir=T)
@@ -70,13 +70,16 @@ densityPlot()
 #
 # from here on only totally random snippets
 #
-
 mcmc_hist(posterior, pars = keyparamnames)
 
 #mcmc_hist(posterior, pars = c("IFR"), binwidth=0.0001)
 #mcmc_hist(posterior, pars = c("Beta"))
 #mcmc_hist(posterior, pars = c("HL", "DL"), binwidth=0.1)
 #mcmc_hist(posterior, pars = c("WZC"))
+
+png("Ne.png", width=500, height=500)
+mcmc_hist(posterior, pars = c("Ne"))
+dev.off()
 
 png("Rt.png", width=500, height=500)
 pdf(paste(outputdir, "/Rt.pdf", sep=""), width=6, height=6)
@@ -128,3 +131,8 @@ mcmc_areas(posterior,
 #lines(s, ifr_prior3, type='l', col='gray')
 #lines(s, ifr_prior4, type='l', col='black')
 lines(s, ifr_prior5, type='l', col='blue')
+
+
+## extra plot met:
+## - Rt evolutie
+## - Rt evolutie

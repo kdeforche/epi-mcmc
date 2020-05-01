@@ -34,8 +34,9 @@ simstep <- function(state, N, Ne, beta, a, gamma)
 {
     i = state$i
 
-    I = N - state$S[i]
-    got_infected = N / Ne * beta * state$I[i] * max(0, (Ne - I) / N)
+    EIR = N - state$S[i]
+
+    got_infected = beta * min(1, state$I[i] / Ne) * max(0, Ne - EIR)
     got_infectious = a * state$E[i]
     got_removed = gamma * state$I[i]
 
@@ -44,6 +45,8 @@ simstep <- function(state, N, Ne, beta, a, gamma)
     deltaI = got_infectious - got_removed
     deltaR = got_removed
 
+    state$Re[i + 1] = got_infected / state$I[i] / gamma
+    state$Rt[i + 1] = beta / gamma
     state$S[i + 1] = state$S[i] + deltaS
     state$E[i + 1] = state$E[i] + deltaE
     state$I[i + 1] = state$I[i] + deltaI
@@ -78,6 +81,8 @@ calculateModel <- function(params, period)
     padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
     state <- NULL
+    state$Re <- rep(0, padding + period)
+    state$Rt <- rep(0, padding + period)
     state$S <- rep(N-Initial, padding + period)
     state$E <- rep(Initial, padding + period)
     state$I <- rep(0, padding + period)
@@ -140,6 +145,7 @@ transformParams <- function(params)
     result = params
     result[4] = exp(params[3] + params[4])
     result[3] = exp(params[3])
+    result[10] = 1 ## Nef
 
     result
 }
@@ -158,9 +164,9 @@ invTransformParams <- function(posterior)
 }
 
 fit.paramnames <- c("beta0", "betat", "logHR", "logHRDR", "HL", "DL",
-                    "Tinf", "Tinc", "lockdownmort", "Nef")
-keyparamnames <- c("R0", "Rt", "IFR", "Tinf", "Tinc", "beta0", "betat", "Nef")
-fitkeyparamnames <- c("beta0", "betat", "logHR", "logHRDR", "Tinf", "Tinc", "Nef")
+                    "Tinf", "Tinc", "lockdownmort")
+keyparamnames <- c("R0", "Rt", "IFR", "Tinf", "Tinc", "beta0", "betat")
+fitkeyparamnames <- c("beta0", "betat", "logHR", "logHRDR", "Tinf", "Tinc")
 
 ## log likelihood function for fitting this model to observed data:
 ##   dhospi and dmorti
@@ -261,3 +267,6 @@ calclogl <- function(params) {
 
     result
 }
+
+init <- c(2.3, 0.5, log(0.02), log(0.3), 10, 9, 2, 5, total_deaths_at_lockdown)
+scales <- c(0.15, 0.05, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20)
