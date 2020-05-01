@@ -272,13 +272,12 @@ dev.off()
 ######## Simple exiting scenario's
 
 ##sourceR("models/model-exiting-age-groups.R")
-source("models/model-exiting.R")
+sourceR("models/model-exiting.R")
 
 plot_end_date <- as.Date("2020/11/1")
 
-## quantilePlotSampleSize <- 50
-
-calcbetas.age <- calcbetas.age.relax
+##calcbetas.age <- calcbetas.age.relax
+calcbeta <- calcbeta.relax
 
 labels <- c("0", "01", "02", "03", "04", "05", "06", "07", "08", "09")
 
