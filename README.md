@@ -5,12 +5,12 @@ Scripts for estimating and visualizing epidemiological models of an epidemic (de
 
 These scripts were developed to get insight in the evolution of the
 Belgian COVID-19 epidemic during March-April 2020. The description of
-the method and results for the Belgian COVID-19 epidemic are described
+the method and results for the Belgian COVID-19 epidemic can be found
 here: https://www.genomedetective.com/covid19-epi/be/report.pdf
 
 Since the epidemic is still ongoing, the models may be expanded with
 new parameters to model social distancing changes as restrictions are
-being lifted (and/or resset). Visualizations are still evolving too.
+being lifted (and/or reset). Visualizations are still evolving too.
 
 ## Description
 
@@ -23,7 +23,7 @@ before and after the introduction of the measures.
 The model uses 'hospitalization' as name for the quantity that is
 either hospitalization or positive test.
 
-Three different model flavours are currently available.
+Three different model flavors are currently available.
 
 ### Simple model
 
