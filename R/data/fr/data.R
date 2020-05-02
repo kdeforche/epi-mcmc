@@ -54,3 +54,8 @@ print (dhospi)
 print (dhosp)
 print (dmorti)
 print (dmort)
+
+country_adjective <- "French"
+
+## how many deaths at date of lockdown
+total_deaths_at_lockdown <- 244
