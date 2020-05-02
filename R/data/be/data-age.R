@@ -27,27 +27,27 @@ source("data.R")
 ## 05-11/4 : 13 51 36
 ## 12-18/4 : 13 46 40
 ##
-## 50-59: 32
-## 60-69: 36 
-## 70-79: 44
-##  < 65 : 50; > 65 : 62
+## 50-59: 15.4
+## 60-69: 18.0
+## 70-79: 21.0
+##  < 65 : 24.4; > 65 : 30
 ##   compare y.dhospi en o.dhospi apart
 ## -> should increase hospitalisations for < 65 vs for > 65y and thus
 ##    predict higher number of 
 
-hosp_week_age_statistics <- data.frame(r0.49 = c(20, 18, 17, 15, 13, 13))
-hosp_week_age_statistics$r50.79 = c(55, 59, 58, 56, 51, 46)
-hosp_week_age_statistics$r80 = c(25, 25, 26, 29, 36, 40)
+hosp_week_age_statistics <- data.frame(r0.49 = c(20, 18, 17, 15, 14, 13, 18))
+hosp_week_age_statistics$r50.79 = c(55, 59, 59, 56, 51, 46, 47)
+hosp_week_age_statistics$r80 = c(25, 25, 26, 29, 36, 41, 38)
 
 for (i in 1:dim(hosp_week_age_statistics)[1]) {
     hosp_week_age_statistics[i,] <- hosp_week_age_statistics[i,] / sum(hosp_week_age_statistics[i,])
 }
 
-bucket_50.79.y = 50/(50 + 62)
+bucket_50.79.y = 24.4/(24.4 + 30)
 hosp_week_age_statistics$y = hosp_week_age_statistics[,1] + hosp_week_age_statistics[,2] * bucket_50.79.y
 hosp_week_age_statistics$index = 1:dim(hosp_week_age_statistics)[1] * 7 - 5
 
-model <- lm(y ~ poly(index, 2), data=hosp_week_age_statistics)
+model <- lm(y ~ poly(index, 3), data=hosp_week_age_statistics)
 yf <- data.frame(index=seq(1:length(dhospi)))
 
 pdf("hosp-age.pdf", width=8, height=6)
@@ -93,7 +93,7 @@ o.dmorti = o.dmorti + floor((1 - yfract) * na.dmorti$x)
 o.wzcmorti = c(0, 0, 0, 0, 2, 1, 1, 2, 3, 10, 9, 12, 21, 19, 12, 24, 25,
                40, 49, 52, 48, 57, 120, 74, 117, 137, 107, 153, 182, 199,
                170, 207, 182, 230, 155, 165, 149, 153, 117, 130, 126, 120,
-               120, 111, 90, 70, 64, 1, 0)
+               120, 111, 95, 75, 75, 95, 70, 55, 45, 12, 0)
 
 print(paste("last day o.wzcmorti: ", dstartdate + length(o.wzcmorti) - 1))
 print(paste("last day o.dmorti: ", dstartdate + length(o.dmorti) - 1))

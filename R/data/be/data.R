@@ -52,3 +52,7 @@ lockdown_transition_period <- 7
 
 ## how many deaths at date of lockdown
 total_deaths_at_lockdown <- 5
+
+## Additional times for which a change in policy may require a new
+## estimate of Rt (Es are interpolation factors between R0 and Rt)
+Es.time <- c(as.Date("2020-05-04")) - dstartdate

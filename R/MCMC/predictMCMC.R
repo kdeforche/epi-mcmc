@@ -238,7 +238,7 @@ data_sample <- readSample()
 
 pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
-plot_end_date <- as.Date("2020/9/1")
+plot_end_date <- as.Date("2020/7/1")
 all_plots(data.frame(pos=c(as.Date("2020/5/1")), color=c("red")))
 
 dev.off()
