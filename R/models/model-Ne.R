@@ -9,9 +9,9 @@ transformParams <- function(params)
     result
 }
 
-fit.paramnames <- c(fit.paramnames, "Nef")
-keyparamnames <- c(keyparamnames, "Nef")
-fitkeyparamnames <- c(fitkeyparamnames, "Nef")
+fit.paramnames <- append(fit.paramnames, "Nef", after=9)
+keyparamnames <- append(keyparamnames, "Nef", after=9)
+fitkeyparamnames <- append(fitkeyparamnames, "Nef", after=9)
 
-init <- c(init, 0.8)
-scales <- c(scales, 0.01)
+init <- append(init, 0.8, after=9)
+scales <- append(scales, 0.01, after=9)

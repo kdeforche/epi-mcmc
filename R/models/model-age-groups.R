@@ -100,27 +100,38 @@ simstep <- function(state, y.beta, o.beta, yo.beta, a, gamma)
     state
 }
 
-calcbetas.age <- function(time, betay0, betayt, betao0, betaot, betayo0, betayot)
+calcbetas.age <- function(time, y.beta0, y.betat, o.beta0, o.betat, yo.beta0, yo.betat, Es)
 {
     betai = time - lockdown_offset
 
     y.beta = o.beta = yo.beta = 0
     
     if (betai < 0) {
-        y.beta = betay0
-        o.beta = betao0
-        yo.beta = betayo0
+        y.beta = y.beta0
+        o.beta = o.beta0
+        yo.beta = yo.beta0
     } else {
         if (betai >= lockdown_transition_period) {
-            y.beta = betayt
-            o.beta = betaot
-            yo.beta = betayot
+            y.beta = y.betat
+            o.beta = o.betat
+            yo.beta = yo.betat
+            if (length(Es.time) > 0) {
+                for (i in length(Es.time):1) {
+                    if (time > Es.time[i]) {
+                        k <- (i - 1) * 3 + 1
+                        y.beta = max(0.001, Es[k] * y.betat + (1 - Es[k]) * y.beta0)
+                        o.beta = max(0.001, Es[k + 1] * o.betat + (1 - Es[k + 1]) * o.beta0)
+                        yo.beta = max(0.001, Es[k + 2] * yo.betat + (1 - Es[k + 2]) * yo.beta0)
+                        break;
+                    }
+                }
+            }
         } else {
             fract0 = (lockdown_transition_period - betai) / lockdown_transition_period
             fractt = betai / lockdown_transition_period
-            y.beta = fract0 * betay0 + fractt * betayt
-            o.beta = fract0 * betao0 + fractt * betaot
-            yo.beta = fract0 * betayo0 + fractt * betayot
+            y.beta = fract0 * y.beta0 + fractt * y.betat
+            o.beta = fract0 * o.beta0 + fractt * o.betat
+            yo.beta = fract0 * yo.beta0 + fractt * yo.betat
         }
     }
 
@@ -145,8 +156,9 @@ calculateModel <- function(params, period)
     Tinf <- params[14]
     Tinc <- params[15]
     mort_lockdown_threshold <- params[16]
-
     o.hosp_rate_factor = params[17] * o.died_rate / y.died_rate
+    Es <- tail(params, n=-17)
+
     y.hosp_rate_factor = 1
 
     a <- 1 / Tinc
@@ -198,8 +210,9 @@ calculateModel <- function(params, period)
             betas = calcbetas.age(i - data_offset,
                                   betay0, betayt,
                                   betao0, betaot,
-                                  betayo0, betayot)
-            
+                                  betayo0, betayot,
+                                  Es)
+
             state <- simstep(state, betas[1], betas[2], betas[3], a, gamma)
 
             s = convolute(state$y.S, i, y.hosp_cv_profile)
@@ -276,18 +289,6 @@ calcNominalState <- function(state)
     state
 }
 
-fit.paramnames <- c("betay0", "betayt",
-                    "betao0", "betaot",
-                    "betayo0", "betayot",
-                    "logHR", "logHRyDR", "logHRoDR",
-                    "y.HL", "y.DL", "o.HL", "o.DL",
-                    "Tinf", "Tinc",
-                    "lockdownmort", "logfHo")
-
-## e.g. used for plotting time series to oversee sampling
-keyparamnames <- c("y.R0", "y.Rt", "y.IFR", "o.IFR", "Tinf", "betay0", "betayt")
-fitkeyparamnames <- c("betay0", "betayt", "betao0", "logHR", "logHRyDR", "logHRoDR", "Tinf", "Tinc")
-
 ## log likelihood function for fitting this model to observed data:
 ##   y.dhospi, o.dhospi, y.dmorti, o.dmorti
 calclogl <- function(params) {
@@ -307,6 +308,8 @@ calclogl <- function(params) {
     Tinf <- params[14]
     Tinc <- params[15]
     mort_lockdown_threshold <- params[16]
+    o.hosp_rate_factor = params[17]
+    Es <- tail(params, n=-17)
 
     if (betay0 < 1E-10) {
         ## print(paste("invalid betay0", betay0))
@@ -407,6 +410,10 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(Tinc, mean=5, sd=3, log=T)
     logPriorP <- logPriorP + dnorm(Tinf, mean=5, sd=3, log=T)
 
+    for (e in Es) {
+        logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
+    }
+    
     ##
     ## Total deaths at lockdown is also the result of an observation
     ##
@@ -460,9 +467,31 @@ calclogl <- function(params) {
     result
 }
 
+fit.paramnames <- c("betay0", "betayt",
+                    "betao0", "betaot",
+                    "betayo0", "betayot",
+                    "logHR", "logHRyDR", "logHRoDR",
+                    "y.HL", "y.DL", "o.HL", "o.DL",
+                    "Tinf", "Tinc",
+                    "lockdownmort", "logfHo")
+
+## e.g. used for plotting time series to oversee sampling
+keyparamnames <- c("y.R0", "y.Rt", "y.IFR", "o.IFR", "Tinf", "betay0", "betayt")
+fitkeyparamnames <- c("betay0", "betayt", "betao0", "logHR", "logHRyDR", "logHRoDR", "Tinf", "Tinc")
+
 init <- c(3.6, 0.7, 3.04, 0.12, 0.27, 0.09,
           log(0.01), log(0.3), log(1),
-          14, 13, 14, 13, 1.3, 7, total_deaths_at_lockdown, log(25))
+          14, 13, 14, 13, 1.3, 7, total_deaths_at_lockdown, log(25),
+          rep(0.9, length(Es.time) * 3))
 scales <- c(0.15, 0.05, 0.15, 0.05, 0.15, 0.05,
             0.05, 0.05, 0.05,
-            1, 1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20, 0.1)
+            1, 1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20, 0.1,
+            rep(0.05, length(Es.time) * 3))
+
+if (length(Es.time) > 0) {
+    for (i in 1:length(Es.time)) {
+        fit.paramnames <- c(fit.paramnames, paste("y.E", i, sep=""),
+                            paste("o.E", i, sep=""),
+                            paste("yo.E", i, sep=""))
+    }
+}

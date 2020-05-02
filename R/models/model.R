@@ -58,7 +58,17 @@ simstep <- function(state, N, Ne, beta, a, gamma)
     state
 }
 
-calcbeta <- function(time, beta0, betat)
+##
+## Beta is a function of time:
+##  t < lockdown_offset : beta0
+##  t > lockdown_offset + lockdown_transition_period : betat
+##  t > Es.time[i] : Es[i] * betat + (1 - Es[i]) * beta0
+
+if (!exists("Es.time")) {
+    Es.time <- c()
+}
+
+calcbeta <- function(time, beta0, betat, Es)
 {
     betai = time - lockdown_offset
 
@@ -69,6 +79,14 @@ calcbeta <- function(time, beta0, betat)
     } else {
         if (betai >= lockdown_transition_period) {
             beta = betat
+            if (length(Es.time) > 0) {
+                for (i in length(Es.time):1) {
+                    if (time > Es.time[i]) {
+                        beta = max(0.001, Es[i] * betat + (1 - Es[i]) * beta0)
+                        break;
+                    }
+                }
+            }
         } else {
             fract0 = (lockdown_transition_period - betai) / lockdown_transition_period
             fractt = betai / lockdown_transition_period
@@ -91,6 +109,7 @@ calculateModel <- function(params, period)
     Tinc <- params[8]
     mort_lockdown_threshold <- params[9]
     Nef <- params[10]
+    Es <- tail(params, n=-10)
 
     Ne <- N * Nef
     a <- 1 / Tinc
@@ -117,7 +136,7 @@ calculateModel <- function(params, period)
     if (Tinf > 1 && Tinc > 1) {
         beta = beta0	
         for (i in (padding + 1):(padding + period)) {
-            beta = calcbeta(i - data_offset, beta0, betat)
+            beta = calcbeta(i - data_offset, beta0, betat, Es)
 
             state <- simstep(state, N, Ne, beta, a, gamma)
 
@@ -155,7 +174,7 @@ transformParams <- function(params)
     result = params
     result[4] = exp(params[3] + params[4])
     result[3] = exp(params[3])
-    result[10] = 1 ## Nef
+    result <- append(result, 1, after=9) ## Nef
 
     result
 }
@@ -173,11 +192,6 @@ invTransformParams <- function(posterior)
     posterior
 }
 
-fit.paramnames <- c("beta0", "betat", "logHR", "logHRDR", "HL", "DL",
-                    "Tinf", "Tinc", "lockdownmort")
-keyparamnames <- c("R0", "Rt", "IFR", "Tinf", "Tinc", "beta0", "betat")
-fitkeyparamnames <- c("beta0", "betat", "logHR", "logHRDR", "Tinf", "Tinc")
-
 ## log likelihood function for fitting this model to observed data:
 ##   dhospi and dmorti
 calclogl <- function(params) {
@@ -191,6 +205,7 @@ calclogl <- function(params) {
     Tinc <- params[8]
     mort_lockdown_threshold <- params[9]
     Nef <- params[10]
+    Es <- tail(params, n=-10)
 
     if (Nef < 0 || Nef > 1) {
         return(-Inf)
@@ -237,6 +252,10 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(Tinc, mean=5, sd=3, log=T)
     logPriorP <- logPriorP + dnorm(Tinf, mean=5, sd=3, log=T)
 
+    for (e in Es) {
+        logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
+    }
+
     loglLD <- dnbinom(total_deaths_at_lockdown, mu=pmax(0.1, mort_lockdown_threshold),
                       size=mort_nbinom_size, log=T)
 
@@ -277,5 +296,18 @@ calclogl <- function(params) {
     result
 }
 
-init <- c(2.3, 0.5, log(0.02), log(0.3), 10, 9, 2, 5, total_deaths_at_lockdown)
-scales <- c(0.15, 0.05, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20)
+fit.paramnames <- c("beta0", "betat", "logHR", "logHRDR", "HL", "DL",
+                    "Tinf", "Tinc", "lockdownmort")
+keyparamnames <- c("R0", "Rt", "IFR", "Tinf", "Tinc", "beta0", "betat")
+fitkeyparamnames <- c("beta0", "betat", "logHR", "logHRDR", "Tinf", "Tinc")
+
+init <- c(2.3, 0.5, log(0.02), log(0.3), 10, 9, 2, 5, total_deaths_at_lockdown,
+          rep(0.9, length(Es.time)))
+scales <- c(0.15, 0.05, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20,
+            rep(0.05, length(Es.time)))
+
+if (length(Es.time) > 0) {
+    for (i in 1:length(Es.time)) {
+        fit.paramnames <- c(fit.paramnames, paste("E", i, sep=""))
+    }
+}

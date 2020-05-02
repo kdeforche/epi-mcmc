@@ -16,6 +16,8 @@ calcloglMCMC <- function(params) {
 ## source it again so that you can override things
 source("settings.R")
 
+print(fit.paramnames)
+
 print(c("initial logl: ", calcloglMCMC(init)))
 
 it <- 0
