@@ -36,8 +36,10 @@ simstep <- function(state, N, h, beta, a, gamma)
 
     ## exponential is only one idea
     ## how about quadratic (integrand of linear) ?
+    cr = 1 - h * ((N - state$S[i])/N)^2
+    ## cr = exp(- h * (N - state$S[i])/N)
     
-    got_infected = beta * state$I[i] / N * exp(- h * (N - state$S[i])/N) * state$S[i]
+    got_infected = beta * state$I[i] / N * cr * state$S[i]
     got_infectious = a * state$E[i]
     got_removed = gamma * state$I[i]
 
@@ -239,10 +241,10 @@ calclogl <- function(params) {
 
     logPriorP <- 0
 
-    logPriorP <- logPriorP + dexp(h0, 1, log=T)
-    logPriorP <- logPriorP + dexp(ht, 1, log=T)
-    logPriorP <- logPriorP + dexp(beta0, 1, log=T)
-    logPriorP <- logPriorP + dexp(betat, 1, log=T)
+    logPriorP <- logPriorP + dexp(h0, 0.1, log=T)
+    logPriorP <- logPriorP + dexp(ht, 0.01, log=T)
+    logPriorP <- logPriorP + dexp(beta0, 0.01, log=T)
+    logPriorP <- logPriorP + dexp(betat, 0.01, log=T)
 
     ## estBetaParams(0.0066, 0.005^2)
     ## logPriorP <- logPriorP + dbeta(died_rate, 1.7243, 259.53, log=T)

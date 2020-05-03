@@ -67,7 +67,11 @@ all_plots <- function(date_markers) {
                    function(state) { state$R/N * 100 }, "#33FF66",
                    c(paste(country_adjective, "population (%)"), "Recovered from disease"), date_markers, NULL)
 
-    grid.arrange(p1, p2, p3, p4, p5, nrow=3)
+    p6 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+                   function(state) { state$Re }, "#33FFFF",
+                   c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
+
+    grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
 }
 
 all_plots_age <- function(date_markers) {
@@ -236,12 +240,12 @@ data_sample <- readSample()
 ## Configure this depending on the model
 # all_plots <- all_plots_age
 
-pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
+##pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
 plot_end_date <- as.Date("2020/7/1")
 all_plots(data.frame(pos=c(as.Date("2020/5/1")), color=c("red")))
 
-dev.off()
+##dev.off()
 
 png(paste(outputdir, "/forecast-time.png", sep=""), width=1200, height=1600)
 
@@ -266,6 +270,25 @@ relax.start <- as.numeric(relax.start_date - dstartdate)
 relax.end <- as.numeric(relax.end_date - dstartdate) 
 
 pdf(paste(outputdir, "/no-lockdown.pdf", sep=""), width=12, height=16)
+all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
+dev.off()
+
+######## Measures were taken 1 week too late
+
+calcbetas.age.orig <- calcbetas.age
+
+calcbetas.age.toolate <- function(time, betay0, betayt, betao0, betaot, betayo0, betayot, Es)
+{
+    if (time > lockdown_offset) {
+        betay0 <- betay0 * runif(1, 0.7, 1)
+    }
+    calcbetas.age.orig(time - 7, betay0, betayt, betao0, betaot, betayo0, betayot, Es)
+}
+
+calcbetas.age <- calcbetas.age.toolate
+
+plot_end_date <- as.Date("2020/6/1")
+pdf(paste(outputdir, "/too-late.pdf", sep=""), width=16, height=16)
 all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
 dev.off()
 

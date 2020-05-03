@@ -13,7 +13,7 @@
 
 dstartdate <- as.Date("2020/2/27")
 
-nl.hosp <- read.csv("in-ziekenhuis-opgenomen-patiënten.csv", sep=";")
+nl.hosp <- read.csv("in-ziekenhuis-opgenomen-patienten.csv", sep=";")
 dhospi <- nl.hosp$tot.en.met.gisteren
 dhosp <- cumsum(dhospi)
 
@@ -48,10 +48,10 @@ country_adjective <- "Dutch"
 #####################
 
 ## Date of lockdown phase (1)
-lockdown_offset <- as.numeric(as.Date("2020/3/17") - dstartdate)
+lockdown_offset <- as.numeric(as.Date("2020/3/10") - dstartdate)
 
 ## over how many days the lockdown is estimated to have occurred
-lockdown_transition_period <- 10
+lockdown_transition_period <- 5
 
 ## how many deaths at date of lockdown
-total_deaths_at_lockdown <- 87
+total_deaths_at_lockdown <- dmort[lockdown_offset]
