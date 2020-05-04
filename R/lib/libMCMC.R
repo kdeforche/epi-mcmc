@@ -212,7 +212,7 @@ makePlot <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
         pos = date_markers$pos[i]
         color = date_markers$color[i]
         result = result + geom_vline(xintercept=pos, linetype="dashed",
-                                     color=color, size=1.3)
+                                     color=color, size=1)
     }
 
     result

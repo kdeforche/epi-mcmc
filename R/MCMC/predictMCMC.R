@@ -71,6 +71,8 @@ all_plots <- function(date_markers) {
                    function(state) { state$Re }, "#33FFFF",
                    c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
 
+    p6 <- p6 + scale_y_continuous(limits = c(0, 6)) +
+        geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
     grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
 }
 
