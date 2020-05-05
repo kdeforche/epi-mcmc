@@ -5,13 +5,13 @@ Rdir <- "../../../../R/"
 HospLabel <- "New cases"
 
 ## Model to be used for data fitting (fitMCMC.R, evalMCMC.R)
-fitmodel <- "../../../../R/models/model-Ne2.R"
+fitmodel <- "../../../../R/models/model-Ne2-inf.R"
 
 ## Data to be used (fitMCMC.R, evalMCMC.R)
 data <- "../../../../R/data/de/data.R"
 
 ## Output file for MCMC samples (fitMCMC.R)
-outputfile <- "ne2.csv"
+outputfile <- "ne2-inf.csv"
 
 ## Input file for MCMC samples (evalMCMC.R, predictMCMC.R)
 #inputfiles <- c("run3.csv", "1/run3.csv", "2/run3.csv", "3/run3.csv", "4/run3.csv", "5/run3.csv", "6/run3.csv")

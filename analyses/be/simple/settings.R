@@ -5,13 +5,13 @@ Rdir <- "../../../../R/"
 HospLabel <- "New hospitalisations"
 
 ## Model to be used for data fitting (fitMCMC.R, evalMCMC.R)
-fitmodel <- "../../../../R/models/model-Ne2.R"
+fitmodel <- "../../../../R/models/model-Ne2-inf.R"
 
 ## Data to be used (fitMCMC.R, evalMCMC.R)
 data <- "../../../../R/data/be/data.R"
 
 ## Output file for MCMC samples (fitMCMC.R)
-outputfile <- "ne2.csv"
+outputfile <- "ne2-inf.csv"
 truncate <- T # whether the current file should be appended or instead truncated
 
 ## Input file for MCMC samples (evalMCMC.R, predictMCMC.R)
