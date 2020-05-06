@@ -108,9 +108,10 @@ calculateModel <- function(params, period)
     Tinf0 <- params[6]
     Tinc <- params[7]
     mort_lockdown_threshold <- params[8]
-    kt <- params[9]
-    Tinft <- params[10]
-    Es <- tail(params, n=-10)
+    k0 <- params[9]
+    kt <- params[10]
+    Tinft <- params[11]
+    Es <- tail(params, n=-11)
 
     h0 <- 1
     a <- 1 / Tinc
@@ -135,7 +136,7 @@ calculateModel <- function(params, period)
 
     if (Tinf0 > 1 && Tinft > 1 && Tinc > 1) {
         for (i in (padding + 1):(padding + period)) {
-            k = calcpar(i - data_offset, 1, kt, Es)
+            k = calcpar(i - data_offset, k0, kt, Es)
             Tinf = calcpar(i - data_offset, Tinf0, Tinft, Es)
             gamma <- 1 / Tinf
 
@@ -204,12 +205,17 @@ calclogl <- function(params) {
     Tinf0 <- params[6]
     Tinc <- params[7]
     mort_lockdown_threshold <- params[8]
-    kt <- params[9]
-    Tinft <- params[10]
-    Es <- tail(params, n=-10)
+    k0 <- params[9]
+    kt <- params[10]
+    Tinft <- params[11]
+    Es <- tail(params, n=-11)
 
     if (beta < 1E-10) {
         ## print(paste("invalid beta0", beta0))
+        return(-Inf)
+    }
+
+    if (k0 <= 0 || k0 > 1) {
         return(-Inf)
     }
 
@@ -300,13 +306,13 @@ calclogl <- function(params) {
 }
 
 fit.paramnames <- c("beta", "logHR", "logHRDR", "HL", "DL",
-                    "Tinf0", "Tinc", "lockdownmort", "kt", "Tinft")
-keyparamnames <- c("beta", "IFR", "Tinf0", "Tinft", "Tinc", "R0", "Rt", "kt")
-fitkeyparamnames <- c("beta", "logHR", "logHRDR", "Tinf0", "Tinc", "kt", "Tinft")
+                    "Tinf0", "Tinc", "lockdownmort", "k0", "kt", "Tinft")
+keyparamnames <- c("beta", "IFR", "Tinf0", "Tinft", "Tinc", "R0", "Rt", "k0", "kt")
+fitkeyparamnames <- c("beta", "logHR", "logHRDR", "Tinf0", "Tinc", "kt", "k0", "Tinft")
 
-init <- c(1, log(0.02), log(0.3), 10, 20, 5, 8, total_deaths_at_lockdown, 0.1, 2,
+init <- c(1, log(0.02), log(0.3), 10, 20, 5, 8, total_deaths_at_lockdown, 0.9, 0.1, 2,
           rep(0.9, length(Es.time)))
-scales <- c(1, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20, 1, 1,
+scales <- c(1, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20, 0.3, 0.3, 1,
             rep(0.05, length(Es.time)))
 
 if (length(Es.time) > 0) {
