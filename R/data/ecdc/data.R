@@ -88,6 +88,10 @@ if (dmort[length(dmort)] < 15) {
     quit()
 }
 
+if (lockdown_offset < 1) {
+    print("Social distancing before data start ?")
+    quit()
+}
 print(c(lockdown_offset, lockdown_transition_period, total_deaths_at_lockdown))
 
 FitTotalPeriod <- length(dmort) + 90
