@@ -251,11 +251,11 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (Tin0 < 0 || Tin0 > 7) {
+    if (Tin0 < 0.2 || Tin0 > 7) {
         return(-Inf)
     }
 
-    if (Tint < 0 || Tint > Tin0) {
+    if (Tint < 0.2 || Tint > Tin0) {
         return(-Inf)
     }
 

@@ -60,8 +60,11 @@ starti <- nzcases[length(nzcases)]
 
 dstartdate <- country.data$date[starti] ## they are in reversed order
 
-dhospi <- rev(country.data$cases[1:starti])
-dmorti <- rev(country.data$deaths[1:starti])
+print(starti)
+dhospi <- pmax(rep(0,starti),rev(country.data$cases[1:starti]))
+dmorti <- pmax(rep(0,starti),rev(country.data$deaths[1:starti]))
+print(dhospi)
+print(dmorti)
 
 dhosp <- cumsum(dhospi)
 dmort <- cumsum(dmorti)

@@ -61,4 +61,4 @@ for (country2 in countries) {
     }
 }
 
-print(paste(good_countries, collapse=' '))
+print(paste(good_countries, collapse='\n'))
