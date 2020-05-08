@@ -36,4 +36,7 @@ for (i in 1:10000) {
     colnames(batch) <- fit.paramnames
     plot(ts(subset(batch, select=fitkeyparamnames)))
     write.csv(batch, file=outputfile)
+
+##    if (i == 1)
+##        break
 }

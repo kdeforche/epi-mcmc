@@ -109,17 +109,17 @@ calcpar <- function(time, par0, part, Es)
 
 calculateModel <- function(params, period)
 {
-    beta <- params[1]
+    beta0 <- params[1]
     hosp_rate <- params[2]
     died_rate <- params[3]
     hosp_latency <- params[4]
     died_latency <- params[5]
-    Tinf0 <- params[6]
+    Tinf <- params[6]
     Tinc <- params[7]
     mort_lockdown_threshold <- params[8]
     k0 <- params[9]
     kt <- params[10]
-    Tinft <- params[11]
+    betat <- params[11]
     Es <- tail(params, n=-11)
 
     h0 <- 1
@@ -143,10 +143,10 @@ calculateModel <- function(params, period)
 
     data_offset = InvalidDataOffset
 
-    if (Tinf0 > 0 && Tinft > 0 && Tinc > 1) {
+    if (Tinf > 0 && Tinc > 1) {
         for (i in (padding + 1):(padding + period)) {
             k = calcpar(i - data_offset, k0, kt, Es)
-            Tinf = calcpar(i - data_offset, Tinf0, Tinft, Es)
+            beta = calcpar(i - data_offset, beta0, betat, Es)
             gamma <- 1 / Tinf
 
             state <- simstep(state, N, beta, a, gamma, k)
@@ -197,8 +197,8 @@ invTransformParams <- function(posterior)
     posterior$HR = exp(posterior$logHR)
 
     ## Additional quantitites of interest
-    posterior$R0 = posterior$beta * posterior$Tinf0
-    posterior$Rt = posterior$beta * posterior$Tinft
+    posterior$R0 = posterior$beta0 * posterior$Tinf
+    posterior$Rt = posterior$betat * posterior$Tinf
 
     posterior
 }
@@ -206,20 +206,25 @@ invTransformParams <- function(posterior)
 ## log likelihood function for fitting this model to observed data:
 ##   dhospi and dmorti
 calclogl <- function(params) {
-    beta <- params[1]
+    beta0 <- params[1]
     hosp_rate <- params[2]
     died_rate <- params[3]
     hosp_latency <- params[4]
     died_latency <- params[5]
-    Tinf0 <- params[6]
+    Tinf <- params[6]
     Tinc <- params[7]
     mort_lockdown_threshold <- params[8]
     k0 <- params[9]
     kt <- params[10]
-    Tinft <- params[11]
+    betat <- params[11]
     Es <- tail(params, n=-11)
 
-    if (beta < 1E-10) {
+    if (beta0 < 1E-10) {
+        ## print(paste("invalid beta0", beta0))
+        return(-Inf)
+    }
+
+    if (betat < 1E-10) {
         ## print(paste("invalid beta0", beta0))
         return(-Inf)
     }
@@ -249,12 +254,6 @@ calclogl <- function(params) {
 
     logPriorP <- 0
 
-    ## must compare models which vary Tinf with models that vary beta, using
-    ## bayes factor
-    
-    ## prior based on Sweden
-    ##  THE WEAK SPOT IS THIS in agreement with R0 / T_inf estimates
-    ##  typically assumed in literature (2.5 / 2.5)
     ## logPriorP <- logPriorP + dnorm(beta, 1, 0.22, log=T)
     logPriorP <- logPriorP + dbeta(k0, 4, 1, log=T)
     logPriorP <- logPriorP + dbeta(kt, 4, 1, log=T)
@@ -270,8 +269,8 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
     logPriorP <- logPriorP + dnorm(Tinc, mean=5, sd=3, log=T)
-    logPriorP <- logPriorP + dnorm(Tinf0, mean=8, sd=4, log=T)
-    #logPriorP <- logPriorP + dnorm(Tinft, mean=8, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(Tinf, mean=8, sd=4, log=T)
+    #logPriorP <- logPriorP + dnorm(Tinft, mean=5, sd=10, log=T)
 
     for (e in Es) {
         logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
@@ -321,12 +320,12 @@ calclogl <- function(params) {
     result
 }
 
-fit.paramnames <- c("beta", "logHR", "logHRDR", "HL", "DL",
-                    "Tinf0", "Tinc", "lockdownmort", "k0", "kt", "Tinft")
-keyparamnames <- c("beta", "IFR", "Tinf0", "Tinft", "Tinc", "R0", "Rt", "k0", "kt")
-fitkeyparamnames <- c("beta", "logHR", "logHRDR", "Tinf0", "Tinc", "kt", "k0", "Tinft")
+fit.paramnames <- c("beta0", "logHR", "logHRDR", "HL", "DL",
+                    "Tinf", "Tinc", "lockdownmort", "k0", "kt", "betat")
+keyparamnames <- c("beta0", "IFR", "Tinf", "betat", "Tinc", "R0", "Rt", "k0", "kt")
+fitkeyparamnames <- c("beta0", "logHR", "logHRDR", "Tinf", "Tinc", "kt", "k0", "betat")
 
-init <- c(1, log(0.02), log(0.3), 10, 20, 5, 8, total_deaths_at_lockdown, 0.9, 0.1, 2,
+init <- c(1, log(0.02), log(0.3), 10, 20, 5, 8, total_deaths_at_lockdown, 0.9, 0.1, 1,
           rep(0.9, length(Es.time)))
 scales <- c(1, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20, 0.3, 0.3, 1,
             rep(0.05, length(Es.time)))

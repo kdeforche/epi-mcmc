@@ -10,8 +10,14 @@ source("settings.R")
 source(data, chdir=T)
 source(fitmodel, chdir=T)
 
-## Load library functions
-source(paste(Rdir, "lib/libMCMC.R", sep=""))
+sourceR <- function(file) {
+    source(paste(Rdir, file, sep=""))
+}
+
+sourceR("lib/libMCMC.R")
+sourceR("lib/libfit.R")
+
+source("settings.R")
 
 options(scipen=999)
 
@@ -36,7 +42,7 @@ read <- function() {
 
 densityPlot <- function() {
     ## sample a subset of data to show in density plots
-    selection <- which(posterior[,"y.IFR"] < 3)
+    selection <- which(posterior[,"Tinc"] < 100)
     scount <- length(selection)
     draws <- sample(floor(scount/8):scount, densityPlotSampleSize)
     display_sample <- posterior[selection[draws],][0:-1]
@@ -63,8 +69,19 @@ densityPlot <- function() {
     #dev.off()
 }
 
+calcloglMCMC <- function(params) {
+    params <- transformParams(unlist(params, use.names=FALSE))
+    return(calclogl(params))
+}
+
 posterior <- read()
 densityPlot()
+
+posterior$logl <- numeric(dim(posterior)[1])
+for (i in 1:dim(posterior)[1]) {
+    params <- posterior[i,0:-1]
+    posterior$logl[i] <- calcloglMCMC(params)
+}
 
 #
 # from here on only totally random snippets

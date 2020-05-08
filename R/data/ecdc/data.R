@@ -23,9 +23,9 @@ optimpw <- function(par) {
     i1 <- max(2, min(i2, i1))
     i2 <- min(length(s)-1, max(i2, i1))
 
-    e1 <- sum((a - s[1:(i1 - 1)])^2)
-    e2 <- sum((seq(a, b, length.out=(i2 - i1 + 1)) - s[i1:i2])^2)
-    e3 <- sum((b - s[(i2 + 1):length(s)])^2)
+    e1 <- sum(abs(a - s[1:(i1 - 1)]))
+    e2 <- sum(abs(seq(a, b, length.out=(i2 - i1 + 1)) - s[i1:i2]))
+    e3 <- sum(abs(b - s[(i2 + 1):length(s)]))
 
     e1 + e2 + e3
 }
@@ -36,7 +36,7 @@ control <- NULL
 control$maxit <- 10000
 control$parscale <- c(1, 1, 1, 1)
 o <- optim(init, optimpw, control=control)
-o$par
+print(o$par)
 
 print(c$date[round(o$par[1:2])])
 
@@ -87,3 +87,4 @@ if (dmort[length(dmort)] < 15) {
 
 print(c(lockdown_offset, lockdown_transition_period, total_deaths_at_lockdown))
 
+FitTotalPeriod <- length(dmort) + 90

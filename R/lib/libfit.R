@@ -16,12 +16,6 @@
 hosp_nbinom_size = 30
 mort_nbinom_size = 90
 
-##
-## Length of model calculations needed to fit the data (you need to take ample time before first
-## cases to allow the epidemic to grow.
-##
-FitTotalPeriod = 80
-
 ####################
 ## Fit library functions
 ####################

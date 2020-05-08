@@ -30,36 +30,62 @@ convolute <- function(values, i, profile)
     (profile$values %*% values[i1:i2])[1,1]
 }
 
-simstep <- function(state, N, beta, a, gamma, k)
+## Kleinere tijdseenheid: 0.5d, iterate here more than once if necessary:
+## 0.5, 0.33, 0.25, ...
+
+simstep <- function(state, N, betaIn, betaIs, a, Tin, Tis, k)
 {
     i = state$i
+
+    gamma1 = 1/Tin
+    gamma2 = 1/Tis
+
+    loops = ceiling(gamma1)
+    Ts = 1/loops
+
+    S = state$S[i]
+    E = state$E[i]
+    In = state$In[i]
+    Is = state$Is[i]
+    R = state$R[i]
+
+    day_infected <- 0
+
+    for (l in 1:loops) {
+        EIR = N - S
+        Ne = max(EIR, k * N)
+
+        got_infected = (betaIn * In) / N * (Ne - EIR) + (betaIs * Is) / N * S
+        got_infectious = a * E
+        got_isolated = gamma1 * In
+        got_removed = gamma2 * Is
+
+        ##print(c(i, Tin, Tis, got_infected, got_infectious, got_isolated, got_removed))
     
-    EIR = N - state$S[i]
+        deltaS = -got_infected
+        deltaE = got_infected - got_infectious
+        deltaIn = got_infectious - got_isolated
+        deltaIs = got_isolated - got_removed
+        deltaR = got_removed
 
-    Ne = max(EIR, k * N)
-    got_infected = beta * state$I[i] / N * (Ne - EIR)
-    got_infectious = a * state$E[i]
-    got_removed = gamma * state$I[i]
+        S = S + deltaS * Ts
+        E = E + deltaE * Ts
+        In = In + deltaIn * Ts
+        Is = Is + deltaIs * Ts
+        R = R + deltaR * Ts
 
-    deltaS = -got_infected
-    deltaE = got_infected - got_infectious
-    deltaI = got_infectious - got_removed
-    deltaR = got_removed
-
-    ## if gamma > 1:
-    ##   fraction of got_infectious skips I and goes directly to R
-    if (gamma > 1) {
-        fr <- (gamma - 1) / gamma
-        deltaI <- deltaI - fr * got_infectious
-        deltaR <- deltaR + fr * got_infectious
+        if (l == 1)
+            day_infected <- got_infected
     }
-    
-    state$Re[i + 1] = got_infected / state$I[i] / gamma
-    state$Rt[i + 1] = beta / gamma
-    state$S[i + 1] = state$S[i] + deltaS
-    state$E[i + 1] = state$E[i] + deltaE
-    state$I[i + 1] = state$I[i] + deltaI
-    state$R[i + 1] = state$R[i] + deltaR
+
+    ## only based on first 'loop iteration'
+    state$Re[i + 1] = day_infected / ((state$In[i] + state$Is[i]) / (Tin + Tis))
+    state$Rt[i + 1] = state$Re[i + 1] * N / (Ne - EIR) ## FIXME
+    state$S[i + 1] = S
+    state$E[i + 1] = E
+    state$In[i + 1] = In
+    state$Is[i + 1] = Is
+    state$R[i + 1] = R
 
     i = i + 1
     state$i = i
@@ -109,18 +135,21 @@ calcpar <- function(time, par0, part, Es)
 
 calculateModel <- function(params, period)
 {
-    beta <- params[1]
-    hosp_rate <- params[2]
-    died_rate <- params[3]
-    hosp_latency <- params[4]
-    died_latency <- params[5]
-    Tinf0 <- params[6]
-    Tinc <- params[7]
-    mort_lockdown_threshold <- params[8]
-    k0 <- params[9]
-    kt <- params[10]
-    Tinft <- params[11]
-    Es <- tail(params, n=-11)
+    betaIn0 <- params[1]
+    betaInt <- params[2]
+    betaIs <- params[3]
+    hosp_rate <- params[4]
+    hosp_latency <- params[5]
+    died_latency <- params[6]
+    mort_lockdown_threshold <- params[7]
+    kt <- params[8]
+    Tin0 <- params[9]
+    Tint <- params[10]
+    Es <- tail(params, n=-10)
+
+    Tinf <- 8
+    Tinc <- 3.5
+    died_rate <- 0.007
 
     h0 <- 1
     a <- 1 / Tinc
@@ -135,7 +164,8 @@ calculateModel <- function(params, period)
     state$Rt <- rep(0, padding + period)
     state$S <- rep(N-Initial, padding + period)
     state$E <- rep(Initial, padding + period)
-    state$I <- rep(0, padding + period)
+    state$In <- rep(0, padding + period)
+    state$Is <- rep(0, padding + period)
     state$R <- rep(0, padding + period)
     state$hosp <- rep(0, padding + period)
     state$died <- rep(0, padding + period)
@@ -143,20 +173,21 @@ calculateModel <- function(params, period)
 
     data_offset = InvalidDataOffset
 
-    if (Tinf0 > 0 && Tinft > 0 && Tinc > 1) {
+    if (Tin0 > 0 && Tint > 0 && Tinc > 1) {
         for (i in (padding + 1):(padding + period)) {
-            k = calcpar(i - data_offset, k0, kt, Es)
-            Tinf = calcpar(i - data_offset, Tinf0, Tinft, Es)
-            gamma <- 1 / Tinf
-
-            state <- simstep(state, N, beta, a, gamma, k)
+            betaIn = calcpar(i - data_offset, betaIn0, betaInt, Es)
+            k = calcpar(i - data_offset, 1, kt, Es)
+            Tin = calcpar(i - data_offset, Tin0, Tint, Es)
+            Tis = Tinf - Tin
+            
+            state <- simstep(state, N, betaIn, betaIs, a, Tin, Tis, k)
 
             s = convolute(state$S, i, hosp_cv_profile)
             state$hosp[i] <- (N - s) * hosp_rate
 
             ## died:
             ##  from those that (ever) became infectious           
-            r = convolute(state$I + state$R, i, died_cv_profile)
+            r = convolute(state$In + state$Is + state$R, i, died_cv_profile)
             state$died[i] <- r * died_rate
 
             ## assuming lockdown decision was based on a cumulative mort count, with some
@@ -185,20 +216,18 @@ calcNominalState <- function(state)
 transformParams <- function(params)
 {
     result = params
-    result[3] = exp(params[2] + params[3])
-    result[2] = exp(params[2])
+    result[4] = exp(params[4])
 
     result
 }
 
 invTransformParams <- function(posterior)
 {
-    posterior$IFR = exp(posterior$logHR + posterior$logHRDR)
     posterior$HR = exp(posterior$logHR)
+    posterior$Tinf = 8
 
-    ## Additional quantitites of interest
-    posterior$R0 = posterior$beta * posterior$Tinf0
-    posterior$Rt = posterior$beta * posterior$Tinft
+    posterior$R0 = posterior$betaIn0 * posterior$Tin0 + posterior$betaIs * (posterior$Tinf - posterior$Tin0)
+    posterior$Rt = posterior$betaInt * posterior$Tint + posterior$betaIs * (posterior$Tinf - posterior$Tint)
 
     posterior
 }
@@ -206,25 +235,31 @@ invTransformParams <- function(posterior)
 ## log likelihood function for fitting this model to observed data:
 ##   dhospi and dmorti
 calclogl <- function(params) {
-    beta <- params[1]
-    hosp_rate <- params[2]
-    died_rate <- params[3]
-    hosp_latency <- params[4]
-    died_latency <- params[5]
-    Tinf0 <- params[6]
-    Tinc <- params[7]
-    mort_lockdown_threshold <- params[8]
-    k0 <- params[9]
-    kt <- params[10]
-    Tinft <- params[11]
-    Es <- tail(params, n=-11)
+    betaIn0 <- params[1]
+    betaInt <- params[2]
+    betaIs <- params[3]
+    hosp_rate <- params[4]
+    hosp_latency <- params[5]
+    died_latency <- params[6]
+    mort_lockdown_threshold <- params[7]
+    kt <- params[8]
+    Tin0 <- params[9]
+    Tint <- params[10]
+    Es <- tail(params, n=-10)
 
-    if (beta < 1E-10) {
-        ## print(paste("invalid beta0", beta0))
+    if (betaIn0 < 1E-10 || betaInt < 1E-10 || betaIs < 1E-10) {
         return(-Inf)
     }
 
-    if (k0 <= 0 || k0 > 1) {
+    if (Tin0 < 0 || Tin0 > 7) {
+        return(-Inf)
+    }
+
+    if (Tint < 0 || Tint > Tin0) {
+        return(-Inf)
+    }
+
+    if (betaInt > betaIn0) {
         return(-Inf)
     }
 
@@ -249,29 +284,11 @@ calclogl <- function(params) {
 
     logPriorP <- 0
 
-    ## must compare models which vary Tinf with models that vary beta, using
-    ## bayes factor
-    
-    ## prior based on Sweden
-    ##  THE WEAK SPOT IS THIS in agreement with R0 / T_inf estimates
-    ##  typically assumed in literature (2.5 / 2.5)
-    ## logPriorP <- logPriorP + dnorm(beta, 1, 0.22, log=T)
-    logPriorP <- logPriorP + dbeta(k0, 4, 1, log=T)
-    logPriorP <- logPriorP + dbeta(kt, 4, 1, log=T)
-
-    ## estBetaParams(0.0066, 0.005^2)
-    ## logPriorP <- logPriorP + dbeta(died_rate, 1.7243, 259.53, log=T)
-    ## estBetaParams(0.0066, 0.002^2)
-    logPriorP <- logPriorP + dbeta(died_rate, 10.811, 1627.298, log=T)
-    ## estBetaParams(0.0066, 0.001^2)
-    ##logPriorP <- logPriorP + dbeta(died_rate, 43.2659, 6512.174, log=T)
+    logPriorP <- logPriorP + dbeta(kt, 1, 0.1, log=T)
+    logPriorP <- logPriorP + dnorm(betaIs, 0, 0.5, log=T)
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
-
-    logPriorP <- logPriorP + dnorm(Tinc, mean=5, sd=3, log=T)
-    logPriorP <- logPriorP + dnorm(Tinf0, mean=8, sd=4, log=T)
-    #logPriorP <- logPriorP + dnorm(Tinft, mean=8, sd=5, log=T)
 
     for (e in Es) {
         logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
@@ -321,14 +338,14 @@ calclogl <- function(params) {
     result
 }
 
-fit.paramnames <- c("beta", "logHR", "logHRDR", "HL", "DL",
-                    "Tinf0", "Tinc", "lockdownmort", "k0", "kt", "Tinft")
-keyparamnames <- c("beta", "IFR", "Tinf0", "Tinft", "Tinc", "R0", "Rt", "k0", "kt")
-fitkeyparamnames <- c("beta", "logHR", "logHRDR", "Tinf0", "Tinc", "kt", "k0", "Tinft")
+fit.paramnames <- c("betaIn0", "betaInt", "betaIs", "logHR", "HL", "DL",
+                    "lockdownmort", "kt", "Tin0", "Tint")
+keyparamnames <- c("betaIn0", "betaInt", "betaIs", "R0", "Rt", "kt")
+fitkeyparamnames <- c("betaIn0", "betaInt", "betaIs", "kt", "Tin0", "Tint")
 
-init <- c(1, log(0.02), log(0.3), 10, 20, 5, 8, total_deaths_at_lockdown, 0.9, 0.1, 2,
+init <- c(1, 1, 0.1, log(0.02), 10, 20, total_deaths_at_lockdown, 0.5, 7, 2,
           rep(0.9, length(Es.time)))
-scales <- c(1, 0.05, 0.1, 1, 1, 0.3, 0.3, total_deaths_at_lockdown / 20, 0.3, 0.3, 1,
+scales <- c(0.3, 0.3, 0.3, 0.05, 1, 1, total_deaths_at_lockdown / 20, 0.3, 1, 1,
             rep(0.05, length(Es.time)))
 
 if (length(Es.time) > 0) {
