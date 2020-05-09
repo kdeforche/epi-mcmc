@@ -306,20 +306,31 @@ calclogl <- function(params) {
         dstart <- dend - length(dhospi) + 1
     }
 
-    if (dend < 1 || dstart < 1) {
-        print(c(dstart, dend))
+    di <- dhospi
+
+    if (dstart < 1) {
+        print("=========================== Increase Padding ? ===================")
+        dstart <- 1
+        dend <- dstart + length(dhospi) - 1
     }
     
     loglH <- sum(dnbinom(dhospi,
                          mu=pmax(0.1, state$hospi[dstart:dend]),
                          size=hosp_nbinom_size, log=T))
 
+    dstart <- state$offset
     dend <- state$offset + length(dmorti) - 1
 
     if (dend > length(state$deadi)) {
         print("=========================== Increase FitTotalPeriod ===================")
         dend <- length(state$deadi)
         dstart <- dend - length(dmorti) + 1
+    }
+
+    if (dstart < 1) {
+        print("=========================== Increase Padding ? ===================")
+        dstart <- 1
+        dend <- dstart + length(dmorti) - 1
     }
 
     loglD <- sum(dnbinom(dmorti,
