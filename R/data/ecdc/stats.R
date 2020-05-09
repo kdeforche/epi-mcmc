@@ -56,9 +56,9 @@ for (country2 in countries) {
     total_deaths <- dmort[length(dmort)]
     print(c(country2, "total deaths:", total_deaths))
 
-    if (total_deaths > 15 || lockdown_offset < 1) {
+    if (total_deaths > 15 && lockdown_offset >= 1) {
         good_countries <- c(good_countries, country2)
     }
 }
 
-print(paste(good_countries, collapse='\n'))
+print(paste(good_countries, collapse=' '))

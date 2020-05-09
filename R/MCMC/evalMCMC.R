@@ -42,7 +42,7 @@ read <- function() {
 
 densityPlot <- function() {
     ## sample a subset of data to show in density plots
-    selection <- which(posterior[,"Tinc"] < 100)
+    selection <- which(posterior[,"HL"] < 1000)
     scount <- length(selection)
     draws <- sample(floor(scount/8):scount, densityPlotSampleSize)
     display_sample <- posterior[selection[draws],][0:-1]
