@@ -309,6 +309,8 @@ invTransformParams <- function(posterior)
     posterior$Tinf = 8
     posterior$Nb0 = exp(posterior$logNb0)
     posterior$Nbt = exp(posterior$logNbt)
+    posterior$BS0 = N/posterior$Nb0
+    posterior$BSt = N/posterior$Nbt
 
     posterior$R0 = (posterior$betaIn + posterior$betaIs0) * posterior$Tinf
     posterior$Rt = (posterior$betaIn + posterior$betaIst) * posterior$Tinf
@@ -334,10 +336,14 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (betaIst > betaIs0) {
-        return(-Inf)
-    }
-    
+    ##if (betaIst > betaIs0) {
+    ##    return(-Inf)
+    ##}
+
+    ##if (betaIs0 > betaIn * 5) {
+    ##    return(-Inf)
+    ##}
+
     if (logNb0 < 0 || logNb0 > log(N)) {
         return(-Inf)
     }        
@@ -365,9 +371,9 @@ calclogl <- function(params) {
 
     ##logPriorP <- logPriorP + dnorm(logNb0, mean=log(N), sd=4, log=T)
     ##logPriorP <- logPriorP + dnorm(logNbt, mean=log(N), sd=4, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaIn, mean=0, sd=1, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaIs0, mean=0, sd=1, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaIst, mean=0, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(betaIn, mean=0, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(betaIs0, mean=0, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(betaIst, mean=0, sd=0.1, log=T)
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
@@ -435,7 +441,7 @@ fit.paramnames <- c("betaIn", "betaIs0", "betaIst", "logHR", "HL", "DL",
 keyparamnames <- c("betaIn", "betaIs0", "betaIst", "R0", "Rt", "Nb0", "Nbt")
 fitkeyparamnames <- c("betaIn", "betaIs0", "betaIst", "logNb0", "logNbt")
 
-init <- c(1, 3, 0.1, log(0.05), 15, 20, total_deaths_at_lockdown, log(N/10), log(N/10),
+init <- c(3, 3, 0.1, log(0.05), 15, 20, total_deaths_at_lockdown, log(N/10), log(N/10),
           rep(0.9, length(Es.time)))
 scales <- c(0.3, 0.3, 0.3, 0.05, 1, 1, total_deaths_at_lockdown / 20, 1, 1,
             rep(0.05, length(Es.time)))
