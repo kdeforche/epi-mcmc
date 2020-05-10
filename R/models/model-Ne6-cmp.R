@@ -363,10 +363,8 @@ calclogl <- function(params) {
     ## a priori chance of hitting some kind of (local) immunity limit: 10%
     ##  in Belgium within WZC's for example
     ##  in Sweden in Stockholm (and WZC's ?)
-    logPriorP <- logPriorP + dbeta(kt, 1, 0.5, log=T)
-    logPriorP <- logPriorP + dnorm(betaInt, 0, 1, log=T)
+    logPriorP <- logPriorP + dbeta(kt, 1, 0.1, log=T)
     logPriorP <- logPriorP + dnorm(betaIs, 0, 0.5, log=T)
-    logPriorP <- logPriorP + dnorm(Tint, 0, 1, log=T)
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)

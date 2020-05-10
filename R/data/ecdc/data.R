@@ -19,6 +19,9 @@ optimpw <- function(par) {
 
     if (i1 > i2)
         return(Inf)
+
+    if (i1 < 1 || i1 > length(s) || i2 < 1 || i2 > length(s))
+        return(Inf)
     
     i1 <- max(2, min(i2, i1))
     i2 <- min(length(s)-1, max(i2, i1))
