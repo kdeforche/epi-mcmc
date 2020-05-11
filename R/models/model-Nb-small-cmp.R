@@ -32,7 +32,7 @@ convolute <- function(values, i, profile)
     (profile$values %*% values[i1:i2])[1,1]
 }
 
-cppFunction('NumericVector odesimstepc(double S, double E, double I, double R, double Ib, int N, double betaIn, double betaIs, double a, double Tinf, double h0, double BS, double prevBS) {
+cppFunction('NumericVector odesimstepc(double S, double E, double I, double R, double Ib, int N, double betaIn, double betaIs, double a, double Tinf, double BS, double prevBS) {
    double gamma = 1/Tinf;
 
    const int LOOPS = 10;
@@ -40,13 +40,13 @@ cppFunction('NumericVector odesimstepc(double S, double E, double I, double R, d
 
    NumericVector out(7);
 
-   if (prevBS != BS) {
-     if (prevBS == 1) {
-        Ib = h0 * Ib;
-     } else {
-        Ib = N / BS * (1 - pow(std::max(0.0, 1 - prevBS * Ib / N), BS/prevBS));
-     }
-   }
+   //if (prevBS != BS) {
+     //if (prevBS < 2) {
+     //   Ib = h0 * Ib / BS;
+     //} else {
+     //   Ib = N / BS * (1 - pow(std::max(0.0, 1 - prevBS * Ib / N), BS/prevBS));
+     //}
+   //}
 
    for (int l = 0; l < LOOPS; ++l) {
      const double susceptibles_in_infected_bubbles = std::max(0.0, Ib * BS - (N - S));
@@ -71,7 +71,7 @@ cppFunction('NumericVector odesimstepc(double S, double E, double I, double R, d
      E += deltaE * Ts;
      I += deltaI * Ts;
      R += deltaR * Ts;
-     Ib = std::min(0.9 * N / BS, Ib + inf2 * Ts);
+     Ib = std::min(N / BS, Ib + inf2 * Ts);
    }
 
    out[0] = S;
@@ -83,12 +83,12 @@ cppFunction('NumericVector odesimstepc(double S, double E, double I, double R, d
    return out;
 }')
 
-simstep.C <- function(state, N, betaIn, betaIs, a, Tinf, h0, BS, prevBS)
+simstep.C <- function(state, N, betaIn, betaIs, a, Tinf, BS, prevBS)
 {
     i = state$i
 
     newState <- odesimstepc(state$S[i], state$E[i], state$I[i], state$R[i],
-                            state$Ib[i], N, betaIn, betaIs, a, Tinf, h0, BS, prevBS)
+                            state$Ib[i], N, betaIn, betaIs, a, Tinf, BS, prevBS)
 
     state$S[i + 1] = newState[1]
     state$E[i + 1] = newState[2]
@@ -227,8 +227,7 @@ calculateModel <- function(params, period)
     died_latency <- params[6]
     mort_lockdown_threshold <- params[7]
     logNbt <- params[8]
-    h0 <- params[9]
-    Es <- tail(params, n=-9)
+    Es <- tail(params, n=-8)
 
     Tinf <- 8
     Tinc <- 3.5
@@ -270,7 +269,7 @@ calculateModel <- function(params, period)
             
             BS = N / Nb
             
-            state <- simstep.C(state, N, betaIn, betaIs, a, Tinf, h0, BS, prevBS)
+            state <- simstep.C(state, N, betaIn, betaIs, a, Tinf, BS, prevBS)
             prevBS = BS
 
             s = convolute(state$S, i, hosp_cv_profile)
@@ -334,8 +333,7 @@ calclogl <- function(params) {
     died_latency <- params[6]
     mort_lockdown_threshold <- params[7]
     logNbt <- params[8]
-    h0 <- params[9]
-    Es <- tail(params, n=-9)
+    Es <- tail(params, n=-8)
 
     if (betaInt < 1E-10 || betaIs0 < 1E-10 || betaIst < 1E-10) {
         return(-Inf)
@@ -343,10 +341,6 @@ calclogl <- function(params) {
 
     if (logNbt < 0 || logNbt > log(N)) {
         return(-Inf)
-    }
-
-    if (h0 < 0 || h0 > 1) {
-        return (-Inf)
     }
 
     if (hosp_latency < 0 || hosp_latency > 30) {
@@ -366,10 +360,10 @@ calclogl <- function(params) {
 
     logPriorP <- 0
 
-    ##logPriorP <- logPriorP + dnorm(logNbt, mean=log(N), sd=4, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaInt, mean=0, sd=1, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaIs0, mean=0, sd=1, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaIst, mean=0, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(logNbt, mean=log(N), sd=4, log=T)
+    logPriorP <- logPriorP + dnorm(betaInt, mean=0, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(betaIs0, mean=0, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(betaIst, mean=0, sd=5, log=T)
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
@@ -433,13 +427,13 @@ calclogl <- function(params) {
 }
 
 fit.paramnames <- c("betaInt", "betaIs0", "betaIst", "logHR", "HL", "DL",
-                    "lockdownmort", "logNbt", "h0")
-keyparamnames <- c("betaInt", "betaIs0", "betaIst", "R0", "Rt", "Nbt", "h0")
-fitkeyparamnames <- c("betaInt", "betaIs0", "betaIst", "logNbt", "h0")
+                    "lockdownmort", "logNbt")
+keyparamnames <- c("betaInt", "betaIs0", "betaIst", "R0", "Rt", "Nbt")
+fitkeyparamnames <- c("betaInt", "betaIs0", "betaIst", "logNbt")
 
-init <- c(1, 1, 0.1, log(0.05), 15, 20, total_deaths_at_lockdown, log(N) - 1, 0.7,
+init <- c(1, 1, 0.1, log(0.05), 15, 20, total_deaths_at_lockdown, log(N) - 1,
           rep(0.9, length(Es.time)))
-scales <- c(0.3, 0.3, 0.3, 0.05, 1, 1, total_deaths_at_lockdown / 20, 1, 0.1,
+scales <- c(0.3, 0.3, 0.3, 0.05, 1, 1, total_deaths_at_lockdown / 20, 1,
             rep(0.05, length(Es.time)))
 
 if (length(Es.time) > 0) {
