@@ -60,7 +60,7 @@ cppFunction('NumericVector odesimstepc(double S, double E, double In, double Is,
 
      if (l == 0) {
        out[5] = Tin * inf1 / In + Tis * inf2 / Is;
-       out[6] = betaIn * Tin + betaIs * Tis;
+       out[6] = out[5] * N / (In + Is);
      }
 
      S += deltaS * Ts;

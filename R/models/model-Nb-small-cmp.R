@@ -428,7 +428,7 @@ calclogl <- function(params) {
 
 fit.paramnames <- c("betaInt", "betaIs0", "betaIst", "logHR", "HL", "DL",
                     "lockdownmort", "logNbt")
-keyparamnames <- c("betaInt", "betaIs0", "betaIst", "R0", "Rt", "Nbt")
+keyparamnames <- c("betaInt", "betaIs0", "betaIst", "R0", "Nbt")
 fitkeyparamnames <- c("betaInt", "betaIs0", "betaIst", "logNbt")
 
 init <- c(1, 1, 0.1, log(0.05), 15, 20, total_deaths_at_lockdown, log(N) - 1,
