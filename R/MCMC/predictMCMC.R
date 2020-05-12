@@ -60,7 +60,7 @@ all_plots <- function(date_markers) {
     p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=1, color="#CC4411")
 
     p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state) { (state$E + state$I)/N * 100 },
+                   function(state) { (state$E + state$In + state$Is)/N * 100 },
                    "#FFFF66", c(paste(country_adjective, "population (%)"), "Infected people"), date_markers, NULL)
 
     p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
@@ -71,8 +71,22 @@ all_plots <- function(date_markers) {
                    function(state) { state$Re }, "#33FFFF",
                    c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
 
-    p6 <- p6 + scale_y_continuous(limits = c(0, 6)) +
+    p6 <- p6 + coord_cartesian(ylim = c(0, 6)) +
         geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
+
+    ## p7 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+    ##                function(state) { state$BS }, "#33FF66",
+    ##                c(paste(country_adjective, "BS"), ""), date_markers, NULL)
+
+    ## p8 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+    ##                function(state) { state$Ib * state$BS }, "#33FF66",
+    ##                c(paste(country_adjective, "Ib * BS"), ""), date_markers, NULL)
+
+    ## p9 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+    ##                function(state) { (state$Ib / (N / state$BS)) }, "#33FF66",
+    ##                c("homogeneity", ""), date_markers, NULL)
+   
+    ## grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, nrow=3)
     grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
 }
 
