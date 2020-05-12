@@ -59,7 +59,12 @@ country.data <- subset(ecdc, geoId == country2)
 country.data$date <- as.Date(paste(country.data$year,country.data$month,country.data$day,sep='/'))
 
 nzcases <- which(country.data$cases > 0)
-starti <- nzcases[length(nzcases)]
+cases.starti <- nzcases[length(nzcases)]
+
+nzmorts <- which(country.data$deaths > 0)
+morts.starti <- nzmorts[length(nzmorts)]
+
+starti <- min(morts.starti + 25, cases.starti)
 
 dstartdate <- country.data$date[starti] ## they are in reversed order
 
