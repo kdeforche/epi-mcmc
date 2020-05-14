@@ -218,7 +218,7 @@ calculateModel <- function(params, period)
     Es <- tail(params, n=-11)
 
     Tinf <- 8
-    Tinc <- 3.5
+    Tinc <- 2.4
     died_rate <- 0.007
 
     h0 <- 1
@@ -284,27 +284,31 @@ calcNominalState <- function(state)
 transformParams <- function(params)
 {
     result = params
-    result[1:5] = exp(params[1:5])
-    result[9:10] = exp(params[9:10])
+    result[1] = params[1] * result[9]
+    result[2] = params[2] * result[10]
+    result[3] = (params[3] - params[1]) / (8 - 1 / result[9])
+    result[4] = (params[4] - params[2]) / (8 - 1 / result[10])
+    result[5] = exp(params[5])
 
     result
 }
 
 invTransformParams <- function(posterior)
 {
-    posterior$betaIn0 = exp(posterior$logBetaIn0)
-    posterior$betaInt = exp(posterior$logBetaInt)
-    posterior$betaIs0 = exp(posterior$logBetaIs0)
-    posterior$betaIst = exp(posterior$logBetaIst)
-    posterior$gamma.in0 = exp(posterior$logGamma.in0)
-    posterior$gamma.int = exp(posterior$logGamma.int)
-    posterior$HR = exp(posterior$logHR)
-    posterior$Tinf = 8
+    posterior$RIs0 = posterior$R0 - posterior$RIn0
+    posterior$RIst = posterior$Rt - posterior$RInt
+    posterior$betaIn0 = posterior$RIn0 * posterior$gamma.in0 
+    posterior$betaInt = posterior$RInt * posterior$gamma.int
     posterior$Tin0 = 1/posterior$gamma.in0
     posterior$Tint = 1/posterior$gamma.int
+    posterior$betaIs0 = posterior$RIs0 / (8 - posterior$Tin0)
+    posterior$betaIst = posterior$RIst / (8 - posterior$Tint)
+    
+    posterior$HR = exp(posterior$logHR)
+    posterior$Tinf = 8
 
-    posterior$R0 = posterior$betaIn0 * posterior$Tin0 + posterior$betaIs0 * (posterior$Tinf - posterior$Tin0)
-    posterior$Rt = posterior$betaInt * posterior$Tint + posterior$betaIst * (posterior$Tinf - posterior$Tint)
+    ##posterior$R0 = posterior$betaIn0 * posterior$Tin0 + posterior$betaIs0 * (posterior$Tinf - posterior$Tin0)
+    ##posterior$Rt = posterior$betaInt * posterior$Tint + posterior$betaIst * (posterior$Tinf - posterior$Tint)
 
     posterior
 }
@@ -332,7 +336,7 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (gamma.int < gamma.in0 || gamma.int > 1/0.2) {
+    if (gamma.int > 1/0.2 || gamma.int < 1/7.8) {
         return(-Inf)
     }
 
@@ -377,6 +381,9 @@ calclogl <- function(params) {
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
+
+    logPriorP <- logPriorP + dnorm(1/gamma.in0, mean=2.8, sd=1.4, log=T)
+    logPriorP <- logPriorP + dnorm(1/gamma.int, mean=2.8, sd=1.4, log=T)
 
     for (e in Es) {
         logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
@@ -437,14 +444,22 @@ calclogl <- function(params) {
     result
 }
 
-fit.paramnames <- c("logBetaIn0", "logBetaInt", "logBetaIs0", "logBetaIst", "logHR", "HL", "DL",
-                    "lockdownmort", "logGamma.in0", "logGamma.int")
-keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "Tin0", "Tint")
-fitkeyparamnames <- c("logBetaIn0", "logBetaInt", "logBetaIs0", "logBetaIst", "logGamma.in0", "logGamma.int")
+##
+## Improve sampling
+##
+## We would expect: betaIn0 / gamma is reasonably well defined.
+## 
+## from that it is unclear how to divide into beta and Tin
+## posterior$betaIn0 * posterior$Tin0
 
-init <- c(log(1), log(1), log(0.1), log(0.1), log(0.02), 10, 20, total_deaths_at_lockdown, log(1/7), log(1/2),
+fit.paramnames <- c("RIn0", "RInt", "R0", "Rt", "logHR", "HL", "DL",
+                    "lockdownmort", "gamma.in0", "gamma.int")
+keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "Tin0", "Tint")
+fitkeyparamnames <- c("R0", "Rt", "RIn0", "RInt", "gamma.in0", "gamma.int")
+
+init <- c(2.9, 0.9, 3, 1, log(0.02), 10, 20, total_deaths_at_lockdown, 1/7, 1/2,
           rep(0.9, length(Es.time)))
-scales <- c(1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20, 1, 1,
+scales <- c(1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20, 2, 0.3,
             rep(0.05, length(Es.time)))
 
 if (length(Es.time) > 0) {

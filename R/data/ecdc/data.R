@@ -64,7 +64,7 @@ cases.starti <- nzcases[length(nzcases)]
 nzmorts <- which(country.data$deaths > 0)
 morts.starti <- nzmorts[length(nzmorts)]
 
-starti <- min(morts.starti + 25, cases.starti)
+starti <- min(morts.starti + 30, cases.starti)
 
 dstartdate <- country.data$date[starti] ## they are in reversed order
 
@@ -97,7 +97,7 @@ if (dmort[length(dmort)] < 15) {
 }
 
 if (lockdown_offset < 1) {
-    print("Social distancing before data start ?")
+    print(c("Social distancing before data start ?", lockdown_offset))
     quit()
 }
 print(c(lockdown_offset, lockdown_transition_period, total_deaths_at_lockdown))

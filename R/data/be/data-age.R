@@ -35,9 +35,9 @@ source("data.R")
 ## -> should increase hospitalisations for < 65 vs for > 65y and thus
 ##    predict higher number of 
 
-hosp_week_age_statistics <- data.frame(r0.49 = c(20, 18, 17, 15, 14, 13, 18))
-hosp_week_age_statistics$r50.79 = c(55, 59, 59, 56, 51, 46, 47)
-hosp_week_age_statistics$r80 = c(25, 25, 26, 29, 36, 41, 38)
+hosp_week_age_statistics <- data.frame(r0.49 = c(20, 18, 17, 15, 14, 13, 18, 18))
+hosp_week_age_statistics$r50.79 = c(55, 59, 59, 56, 51, 47, 46, 47)
+hosp_week_age_statistics$r80 = c(25, 25, 26, 29, 36, 41, 38, 37)
 
 for (i in 1:dim(hosp_week_age_statistics)[1]) {
     hosp_week_age_statistics[i,] <- hosp_week_age_statistics[i,] / sum(hosp_week_age_statistics[i,])
@@ -47,7 +47,7 @@ bucket_50.79.y = 24.4/(24.4 + 30)
 hosp_week_age_statistics$y = hosp_week_age_statistics[,1] + hosp_week_age_statistics[,2] * bucket_50.79.y
 hosp_week_age_statistics$index = 1:dim(hosp_week_age_statistics)[1] * 7 - 5
 
-model <- lm(y ~ poly(index, 3), data=hosp_week_age_statistics)
+model <- lm(y ~ poly(index, 4), data=hosp_week_age_statistics)
 yf <- data.frame(index=seq(1:length(dhospi)))
 
 pdf("hosp-age.pdf", width=8, height=6)
@@ -91,9 +91,10 @@ o.dmorti = o.dmorti + floor((1 - yfract) * na.dmorti$x)
 ## 
 
 o.wzcmorti = c(0, 0, 0, 0, 2, 1, 1, 2, 3, 10, 9, 12, 21, 19, 12, 24, 25,
-               40, 49, 52, 48, 57, 120, 74, 117, 137, 107, 153, 182, 199,
-               170, 207, 182, 230, 155, 165, 149, 153, 117, 130, 126, 120,
-               120, 111, 95, 75, 75, 95, 70, 55, 45, 12, 0)
+               40, 49, 52, 48, 60, 122, 76, 112, 137, 110, 156, 182, 185,
+               170, 199, 176, 240, 155, 165, 149, 153, 117, 130, 126, 120, # 20/04/20
+               116, 112, 95, 74, 76, 95, 70, 55, 45, 43, 44, 31, 44, 35, 34, # 05/05/20
+               33, 33, 25, 25, 0, 0)
 
 print(paste("last day o.wzcmorti: ", dstartdate + length(o.wzcmorti) - 1))
 print(paste("last day o.dmorti: ", dstartdate + length(o.dmorti) - 1))
