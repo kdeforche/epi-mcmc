@@ -382,8 +382,8 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
-    logPriorP <- logPriorP + dnorm(1/gamma.in0, mean=2.8, sd=1.4, log=T)
-    logPriorP <- logPriorP + dnorm(1/gamma.int, mean=2.8, sd=1.4, log=T)
+    logPriorP <- logPriorP + dnorm(1/gamma.in0, mean=2.8, sd=0.5, log=T)
+    logPriorP <- logPriorP + dnorm(1/gamma.int, mean=2.8, sd=0.5, log=T)
 
     for (e in Es) {
         logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
