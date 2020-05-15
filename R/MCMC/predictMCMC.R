@@ -39,7 +39,7 @@ all_plots <- function(date_markers) {
                    c("Count", "Deaths per day"), date_markers, NULL)
     dm1 <- numeric(length(p1$data$x))
     dm1[1:length(p1$data$x)] = NA
-    dm1[1:length(dmorti)] = dmorti
+    dm1[1:length(dmort)] = dmorti
     p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=1, color="#1144CC")
 
     p2 <- makePlot(data_sample, c(dstartdate, plot_end_date),
@@ -71,7 +71,7 @@ all_plots <- function(date_markers) {
                    function(state) { state$Re }, "#33FFFF",
                    c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
 
-    p6 <- p6 + coord_cartesian(ylim = c(0, 6)) +
+    p6 <- p6 + coord_cartesian(ylim = c(0, NA)) +
         geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
 
     ## p7 <- makePlot(data_sample, c(dstartdate, plot_end_date),
@@ -213,7 +213,14 @@ all_plots_age <- function(date_markers) {
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
 
-    grid.arrange(p1, p2, p3, p4, p5, nrow=3)
+    p6 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+                   function(state) { state$Rt }, "#33FFFF",
+                   c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
+    
+    p6 <- p6 + coord_cartesian(ylim = c(0, NA)) +
+        geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
+
+    grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
 }
 
 options(scipen=999)
@@ -225,7 +232,7 @@ readSample <- function() {
 
     print(ess(posterior))
 
-    ##plot(ts(subset(posterior, select=keyparamnames)))
+    plot(ts(subset(posterior, select=keyparamnames)))
 
     ## compute credibility intervals
     print(data.frame(ci(posterior, ci=0.01)))
@@ -259,204 +266,290 @@ data_sample <- readSample()
 ##pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
 
 plot_end_date <- as.Date("2020/7/1")
-all_plots(data.frame(pos=c(as.Date("2020/5/1")), color=c("red")))
+all_plots(data.frame(pos=c(dstartdate + lockdown_offset, dstartdate + lockdown_offset + lockdown_transition_period), color=c("orange", "red")))
 
-##dev.off()
-
-png(paste(outputdir, "/forecast-time.png", sep=""), width=1200, height=1600)
-
-all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
-
-dev.off()
-
-######## No measures were taken
-
-sourceR("models/model-exiting-age-groups.R")
-
-calcbetas.age <- calcbetas.age.relax
-
-plot_end_date <- as.Date("2020/6/1")
-relax.start_date <- as.Date("2020/3/11")
-relax.end_date <- as.Date("2020/12/1")
-
-relax.measures.y.E = 0
-relax.measures.o.E = 0
-relax.measures.yo.E = 0
-relax.start <- as.numeric(relax.start_date - dstartdate) 
-relax.end <- as.numeric(relax.end_date - dstartdate) 
-
-pdf(paste(outputdir, "/no-lockdown.pdf", sep=""), width=12, height=16)
-all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
-dev.off()
-
-######## Measures were taken 1 week too late
-
-calcbetas.age.orig <- calcbetas.age
-
-calcbetas.age.toolate <- function(time, betay0, betayt, betao0, betaot, betayo0, betayot, Es)
-{
-    if (time > lockdown_offset) {
-        betay0 <- betay0 * runif(1, 0.7, 1)
-    }
-    calcbetas.age.orig(time - 7, betay0, betayt, betao0, betaot, betayo0, betayot, Es)
+plots <- function() {
+    plot_end_date <- as.Date("2020/7/1")
+    all_plots(data.frame(pos=c(dstartdate + lockdown_offset, dstartdate + lockdown_offset + lockdown_transition_period), color=c("orange", "red")))
 }
 
-calcbetas.age <- calcbetas.age.toolate
+simPlot <- function() {
+    ## Simulate the behavior of two different parameter sets with same Rt
 
-plot_end_date <- as.Date("2020/6/1")
-pdf(paste(outputdir, "/too-late.pdf", sep=""), width=16, height=16)
-all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
-dev.off()
+    ## Pick params vectors which have equal R0 and Rt
 
-######## Simple exiting scenario's
-
-##sourceR("models/model-exiting-age-groups.R")
-sourceR("models/model-exiting.R")
-
-plot_end_date <- as.Date("2020/11/1")
-
-##calcbetas.age <- calcbetas.age.relax
-calcbeta <- calcbeta.relax
-
-labels <- c("0", "01", "02", "03", "04", "05", "06", "07", "08", "09")
-
-r <- 0.85
-r <- 0.8
-r <- 0
-
-i = 1
-for (r in seq(0,0.9,0.1)) {
-    # relax.start_date <- as.Date("2020/4/16")
-    relax.start_date <- as.Date("2020/5/4")
-    relax.end_date <- as.Date("2020/12/1")
-
-    ##relax.measures.y.E = r
-    relax.measures.E = r
-    relax.start <- as.numeric(relax.start_date - dstartdate) 
-    relax.end <- as.numeric(relax.end_date - dstartdate) 
-
-    ##pdf(paste(outputdir, "/full-exit-zoom.pdf", sep=""), width=12, height=16)
-    pdf(paste(outputdir, "/young-relax0-exit.pdf", sep=""), width=12, height=16)
-    ##pdf(paste(outputdir, "/young-relax-exit", labels[i], "-",
-    ##          relax.start, "-", relax.end, ".pdf", sep=""), width=12, height=16)
-
-    all_plots(data.frame(pos=c(relax.start_date, relax.end_date), color=c("#888800", "#008800")))
-
-    dev.off()
-
-    i = i + 1
-}
-
-######## Experiment scenario's
-
-## One weekend relaxed
-
-plot_end_date <- as.Date("2020/6/1")
-
-## quantilePlotSampleSize <- 50
-
-calcbetas.age.experiment <- function(time, betay0, betayt, betao0, betaot, betayo0, betayot)
-{
-    if (time < relax.start)
-        return(calcbetas.age.orig(time, betay0, betayt, betao0, betaot, betayo0, betayot))
-
-    if (time > relax.end)
-        return(calcbetas.age.orig(time, betay0, betayt, betao0, betaot, betayo0, betayot))
+    orig <- c(1.988216, 0.8245114, 3.757175, 0.8, -3.152355, 14.07209, 21.04874,
+                3.377203, 0.3972412, 0.9936065)
+    names(orig) <- fit.paramnames
     
-    y.beta = max(0.001, relax.measures.y.E * betayt + (1 - relax.measures.y.E) * betay0)
-    o.beta = max(0.001, relax.measures.o.E * betaot + (1 - relax.measures.o.E) * betao0)
-    yo.beta = max(0.001, relax.measures.yo.E * betayot + (1 - relax.measures.yo.E)
-                  * betayo0)
 
-    c(y.beta, o.beta, yo.beta)
+    f <- function(state) { state$E + state$In + state$Is }
+    
+    ## 1
+    ##  RIn0 = R0, RIs0 = 0
+    ##  RIst = Rt, RIst = 0
+    ##  Tin0 = Tint = 2.4
+    p1 <- orig
+    p1[1] = p1[3]
+    p1[2] = p1[4]
+    p1[9] = p1[10] = 1/2.4
+
+    range <- 50:120
+    
+    p1 <- transformParams(unlist(p1, use.names=FALSE))
+    state <- calcNominalState(calculateModel(p1, 100))
+    plot(range, f(state)[range], type='l')
+    
+    ## 2
+    ##  RIn0 = R0, RIs0 = 0
+    ##  RIst = Rt, RIst = 0
+    ##  betaIn0 = betaInt = 1
+    p2 <- orig
+    p2[1] = p2[3]
+    p2[2] = p2[4]
+    p2[9] = 1/2.4
+    p2[10] = p2[1] / p2[2] * p2[9] # R0 * gamma0 = Rt * gammat
+
+    p2 <- transformParams(unlist(p2, use.names=FALSE))
+    state <- calcNominalState(calculateModel(p2, 100))
+    lines(range, f(state)[range], col='blue')
+
+    ## Dus: gammat is hoger -> aantal 'actieve' infecties gaat sneller omlaag
+    ##   Rt zal lager geschat worden dan in werkelijkheid het geval. -> 10%
+    ##   Aantal totaal geïnfecteerden zal overschat worden (S/N zwart < S/N blauw)
+    ## Model verkiest daling van Tinf versus beta omdat het zo de snellere
+    ##   
+
+    p3 <- orig
+    ##p3[4] = p3[4] ## * 1.18 
+    p3[4] = p3[4] * 1.1
+    ##p3[4] = p3[4] * 1.1
+    p3[1] = p3[3]
+    p3[2] = p3[4]
+    p3[9] = 1/2.4
+    p3[10] = p3[1] / p3[2] * p3[9] # R0 * gamma0 = Rt * gammat
+
+    p3 <- transformParams(unlist(p3, use.names=FALSE))
+    state <- calcNominalState(calculateModel(p3, 100))
+    lines(range, f(state)[range], col='red')
+
+    ## Zelfde (originele) curve -> R0 lager
+    
+    p4 <- orig
+    p4[3] = p4[3] * 0.95
+    p4[4] = p4[4] ## * 1.18 
+    ##p4[4] = p4[4] * 1.1
+    ## p4[4] = p4[4] * 1.1
+    p4[1] = p4[3]
+    p4[2] = p4[4]
+    p4[9] = 1/2.4
+    p4[10] = p4[1] / p4[2] * p4[9] # R0 * gamma0 = Rt * gammat
+
+    p4 <- transformParams(unlist(p4, use.names=FALSE))
+    state <- calcNominalState(calculateModel(p4, 200))
+    lines(1.65 * f(state), col='red')
+
+    
 }
 
+## all_plots(data.frame(pos=c(as.Date("2020/5/1")), color=c("red")))
 
-calcbetas.age <- calcbetas.age.experiment
+## ##dev.off()
 
-relax.start_date <- as.Date("2020/5/3")
-relax.end_date <- as.Date("2020/5/5")
+## png(paste(outputdir, "/forecast-time.png", sep=""), width=1200, height=1600)
 
-relax.measures.y.E = 0
-relax.measures.o.E = 0
-relax.measures.yo.E = 0
+## all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
 
-relax.start <- as.numeric(relax.start_date - dstartdate) 
-relax.end <- as.numeric(relax.end_date - dstartdate) 
+## dev.off()
 
-pdf(paste(outputdir, "/experiment", sep=""), width=12, height=16)
+## ######## No measures were taken
 
-all_plots(data.frame(pos=c(relax.start_date, relax.end_date), color=c("#888800", "#008800")))
+## sourceR("models/model-exiting-age-groups.R")
+
+## calcbetas.age <- calcbetas.age.relax
+
+## plot_end_date <- as.Date("2020/6/1")
+## relax.start_date <- as.Date("2020/3/11")
+## relax.end_date <- as.Date("2020/12/1")
+
+## relax.measures.y.E = 0
+## relax.measures.o.E = 0
+## relax.measures.yo.E = 0
+## relax.start <- as.numeric(relax.start_date - dstartdate) 
+## relax.end <- as.numeric(relax.end_date - dstartdate) 
+
+## pdf(paste(outputdir, "/no-lockdown.pdf", sep=""), width=12, height=16)
+## all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
+## dev.off()
+
+## ######## Measures were taken 1 week too late
+
+## calcbetas.age.orig <- calcbetas.age
+
+## calcbetas.age.toolate <- function(time, betay0, betayt, betao0, betaot, betayo0, betayot, Es)
+## {
+##     if (time > lockdown_offset) {
+##         betay0 <- betay0 * runif(1, 0.7, 1)
+##     }
+##     calcbetas.age.orig(time - 7, betay0, betayt, betao0, betaot, betayo0, betayot, Es)
+## }
+
+## calcbetas.age <- calcbetas.age.toolate
+
+## plot_end_date <- as.Date("2020/6/1")
+## pdf(paste(outputdir, "/too-late.pdf", sep=""), width=16, height=16)
+## all_plots(data.frame(pos=c(Sys.Date()), color=c("red")))
+## dev.off()
+
+## ######## Simple exiting scenario's
+
+## ##sourceR("models/model-exiting-age-groups.R")
+## sourceR("models/model-exiting.R")
+
+## plot_end_date <- as.Date("2020/11/1")
+
+## ##calcbetas.age <- calcbetas.age.relax
+## calcbeta <- calcbeta.relax
+
+## labels <- c("0", "01", "02", "03", "04", "05", "06", "07", "08", "09")
+
+## r <- 0.85
+## r <- 0.8
+## r <- 0
+
+## i = 1
+## for (r in seq(0,0.9,0.1)) {
+##     # relax.start_date <- as.Date("2020/4/16")
+##     relax.start_date <- as.Date("2020/5/4")
+##     relax.end_date <- as.Date("2020/12/1")
+
+##     ##relax.measures.y.E = r
+##     relax.measures.E = r
+##     relax.start <- as.numeric(relax.start_date - dstartdate) 
+##     relax.end <- as.numeric(relax.end_date - dstartdate) 
+
+##     ##pdf(paste(outputdir, "/full-exit-zoom.pdf", sep=""), width=12, height=16)
+##     pdf(paste(outputdir, "/young-relax0-exit.pdf", sep=""), width=12, height=16)
+##     ##pdf(paste(outputdir, "/young-relax-exit", labels[i], "-",
+##     ##          relax.start, "-", relax.end, ".pdf", sep=""), width=12, height=16)
+
+##     all_plots(data.frame(pos=c(relax.start_date, relax.end_date), color=c("#888800", "#008800")))
+
+##     dev.off()
+
+##     i = i + 1
+## }
+
+## ######## Experiment scenario's
+
+## ## One weekend relaxed
+
+## plot_end_date <- as.Date("2020/6/1")
+
+## ## quantilePlotSampleSize <- 50
+
+## calcbetas.age.experiment <- function(time, betay0, betayt, betao0, betaot, betayo0, betayot)
+## {
+##     if (time < relax.start)
+##         return(calcbetas.age.orig(time, betay0, betayt, betao0, betaot, betayo0, betayot))
+
+##     if (time > relax.end)
+##         return(calcbetas.age.orig(time, betay0, betayt, betao0, betaot, betayo0, betayot))
     
-dev.off()
+##     y.beta = max(0.001, relax.measures.y.E * betayt + (1 - relax.measures.y.E) * betay0)
+##     o.beta = max(0.001, relax.measures.o.E * betaot + (1 - relax.measures.o.E) * betao0)
+##     yo.beta = max(0.001, relax.measures.yo.E * betayot + (1 - relax.measures.yo.E)
+##                   * betayo0)
+
+##     c(y.beta, o.beta, yo.beta)
+## }
+
+
+## calcbetas.age <- calcbetas.age.experiment
+
+## relax.start_date <- as.Date("2020/5/3")
+## relax.end_date <- as.Date("2020/5/5")
+
+## relax.measures.y.E = 0
+## relax.measures.o.E = 0
+## relax.measures.yo.E = 0
+
+## relax.start <- as.numeric(relax.start_date - dstartdate) 
+## relax.end <- as.numeric(relax.end_date - dstartdate) 
+
+## pdf(paste(outputdir, "/experiment", sep=""), width=12, height=16)
+
+## all_plots(data.frame(pos=c(relax.start_date, relax.end_date), color=c("#888800", "#008800")))
+    
+## dev.off()
 
 
 
-######## Lockdowns Wuhan style
+## ######## Lockdowns Wuhan style
 
-## (1) 1.1
+## ## (1) 1.1
 
-plot_end_date <- as.Date("2020/6/10")
-relax_date <- as.Date("2020/5/1")
-lift_date <- as.Date("2020/5/30")
+## plot_end_date <- as.Date("2020/6/10")
+## relax_date <- as.Date("2020/5/1")
+## lift_date <- as.Date("2020/5/30")
 
-relax_E = 1.1  # 0 : no lockdown, 1 : lockdown 'lite' as now
-relax_offset <- as.numeric(relax_date - dstartdate) 
-lift_offset <- as.numeric(lift_date - dstartdate) 
+## relax_E = 1.1  # 0 : no lockdown, 1 : lockdown 'lite' as now
+## relax_offset <- as.numeric(relax_date - dstartdate) 
+## lift_offset <- as.numeric(lift_date - dstartdate) 
 
-if (relax_E == 0)
-    lift_date = relax_date
+## if (relax_E == 0)
+##     lift_date = relax_date
 
-pdf(paste(outputdir, "/wuhan11.pdf", sep=""), width=12, height=16) 
-all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
-dev.off()
+## pdf(paste(outputdir, "/wuhan11.pdf", sep=""), width=12, height=16) 
+## all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
+## dev.off()
 
-## (2) 1.05
+## ## (2) 1.05
 
-plot_end_date <- as.Date("2020/6/10")
-relax_date <- as.Date("2020/5/1")
-lift_date <- as.Date("2020/5/30")
+## plot_end_date <- as.Date("2020/6/10")
+## relax_date <- as.Date("2020/5/1")
+## lift_date <- as.Date("2020/5/30")
 
-relax_E = 1.05  # 0 : no lockdown, 1 : lockdown 'lite' as now
-relax_offset <- as.numeric(relax_date - dstartdate) 
-lift_offset <- as.numeric(lift_date - dstartdate) 
+## relax_E = 1.05  # 0 : no lockdown, 1 : lockdown 'lite' as now
+## relax_offset <- as.numeric(relax_date - dstartdate) 
+## lift_offset <- as.numeric(lift_date - dstartdate) 
 
-if (relax_E == 0)
-    lift_date = relax_date
+## if (relax_E == 0)
+##     lift_date = relax_date
 
-pdf(paste(outputdir, "/wuhan105.pdf", sep=""), width=12, height=16) 
-all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
-dev.off()
+## pdf(paste(outputdir, "/wuhan105.pdf", sep=""), width=12, height=16) 
+## all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
+## dev.off()
 
-##
-## Spain exiting scenario
-##
-sourceR("models/model.R")
-sourceR("models/model-exiting-lockdown.R")
+## ##
+## ## Spain exiting scenario
+## ##
+## sourceR("models/model.R")
+## sourceR("models/model-exiting-lockdown.R")
 
-plot_end_date <- as.Date("2020/11/1")
+## plot_end_date <- as.Date("2020/11/1")
 
-relax_date <- as.Date("2020/4/14")
-lift_date <- as.Date("2020/8/31")
+## relax_date <- as.Date("2020/4/14")
+## lift_date <- as.Date("2020/8/31")
 
-relax_E = 0.6 # 0 : no lockdown, 1 : lockdown 'lite' as now
-relax_offset <- as.numeric(relax_date - dstartdate) 
-lift_offset <- as.numeric(lift_date - dstartdate) 
+## relax_E = 0.6 # 0 : no lockdown, 1 : lockdown 'lite' as now
+## relax_offset <- as.numeric(relax_date - dstartdate) 
+## lift_offset <- as.numeric(lift_date - dstartdate) 
 
-if (relax_E == 0)
-    lift_date = relax_date
+## if (relax_E == 0)
+##     lift_date = relax_date
 
-pdf(paste(outputdir, "/spain-exit-0.6.pdf", sep=""), width=12, height=16)
+## pdf(paste(outputdir, "/spain-exit-0.6.pdf", sep=""), width=12, height=16)
 
-all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
+## all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
 
-dev.off()
+## dev.off()
 
-png(paste(outputdir, "/spain-exit-0.6.png", sep=""), width=1200, height=1600)
+## png(paste(outputdir, "/spain-exit-0.6.png", sep=""), width=1200, height=1600)
 
-all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
+## all_plots(data.frame(pos=c(relax_date, lift_date), color=c("#888800", "#008800")))
 
-dev.off()
+## dev.off()
 
 
-###
+## ###

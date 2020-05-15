@@ -378,28 +378,15 @@ calclogl <- function(params) {
 
     logPriorP <- 0
 
-    ## Ne stijgt zolang je buiten je eigen groep besmet
-    ## Ne daalt wanneer je in je eigen groep besmet
-    
-    ##logPriorP <- logPriorP + dnorm(betaIs0, 0, 0.05, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaIst, 0, 0.05, log=T)
-
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
-    ## Prior on Tef = 2.4
     Tin0 = 1/gamma.in0
     Tis0 = 8 - Tin0
     R0 = betaIn0 * Tin0 + betaIs0 * Tis0
     Tef0 = (Tin0 * betaIn0 * Tin0 + 8 * betaIs0 * Tis0) / R0
 
-    Tint = 1/gamma.int
-    Tist = 8 - Tint
-    Rt = betaInt * Tint + betaIst * Tist
-    Teft = (Tint * betaInt * Tint + 8 * betaIst * Tist) / Rt
-
-    logPriorP <- logPriorP + dnorm(Tef0, mean=2.8, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(Teft, mean=2.8, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(Tef0, mean=2.8, sd=0.5, log=T)
 
     for (e in Es) {
         logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
