@@ -391,8 +391,8 @@ calclogl <- function(params) {
     Rt = betaInt * Tint + betaIst * Tist
     Teft = (Tint * betaInt * Tint + 8 * betaIst * Tist) / Rt
 
-    logPriorP <- logPriorP + dnorm(Tef0, mean=2.8, sd=0.5, log=T)
-    logPriorP <- logPriorP + dnorm(Teft, mean=2.8, sd=0.5, log=T)
+    logPriorP <- logPriorP + dnorm(Tef0, mean=2.8, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(Teft, mean=2.8, sd=1, log=T)
 
     for (e in Es) {
         logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
