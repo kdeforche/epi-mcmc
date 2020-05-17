@@ -32,16 +32,22 @@ convolute <- function(values, i, profile)
     (profile$values %*% values[i1:i2])[1,1]
 }
 
-cppFunction('NumericVector odesimstepc(double S, double E, double In, double Is, double R, int N, double betaIn, double betaIs, double a, double Tin, double Tis) {
-   double gamma1 = 1/Tin;
-   double gamma2 = 1/Tis;
-
+cppFunction('NumericVector odesimstepc(double S, double E, double In, double Is, double R, int N, double betaIn0, double betaIs0, double a0, double Tin0, double Tis0, double betaIn1, double betaIs1, double a1, double Tin1, double Tis1) {
    const int LOOPS = 10;
    const double Ts = 1.0/LOOPS;
 
    NumericVector out(7);
 
    for (int l = 0; l < LOOPS; ++l) {
+     const double betaIn = 1.0/LOOPS * (l * betaIn1 + (LOOPS - l) * betaIn0);
+     const double betaIs = 1.0/LOOPS * (l * betaIs1 + (LOOPS - l) * betaIs0);
+     const double a = 1.0/LOOPS * (l * a1 + (LOOPS - l) * a0);
+     const double Tin = 1.0/LOOPS * (l * Tin1 + (LOOPS - l) * Tin0);
+     const double Tis = 1.0/LOOPS * (l * Tis1 + (LOOPS - l) * Tis0);
+
+     const double gamma1 = 1/Tin;
+     const double gamma2 = 1/Tis;
+
      const double inf1 = (betaIn * In) / N * S;
      const double inf2 = (betaIs * Is) / N * S;
      const double got_infected = inf1 + inf2;
@@ -57,7 +63,7 @@ cppFunction('NumericVector odesimstepc(double S, double E, double In, double Is,
 
      if (l == 0) {
        out[5] = Tin * inf1 / In + Tis * inf2 / Is;
-       out[6] = out[5] * N / (In + Is);
+       out[6] = out[5] * N / S;
      }
 
      S += deltaS * Ts;
@@ -76,12 +82,16 @@ cppFunction('NumericVector odesimstepc(double S, double E, double In, double Is,
    return out;
 }')
 
-simstep.C <- function(state, N, betaIn, betaIs, a, Tin, Tis)
+simstep.C <- function(state, N,
+                      betaIn0, betaIs0, a0, Tin0, Tis0,
+                      betaIn1, betaIs1, a1, Tin1, Tis1)
 {
     i = state$i
 
     newState <- odesimstepc(state$S[i], state$E[i], state$In[i], state$Is[i],
-                            state$R[i], N, betaIn, betaIs, a, Tin, Tis)
+                            state$R[i], N,
+                            betaIn0, betaIs0, a0, Tin0, Tis0,
+                            betaIn1, betaIs1, a1, Tin1, Tis1)
 
     state$S[i + 1] = newState[1]
     state$E[i + 1] = newState[2]
@@ -218,7 +228,7 @@ calculateModel <- function(params, period)
     Es <- tail(params, n=-11)
 
     Tinf <- 8
-    Tinc <- 3.5
+    Tinc <- 2.4
     died_rate <- 0.007
 
     h0 <- 1
@@ -239,18 +249,31 @@ calculateModel <- function(params, period)
     state$R <- rep(0, padding + period)
     state$hosp <- rep(0, padding + period)
     state$died <- rep(0, padding + period)
+    state$Sr <- c()
     state$i <- padding + 1
 
     data_offset = InvalidDataOffset
 
+    l.betaIn = betaIn0
+    l.betaIs = betaIs0
+    l.Tin = 1/gamma.in0
+    l.Tis = Tinf - l.Tin
+    
     for (i in (padding + 1):(padding + period)) {
         betaIn = calcpar(i - data_offset, betaIn0, betaInt, Es)
         betaIs = calcpar(i - data_offset, betaIs0, betaIst, Es)
-        Tin = 1/calcpar(i - data_offset, gamma.in0, gamma.int, Es)
+        Tin = calcpar(i - data_offset, 1/gamma.in0, 1/gamma.int, Es)
         Tis = Tinf - Tin
         
-        state <- simstep.C(state, N, betaIn, betaIs, a, Tin, Tis)
+        state <- simstep.C(state, N,
+                           l.betaIn, l.betaIs, a, l.Tin, l.Tis,
+                           betaIn, betaIs, a, Tin, Tis)
 
+        l.betaIn = betaIn
+        l.betaIs = betaIs
+        l.Tin = Tin
+        l.Tis = Tis
+        
         s = convolute(state$S, i, hosp_cv_profile)
         state$hosp[i] <- (N - s) * hosp_rate
 
@@ -284,36 +307,36 @@ calcNominalState <- function(state)
 transformParams <- function(params)
 {
     result = params
-    result[1:5] = exp(params[1:5])
-    result[9:10] = exp(params[9:10])
+    result[1] = params[1] * result[9]
+    result[2] = params[2] * result[10]
+    result[3] = (params[3] - params[1]) / (8 - 1 / result[9])
+    result[4] = (params[4] - params[2]) / (8 - 1 / result[10])
+    result[5] = exp(params[5])
 
     result
 }
 
 invTransformParams <- function(posterior)
 {
-    posterior$betaIn0 = exp(posterior$logBetaIn0)
-    posterior$betaInt = exp(posterior$logBetaInt)
-    posterior$betaIs0 = exp(posterior$logBetaIs0)
-    posterior$betaIst = exp(posterior$logBetaIst)
-    posterior$gamma.in0 = exp(posterior$logGamma.in0)
-    posterior$gamma.int = exp(posterior$logGamma.int)
-    posterior$HR = exp(posterior$logHR)
-    posterior$Tinf = 8
+    posterior$RIs0 = posterior$R0 - posterior$RIn0
+    posterior$RIst = posterior$Rt - posterior$RInt
+    posterior$betaIn0 = posterior$RIn0 * posterior$gamma.in0 
+    posterior$betaInt = posterior$RInt * posterior$gamma.int
     posterior$Tin0 = 1/posterior$gamma.in0
     posterior$Tint = 1/posterior$gamma.int
-    posterior$RIn0 = posterior$betaIn0 * posterior$Tin0
-    posterior$RIs0 = posterior$betaIs0 * (posterior$Tinf - posterior$Tin0)
-    posterior$RInt = posterior$betaInt * posterior$Tint
-    posterior$RIst = posterior$betaIst * (posterior$Tinf - posterior$Tint)
-    
-    posterior$R0 = posterior$RIn0 + posterior$RIs0
-    posterior$Rt = posterior$RInt + posterior$RIst
-    posterior$Tef0 = (posterior$Tin0 * posterior$RIn0 + posterior$Tinf * posterior$RIs0) / posterior$R0
-    posterior$Teft = (posterior$Tint * posterior$RInt + posterior$Tinf * posterior$RIst) / posterior$Rt
+    posterior$betaIs0 = posterior$RIs0 / (8 - posterior$Tin0)
+    posterior$betaIst = posterior$RIst / (8 - posterior$Tint)
+    posterior$Tef0 = (posterior$Tin0 * posterior$RIn0 + 8 * posterior$RIs0) / posterior$R0
+    posterior$Teft = (posterior$Tint * posterior$RInt + 8 * posterior$RIst) / posterior$Rt
     posterior$beta0 = posterior$R0 / posterior$Tef0
     posterior$betat = posterior$Rt / posterior$Teft
+    ##    (posterior$Tin0 * posterior$betaIn0 + (8 - posterior$Tin0) * posterior$betaIs0)
+    
+    posterior$HR = exp(posterior$logHR)
+    posterior$Tinf = 8
 
+    ##posterior$R0 = posterior$betaIn0 * posterior$Tin0 + posterior$betaIs0 * (posterior$Tinf - posterior$Tin0)
+    ##posterior$Rt = posterior$betaInt * posterior$Tint + posterior$betaIst * (posterior$Tinf - posterior$Tint)
 
     posterior
 }
@@ -341,7 +364,7 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (gamma.int < gamma.in0 || gamma.int > 1/0.2) {
+    if (gamma.int > 1/0.2 || gamma.int < 1/7.8) {
         return(-Inf)
     }
 
@@ -386,6 +409,20 @@ calclogl <- function(params) {
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
+
+    Tin0 = 1/gamma.in0
+    Tis0 = 8 - Tin0
+    R0 = betaIn0 * Tin0 + betaIs0 * Tis0
+    Tef0 = (Tin0 * betaIn0 * Tin0 + 8 * betaIs0 * Tis0) / R0
+
+    Tint = 1/gamma.int
+    Tist = 8 - Tint
+    Rt = betaInt * Tint + betaIst * Tist
+    Teft = (Tint * betaInt * Tint + 8 * betaIst * Tist) / Rt
+
+    ## Weak priors here...
+    logPriorP <- logPriorP + dnorm(Tef0, mean=2.8, sd=0.5, log=T)
+    logPriorP <- logPriorP + dnorm(Teft, mean=2.8, sd=5, log=T)
 
     for (e in Es) {
         logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
@@ -439,6 +476,7 @@ calclogl <- function(params) {
     
     if (it %% 1000 == 0) {
         print(params)
+        print(c(R0, Rt, Tef0, Teft))
 	print(c(it, result))
 	graphs()
     }
@@ -446,14 +484,15 @@ calclogl <- function(params) {
     result
 }
 
-fit.paramnames <- c("logBetaIn0", "logBetaInt", "logBetaIs0", "logBetaIst", "logHR", "HL", "DL",
-                    "lockdownmort", "logGamma.in0", "logGamma.int")
-keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "Tin0", "Tint")
-fitkeyparamnames <- c("logBetaIn0", "logBetaInt", "logBetaIs0", "logBetaIst", "logGamma.in0", "logGamma.int")
+fit.paramnames <- c("RIn0", "RInt", "R0", "Rt", "logHR", "HL", "DL",
+                    "lockdownmort", "gamma.in0", "gamma.int")
+keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "Tef0", "Teft",
+                   "RIn0", "RIs0")
+fitkeyparamnames <- c("R0", "Rt", "RIn0", "RInt", "gamma.in0", "gamma.int")
 
-init <- c(log(1), log(1), log(0.1), log(0.1), log(0.02), 10, 20, total_deaths_at_lockdown, log(1/7), log(1/2),
+init <- c(2.9, 0.9, 3, 1, log(0.02), 10, 20, total_deaths_at_lockdown, 1/7, 1/2,
           rep(0.9, length(Es.time)))
-scales <- c(1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20, 1, 1,
+scales <- c(1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20, 2, 0.3,
             rep(0.05, length(Es.time)))
 
 if (length(Es.time) > 0) {
