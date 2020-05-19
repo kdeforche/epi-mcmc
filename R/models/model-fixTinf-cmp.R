@@ -393,12 +393,6 @@ calclogl <- function(params) {
 
     logPriorP <- 0
 
-    ## Ne stijgt zolang je buiten je eigen groep besmet
-    ## Ne daalt wanneer je in je eigen groep besmet
-    
-    ##logPriorP <- logPriorP + dnorm(betaIs0, 0, 0.05, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaIst, 0, 0.05, log=T)
-
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
@@ -418,12 +412,6 @@ calclogl <- function(params) {
     Teft = (Tint * RInt + 8 * RIst) / Rt
     betat = Rt / Teft
 
-    if (RInt > RIn0)
-        return(-Inf)
-
-    if (RIst > RIs0)
-        return (-Inf)
-    
     logPriorP <- logPriorP + dnorm(Tef0, mean=2.8, sd=0.2, log=T)
     logPriorP <- logPriorP + dnorm(Teft, mean=2.8, sd=0.2, log=T)
 
