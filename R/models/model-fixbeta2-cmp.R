@@ -412,6 +412,9 @@ calclogl <- function(params) {
     Teft = (Tint * RInt + 8 * RIst) / Rt
     betat = Rt / Teft
 
+    if (RIs0 > RIn0)
+        return(-Inf)
+
     logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)
     logPriorP <- logPriorP + dnorm(betaInt, mean=1, sd=0.1, log=T)
 
