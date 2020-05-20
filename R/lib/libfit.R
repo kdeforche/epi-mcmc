@@ -45,37 +45,33 @@ graphs <- function() {
 
     days <- seq(dstartdate, dstartdate + length(dhosp) + 30, 1)
 
-    if (state$offset < 1) {
-        plot(days[1:5], state$hospi[1:5], type='l', col='red',
-             xlab='Date', ylab='Count',
-             main='Cumulative hospitalisations')
-        return (0)
-    } else {
-        len <- 40
-        plot(days[1:len], state$hosp[state$offset:(state$offset + len - 1)], type='l', col='red',
-             ylim=c(0, 10000),
-             xlab='Date', ylab='Cumulative count',
-             main='Cumulative hospitalisations and deaths')
-        lines(days[1:len],state$died[state$offset:(state$offset + len - 1)], type='l', col='blue')
-        points(days[1:length(dhospi)],dhosp,col='red')
-        points(days[1:length(dmort)],dmort,col='blue')
-        legend("topleft", inset=0.02, legend=c("Hospitalisations", "Deaths"),
-               col=c("red", "blue"),lty=1)
-    }
-
     period <- length(state$hospi)
     len <- period - state$offset + 1
 
     if (len < 2) {
         plot(days[1:5], state$hospi[1:5], type='l', col='red',
              xlab='Date', ylab='Count',
+             main='Cumulative hospitalisations')
+        plot(days[1:5], state$hospi[1:5], type='l', col='red',
+             xlab='Date', ylab='Count',
              main='New hospitalisations and deaths per day')
         return (0)
     }
 
+    len <- period - state$offset + 1
+    plot(days[1:len], state$hosp[state$offset:(state$offset + len - 1)], type='l', col='red',
+         xlab='Date', ylab='Cumulative count',
+         main='Cumulative hospitalisations and deaths',
+         log="y")
+    lines(days[1:len],state$died[state$offset:(state$offset + len - 1)], type='l', col='blue')
+    points(days[1:length(dhospi)],dhosp,col='red')
+    points(days[1:length(dmort)],dmort,col='blue')
+    legend("topleft", inset=0.02, legend=c("Hospitalisations", "Deaths"),
+           col=c("red", "blue"),lty=1)
+
     plot(days[1:len],state$hospi[state$offset:period], type='l', col='red',
          xlab='Date', ylab='Count',
-         main='New hospitalisations and deaths per day')
+         main='New hospitalisations and deaths per day', log="y")
 
     if ("y.hospi" %in% names(state)) {
         lines(days[1:len],state$y.hospi[state$offset:period], type='l', lty=2, col='red')
@@ -96,7 +92,7 @@ graphs <- function() {
         points(days[1:length(dhospi)],dhospi,col=c("red"))
     }
 
-    legend("topright", inset=0.02, legend=c("Hospitalisations", "Deaths"),
+    legend("topleft", inset=0.02, legend=c("Hospitalisations", "Deaths"),
 	   col=c("red", "blue"),lty=1)
 
     if ("R" %in% names(state)) {
