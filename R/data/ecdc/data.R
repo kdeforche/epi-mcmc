@@ -104,6 +104,6 @@ print(c(lockdown_offset, lockdown_transition_period, total_deaths_at_lockdown))
 
 FitTotalPeriod <- length(dmort) + 90
 
-if (country2 == "BD" || country2 == "SK" || country2 == "KW" || country2 == "NG") {
+if (country2 == "KE" || country2 == "BD" || country2 == "SK" || country2 == "KW" || country2 == "NG") {
   FitTotalPeriod <- FitTotalPeriod + 60
 }

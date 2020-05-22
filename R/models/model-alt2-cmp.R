@@ -3,7 +3,10 @@ require(Rcpp)
 InvalidDataOffset <- 10000
 Initial <- 1
 
-Tinf <- 8
+## Generation interval of 5.2 days, incubation period of 5.2, 50% presymtomatic transmission
+## -> 2.5 + 2.5 days => average is 5 dagen
+##    about half before 5 days, and half after ?
+Tinf <- 14
 Tinc <- 2.5
 died_rate <- 0.007
 
@@ -326,6 +329,7 @@ transformParams <- function(params)
 invTransformParams <- function(posterior)
 {
     posterior$Tinf = Tinf
+    posterior$Tinc = Tinc
 
     posterior$Tis0 = posterior$Tinf - posterior$Tin0
     posterior$Ris0 = posterior$R0 * (posterior$Tef0 - posterior$Tin0) /
@@ -342,6 +346,8 @@ invTransformParams <- function(posterior)
     posterior$betaInt = posterior$Rint / posterior$Tint
     posterior$betaIst = posterior$Rist / posterior$Tist
     posterior$betat = posterior$Rt / posterior$Teft
+
+    posterior$deltaTeff = posterior$Teft - posterior$Tef0
     
     posterior$HR = exp(posterior$logHR)
 
@@ -370,15 +376,15 @@ calclogl <- function(params) {
         return(-Inf)
     }
     
-    if (Tin0 < 0.2 || Tin0 > 7.8) {
+    if (Tin0 < 0.2 || Tin0 > Tinf - 0.2) {
         return(-Inf)
     }
 
-    if (Tint < 0.2 || Tint > 7.8) {
+    if (Tint < 0.2 || Tint > Tinf - 0.2) {
         return(-Inf)
     }
 
-    if (Tef0 < 0.2 || Tef0 > 7.8) {
+    if (Tef0 < 0.2 || Tef0 > Tinf - 0.2) {
         return(-Inf)
     }
 
@@ -433,7 +439,7 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
     logPriorP <- logPriorP + dnorm(Tef0, mean=2.5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(Teft, mean=2.5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(Tef0 - Teft, mean=0, sd=2, log=T)
 
     ##logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)
     ##logPriorP <- logPriorP + dnorm(betaInt, mean=1, sd=0.1, log=T)

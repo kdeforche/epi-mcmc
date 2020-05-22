@@ -214,7 +214,7 @@ all_plots_age <- function(date_markers) {
                               labels = ageGroupLabels)
 
     p6 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state) { state$Rt }, "#33FFFF",
+                   function(state) { state$Re }, "#33FFFF",
                    c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
     
     p6 <- p6 + coord_cartesian(ylim = c(0, NA)) +
@@ -253,8 +253,6 @@ outputdir <- "output"
 
 source("settings.R")
 
-system(paste("mkdir ", outputdir))
-
 # trimData(4)
 
 #quantilePlotSampleSize <- 1500
@@ -263,7 +261,7 @@ data_sample <- readSample()
 ## Configure this depending on the model
 # all_plots <- all_plots_age
 
-##pdf(paste(outputdir, "/current-state.pdf", sep=""), width=12, height=16)
+##pdf("current-state.pdf", width=12, height=16)
 
 plot_end_date <- as.Date("2020/7/1")
 all_plots(data.frame(pos=c(dstartdate + lockdown_offset, dstartdate + lockdown_offset + lockdown_transition_period), color=c("orange", "red")))
@@ -272,6 +270,15 @@ plots <- function() {
     plot_end_date <- as.Date("2020/7/1")
     all_plots(data.frame(pos=c(dstartdate + lockdown_offset, dstartdate + lockdown_offset + lockdown_transition_period), color=c("orange", "red")))
 }
+
+## current Re value
+est.Re <- data.frame(quantileData(data_sample, function(state) { state$Re }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+colnames(est.Re) <- c("q5", "q50", "q95")
+
+now.est.Re.median <- est.Re$q50[Sys.Date() - dstartdate]
+now.est.Re.cri95lo <- est.Re$q5[Sys.Date() - dstartdate]
+now.est.Re.cri95hi <- est.Re$q95[Sys.Date() - dstartdate]
+
 
 ## all_plots(data.frame(pos=c(as.Date("2020/5/1")), color=c("red")))
 
