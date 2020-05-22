@@ -439,7 +439,7 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
     logPriorP <- logPriorP + dnorm(Tef0, mean=2.5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(Tef0 - Teft, mean=0, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(Tef0 - Teft, mean=0, sd=1.5, log=T)
 
     ##logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)
     ##logPriorP <- logPriorP + dnorm(betaInt, mean=1, sd=0.1, log=T)
