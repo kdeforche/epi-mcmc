@@ -48,7 +48,7 @@ graphs <- function() {
     period <- length(state$hospi)
     len <- period - state$offset + 1
 
-    if (len < 2) {
+    if (state$offset < 1 | len < 2) {
         plot(days[1:5], state$hospi[1:5], type='l', col='red',
              xlab='Date', ylab='Count',
              main='Cumulative hospitalisations')
@@ -58,7 +58,6 @@ graphs <- function() {
         return (0)
     }
 
-    len <- period - state$offset + 1
     plot(days[1:len], state$hosp[state$offset:(state$offset + len - 1)], type='l', col='red',
          xlab='Date', ylab='Cumulative count',
          main='Cumulative hospitalisations and deaths',
