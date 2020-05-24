@@ -90,72 +90,6 @@ simstep.C <- function(state, N, beta, a, Tinf)
     state
 }
     
-simstep.R <- function(state, N, betaIn, betaIs, a, Tin, Tis, k)
-{
-    i = state$i
-
-    gamma1 = 1/Tin
-    gamma2 = 1/Tis
-
-    loops = 10
-    Ts = 1/loops
-
-    S = state$S[i]
-    E = state$E[i]
-    In = state$In[i]
-    Is = state$Is[i]
-    R = state$R[i]
-
-    day_infected1 <- 0
-    day_infected2 <- 0
-
-    for (l in 1:loops) {
-        EIR = N - S
-        Ne = max(EIR, k * N)
-
-        inf1 <- (betaIn * In) / N * (Ne - EIR)
-        inf2 <- (betaIs * Is) / N * S
-        got_infected = inf1 + inf2
-        got_infectious = a * E
-        got_isolated = gamma1 * In
-        got_removed = gamma2 * Is
-
-        ##print(c(i, Tin, Tis, got_infected, got_infectious, got_isolated, got_removed))
-    
-        deltaS = -got_infected
-        deltaE = got_infected - got_infectious
-        deltaIn = got_infectious - got_isolated
-        deltaIs = got_isolated - got_removed
-        deltaR = got_removed
-
-        S = S + deltaS * Ts
-        E = E + deltaE * Ts
-        In = In + deltaIn * Ts
-        Is = Is + deltaIs * Ts
-        R = R + deltaR * Ts
-
-        if (l == 1) {
-            day_infected1 <- inf1
-            day_infected2 <- inf2
-        }
-    }
-
-    state$Re[i + 1] = (day_infected1 + day_infected2) / ((state$In[i] + state$Is[i]) / (Tin + Tis))
-
-    state$Rt[i + 1] = betaIn * Tin + betaIs * Tis
-
-    state$S[i + 1] = S
-    state$E[i + 1] = E
-    state$In[i + 1] = In
-    state$Is[i + 1] = Is
-    state$R[i + 1] = R
-
-    i = i + 1
-    state$i = i
-
-    state
-}
-
 ##
 ## Parameters are a function of time:
 ##  t < lockdown_offset : par0
@@ -275,7 +209,7 @@ transformParams <- function(params)
 
 invTransformParams <- function(posterior)
 {
-    posterior$Tinf = 2.4
+    posterior$Tinf = 2.8
     posterior$R0 = posterior$beta0 * posterior$Tinf
     posterior$Rt = posterior$betat * posterior$Tinf
     posterior$HR = exp(posterior$logHR)

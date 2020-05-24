@@ -22,6 +22,9 @@ optimpw <- function(par) {
 
     if (i1 < 1 || i1 > length(s) || i2 < 1 || i2 > length(s))
         return(Inf)
+
+    if (country2 == "BY" & i1 < 40)
+        return(Inf)
     
     i1 <- max(2, min(i2, i1))
     i2 <- min(length(s)-1, max(i2, i1))
@@ -34,6 +37,8 @@ optimpw <- function(par) {
 }
 
 init <- c(20, 30, 0, -60)
+if (country2 == "BY")
+    init <- c(41, 42, 0, -60)
 
 control <- NULL
 control$maxit <- 10000
@@ -104,6 +109,10 @@ print(c(lockdown_offset, lockdown_transition_period, total_deaths_at_lockdown))
 
 FitTotalPeriod <- length(dmort) + 90
 
-if (country2 == "KE" || country2 == "BD" || country2 == "SK" || country2 == "KW" || country2 == "NG") {
+if (country2 == "BY" || country2 == "KE" || country2 == "BD" || country2 == "SK" || country2 == "KW" || country2 == "NG") {
+  FitTotalPeriod <- FitTotalPeriod + 60
+}
+
+if (country2 == "SK") {
   FitTotalPeriod <- FitTotalPeriod + 60
 }

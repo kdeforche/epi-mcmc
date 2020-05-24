@@ -348,11 +348,12 @@ invTransformParams <- function(posterior)
     posterior$betat = posterior$Rt / posterior$Teft
 
     posterior$deltaTeff = posterior$Teft - posterior$Tef0
+
+    posterior$frTef = posterior$Teft / posterior$Tef0
+    posterior$frbeta = posterior$betat / posterior$beta0
+    posterior$frR = posterior$Rt / posterior$R0
     
     posterior$HR = exp(posterior$logHR)
-
-    ##posterior$R0 = posterior$betaIn0 * posterior$Tin0 + posterior$betaIs0 * (posterior$Tinf - posterior$Tin0)
-    ##posterior$Rt = posterior$betaInt * posterior$Tint + posterior$betaIst * (posterior$Tinf - posterior$Tint)
 
     posterior
 }

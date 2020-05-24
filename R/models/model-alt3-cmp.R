@@ -3,6 +3,13 @@ require(Rcpp)
 InvalidDataOffset <- 10000
 Initial <- 1
 
+## Generation interval of 5.2 days, incubation period of 5.2, 50% presymtomatic transmission
+## -> 2.5 + 2.5 days => average is 5 dagen
+##    about half before 5 days, and half after ?
+Tinf <- 14
+Tinc <- 2.5
+died_rate <- 0.007
+
 calcConvolveProfile <- function(latency, latency_sd)
 {
     kend = min(0, ceiling(latency + latency_sd * 1.5))
@@ -107,72 +114,6 @@ simstep.C <- function(state, N,
     state
 }
     
-simstep.R <- function(state, N, betaIn, betaIs, a, Tin, Tis, k)
-{
-    i = state$i
-
-    gamma1 = 1/Tin
-    gamma2 = 1/Tis
-
-    loops = 10
-    Ts = 1/loops
-
-    S = state$S[i]
-    E = state$E[i]
-    In = state$In[i]
-    Is = state$Is[i]
-    R = state$R[i]
-
-    day_infected1 <- 0
-    day_infected2 <- 0
-
-    for (l in 1:loops) {
-        EIR = N - S
-        Ne = max(EIR, k * N)
-
-        inf1 <- (betaIn * In) / N * (Ne - EIR)
-        inf2 <- (betaIs * Is) / N * S
-        got_infected = inf1 + inf2
-        got_infectious = a * E
-        got_isolated = gamma1 * In
-        got_removed = gamma2 * Is
-
-        ##print(c(i, Tin, Tis, got_infected, got_infectious, got_isolated, got_removed))
-    
-        deltaS = -got_infected
-        deltaE = got_infected - got_infectious
-        deltaIn = got_infectious - got_isolated
-        deltaIs = got_isolated - got_removed
-        deltaR = got_removed
-
-        S = S + deltaS * Ts
-        E = E + deltaE * Ts
-        In = In + deltaIn * Ts
-        Is = Is + deltaIs * Ts
-        R = R + deltaR * Ts
-
-        if (l == 1) {
-            day_infected1 <- inf1
-            day_infected2 <- inf2
-        }
-    }
-
-    state$Re[i + 1] = (day_infected1 + day_infected2) / ((state$In[i] + state$Is[i]) / (Tin + Tis))
-
-    state$Rt[i + 1] = betaIn * Tin + betaIs * Tis
-
-    state$S[i + 1] = S
-    state$E[i + 1] = E
-    state$In[i + 1] = In
-    state$Is[i + 1] = Is
-    state$R[i + 1] = R
-
-    i = i + 1
-    state$i = i
-
-    state
-}
-
 ##
 ## Parameters are a function of time:
 ##  t < lockdown_offset : par0
@@ -215,23 +156,30 @@ calcpar <- function(time, par0, part, Es)
 
 calculateModel <- function(params, period)
 {
-    betaIn0 <- params[1]
-    betaInt <- params[2]
-    betaIs0 <- params[3]
-    betaIst <- params[4]
-    hosp_rate <- params[5]
-    hosp_latency <- params[6]
-    died_latency <- params[7]
-    mort_lockdown_threshold <- params[8]
-    gamma.in0 <- params[9]
-    gamma.int <- params[10]
-    Es <- tail(params, n=-11)
+    R0 <- params[1]
+    Rt <- params[2]
+    Tef0 <- params[3]
+    Teft <- params[4]
+    Tin0 <- params[5]
+    Tint <- params[6]
+    hosp_rate <- params[7]
+    hosp_latency <- params[8]
+    died_latency <- params[9]
+    mort_lockdown_threshold <- params[10]
+    Es <- tail(params, n=-10)
 
-    Tinf <- 8
-    Tinc <- 2.4
-    died_rate <- 0.007
+    Tis0 = Tinf - Tin0
+    Ris0 = R0 * (Tef0 - Tin0) / (Tinf - Tin0)
+    Rin0 = R0 - Ris0
+    betaIn0 = Rin0 / Tin0
+    betaIs0 = Ris0 / Tis0
 
-    h0 <- 1
+    Tist = Tinf - Tint
+    Rist = Rt * (Teft - Tint) / (Tinf - Tint)
+    Rint = Rt - Rist
+    betaInt = Rint / Tint
+    betaIst = Rist / Tist
+    
     a <- 1 / Tinc
 
     hosp_cv_profile = calcConvolveProfile(-hosp_latency, 5)
@@ -256,13 +204,13 @@ calculateModel <- function(params, period)
 
     l.betaIn = betaIn0
     l.betaIs = betaIs0
-    l.Tin = 1/gamma.in0
-    l.Tis = Tinf - l.Tin
+    l.Tin = Tin0
+    l.Tis = Tis0
     
     for (i in (padding + 1):(padding + period)) {
         betaIn = calcpar(i - data_offset, betaIn0, betaInt, Es)
         betaIs = calcpar(i - data_offset, betaIs0, betaIst, Es)
-        Tin = calcpar(i - data_offset, 1/gamma.in0, 1/gamma.int, Es)
+        Tin = calcpar(i - data_offset, Tin0, Tint, Es)
         Tis = Tinf - Tin
         
         state <- simstep.C(state, N,
@@ -307,36 +255,39 @@ calcNominalState <- function(state)
 transformParams <- function(params)
 {
     result = params
-    result[1] = params[1] * result[9]
-    result[2] = params[2] * result[10]
-    result[3] = (params[3] - params[1]) / (8 - 1 / result[9])
-    result[4] = (params[4] - params[2]) / (8 - 1 / result[10])
-    result[5] = exp(params[5])
+    result[7] = exp(params[7])
 
     result
 }
 
 invTransformParams <- function(posterior)
 {
-    posterior$RIs0 = posterior$R0 - posterior$RIn0
-    posterior$RIst = posterior$Rt - posterior$RInt
-    posterior$betaIn0 = posterior$RIn0 * posterior$gamma.in0 
-    posterior$betaInt = posterior$RInt * posterior$gamma.int
-    posterior$Tin0 = 1/posterior$gamma.in0
-    posterior$Tint = 1/posterior$gamma.int
-    posterior$betaIs0 = posterior$RIs0 / (8 - posterior$Tin0)
-    posterior$betaIst = posterior$RIst / (8 - posterior$Tint)
-    posterior$Tef0 = (posterior$Tin0 * posterior$RIn0 + 8 * posterior$RIs0) / posterior$R0
-    posterior$Teft = (posterior$Tint * posterior$RInt + 8 * posterior$RIst) / posterior$Rt
+    posterior$Tinf = Tinf
+    posterior$Tinc = Tinc
+
+    posterior$Tis0 = posterior$Tinf - posterior$Tin0
+    posterior$Ris0 = posterior$R0 * (posterior$Tef0 - posterior$Tin0) /
+        (posterior$Tinf - posterior$Tin0)
+    posterior$Rin0 = posterior$R0 - posterior$Ris0
+    posterior$betaIn0 = posterior$Rin0 / posterior$Tin0
+    posterior$betaIs0 = posterior$Ris0 / posterior$Tis0
     posterior$beta0 = posterior$R0 / posterior$Tef0
+
+    posterior$Tist = posterior$Tinf - posterior$Tint
+    posterior$Rist = posterior$Rt * (posterior$Teft - posterior$Tint) /
+        (posterior$Tinf - posterior$Tint)
+    posterior$Rint = posterior$Rt - posterior$Rist
+    posterior$betaInt = posterior$Rint / posterior$Tint
+    posterior$betaIst = posterior$Rist / posterior$Tist
     posterior$betat = posterior$Rt / posterior$Teft
-    ##    (posterior$Tin0 * posterior$betaIn0 + (8 - posterior$Tin0) * posterior$betaIs0)
+
+    posterior$deltaTeff = posterior$Teft - posterior$Tef0
+
+    posterior$frTef = posterior$Teft / posterior$Tef0
+    posterior$frbeta = posterior$betat / posterior$beta0
+    posterior$frR = posterior$Rt / posterior$R0
     
     posterior$HR = exp(posterior$logHR)
-    posterior$Tinf = 8
-
-    ##posterior$R0 = posterior$betaIn0 * posterior$Tin0 + posterior$betaIs0 * (posterior$Tinf - posterior$Tin0)
-    ##posterior$Rt = posterior$betaInt * posterior$Tint + posterior$betaIst * (posterior$Tinf - posterior$Tint)
 
     posterior
 }
@@ -344,35 +295,61 @@ invTransformParams <- function(posterior)
 ## log likelihood function for fitting this model to observed data:
 ##   dhospi and dmorti
 calclogl <- function(params) {
-    betaIn0 <- params[1]
-    betaInt <- params[2]
-    betaIs0 <- params[3]
-    betaIst <- params[4]
-    hosp_rate <- params[5]
-    hosp_latency <- params[6]
-    died_latency <- params[7]
-    mort_lockdown_threshold <- params[8]
-    gamma.in0 <- params[9]
-    gamma.int <- params[10]
+    R0 <- params[1]
+    Rt <- params[2]
+    Tef0 <- params[3]
+    Teft <- params[4]
+    Tin0 <- params[5]
+    Tint <- params[6]
+    hosp_rate <- params[7]
+    hosp_latency <- params[8]
+    died_latency <- params[9]
+    mort_lockdown_threshold <- params[10]
     Es <- tail(params, n=-10)
 
-    if (betaIn0 < 1E-5 || betaInt < 1E-5 || betaIs0 < 1E-5 || betaIst < 1E-5) {
+    if (R0 < 0 || Rt < 0) {
         return(-Inf)
     }
     
-    if (gamma.in0 > 1/0.2 || gamma.in0 < 1/7.8) {
+    if (Tin0 < 0.2 || Tin0 > Tinf - 0.2) {
         return(-Inf)
     }
 
-    if (gamma.int > 1/0.2 || gamma.int < 1/7.8) {
+    if (Tint < 0.2 || Tint > Tinf - 0.2) {
         return(-Inf)
     }
 
+    if (Tef0 < 0.2 || Tef0 > Tinf - 0.2) {
+        return(-Inf)
+    }
+
+    Tis0 = Tinf - Tin0
+    Ris0 = R0 * (Tef0 - Tin0) / (Tinf - Tin0)
+    Rin0 = R0 - Ris0
+    betaIn0 = Rin0 / Tin0
+    betaIs0 = Ris0 / Tis0
+    beta0 = R0 / Tef0
+
+    Tist = Tinf - Tint
+    Rist = Rt * (Teft - Tint) / (Tinf - Tint)
+    Rint = Rt - Rist
+    betaInt = Rint / Tint
+    betaIst = Rist / Tist
+    betat = Rt / Teft
+
+    if (betaIn0 < 0 || betaInt < 0 || betaIs0 < 0 || betaIst < 0) {
+        return(-Inf)
+    }
+    
     if (betaIst > betaInt) {
-         return(-Inf)
+        return(-Inf)
     }
 
     if (betaIs0 > betaIn0) {
+        return(-Inf)
+    }
+
+    if (Ris0 > Rin0) {
         return(-Inf)
     }
 
@@ -393,37 +370,14 @@ calclogl <- function(params) {
 
     logPriorP <- 0
 
-    ## Ne stijgt zolang je buiten je eigen groep besmet
-    ## Ne daalt wanneer je in je eigen groep besmet
-    
-    ##logPriorP <- logPriorP + dnorm(betaIs0, 0, 0.05, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaIst, 0, 0.05, log=T)
-
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=18, sd=2, log=T)
 
-    Tin0 = 1/gamma.in0
-    Tis0 = 8 - Tin0
-    RIn0 = betaIn0 * Tin0
-    RIs0 = betaIs0 * Tis0
-    R0 = RIn0 + RIs0
-    Tef0 = (Tin0 * RIn0 + 8 * RIs0) / R0
+    logPriorP <- logPriorP + dnorm(Tef0, mean=2.5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(Tef0 - Teft, mean=0, sd=1.5, log=T)
 
-    Tint = 1/gamma.int
-    Tist = 8 - Tint
-    RInt = betaInt * Tint
-    RIst = betaIst * Tist
-    Rt = RInt + RIst
-    Teft = (Tint * RInt + 8 * RIst) / Rt
-
-    if (RInt > RIn0)
-        return(-Inf)
-
-    if (RIst > RIs0)
-        return (-Inf)
-    
-    logPriorP <- logPriorP + dnorm(Tef0, mean=2.8, sd=0.2, log=T)
-    logPriorP <- logPriorP + dnorm(Teft, mean=2.8, sd=1, log=T)
+    ##logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)
+    ##logPriorP <- logPriorP + dnorm(betaInt, mean=1, sd=0.1, log=T)
 
     for (e in Es) {
         logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
@@ -477,7 +431,7 @@ calclogl <- function(params) {
     
     if (it %% 1000 == 0) {
         print(params)
-        print(c(R0, Rt, Tef0, Teft))
+        print(c(R0, Rt, Tef0, Teft, beta0, betat))
 	print(c(it, result))
 	graphs()
     }
@@ -485,15 +439,16 @@ calclogl <- function(params) {
     result
 }
 
-fit.paramnames <- c("RIn0", "RInt", "R0", "Rt", "logHR", "HL", "DL",
-                    "lockdownmort", "gamma.in0", "gamma.int")
-keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "Tef0", "Teft",
-                   "RIn0", "RIs0")
-fitkeyparamnames <- c("R0", "Rt", "RIn0", "RInt", "gamma.in0", "gamma.int")
 
-init <- c(2.9, 0.9, 3, 1, log(0.02), 10, 20, total_deaths_at_lockdown, 1/7, 1/2,
+fit.paramnames <- c("R0", "Rt", "Tef0", "Teft", "Tin0", "Tint",
+                    "logHR", "HL", "DL", "lockdownmort")
+keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "Tef0", "Teft",
+                   "Rin0", "Ris0")
+fitkeyparamnames <- c("R0", "Rt", "Tef0", "Teft", "Tin0", "Tint")
+
+init <- c(2.9, 0.9, 3, 3, 2, 1, log(0.02), 10, 20, total_deaths_at_lockdown,
           rep(0.9, length(Es.time)))
-scales <- c(1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20, 2, 0.3,
+scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20,
             rep(0.05, length(Es.time)))
 
 if (length(Es.time) > 0) {
