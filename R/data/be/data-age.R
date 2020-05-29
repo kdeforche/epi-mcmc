@@ -61,6 +61,11 @@ legend("topleft", inset=0.02, legend=c("< 65", ">= 65"),
 
 dev.off()
 
+plot(dstartdate + (hosp_week_age_statistics$index - 1), hosp_week_age_statistics$y * 100, type='o', xlab="Date", ylab="Fraction of hospitalisations", main="Distribution of hospitalisations in younger and older groups", col='blue', ylim=c(0, 100))
+lines(dstartdate + (hosp_week_age_statistics$index - 1), 100 - hosp_week_age_statistics$y * 100, col='darkgreen', type='o')
+legend("topleft", inset=0.02, legend=c("< 65", ">= 65"),
+       col=c("blue", "darkgreen"),lty=1)
+
 y.dhospi = round(dhospi * predict(model, yf))
 o.dhospi = dhospi - y.dhospi
 
@@ -94,7 +99,8 @@ o.wzcmorti = c(0, 0, 0, 0, 2, 1, 1, 2, 3, 10, 9, 12, 21, 19, 12, 24, 25,
                40, 49, 52, 48, 60, 122, 76, 112, 137, 110, 156, 182, 185,
                170, 199, 176, 240, 155, 165, 149, 153, 117, 130, 126, 120, # 20/04/20
                116, 112, 95, 74, 76, 95, 70, 55, 48, 46, 47, 33, 45, 40, 38, # 05/05/20
-               37, 40, 28, 35, 38, 25, 24, 20, 23, 11, 8, 21, 12, 0, 0) # 20/05/20
+               37, 40, 28, 35, 38, 25, 24, 20, 23, 11, 8, 21, 13, 8, 13, # 20/05/20
+               12, 12, 3, 0, 0)
 
 print(paste("last day o.wzcmorti: ", dstartdate + length(o.wzcmorti) - 1))
 print(paste("last day o.dmorti: ", dstartdate + length(o.dmorti) - 1))
