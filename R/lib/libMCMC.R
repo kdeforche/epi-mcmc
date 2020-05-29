@@ -195,9 +195,9 @@ makePlot <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
         geom_ribbon(aes(ymin = q25, ymax=q75, fill=grey75), alpha=0.4)
 
     if (is.null(lty))
-        result <- result + geom_line(aes(y = q50), size = 1, colour=colour)
+        result <- result + geom_line(aes(y = q50), size = 0.5, colour=colour)
     else
-        result <- result + geom_line(aes(y = q50, linetype = lty), size = 1, colour=colour)
+        result <- result + geom_line(aes(y = q50, linetype = lty), size = 0.5, colour=colour)
 
     result <- result +
         labs(x="Date") +
@@ -212,7 +212,7 @@ makePlot <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
         pos = date_markers$pos[i]
         color = date_markers$color[i]
         result = result + geom_vline(xintercept=pos, linetype="dashed",
-                                     color=color, size=1)
+                                     color=color, size=0.5)
     }
 
     result
@@ -226,7 +226,7 @@ addExtraPlot <- function(plot, sample, dateRange, fun, colour, lty)
     colnames(qd) <- c("q50")
     
     result <- plot +
-        geom_line(aes(y = qd$q50, linetype = lty), colour=colour, size = 1)
+        geom_line(aes(y = qd$q50, linetype = lty), colour=colour, size = 0.5)
 
     result
 }
@@ -241,7 +241,7 @@ addExtraPlotQ <- function(plot, sample, dateRange, fun, colour, lty)
     result <- plot +
         geom_ribbon(aes(ymin = qd$q5, ymax=qd$q95, fill=grey95), alpha=0.4) +
         geom_ribbon(aes(ymin = qd$q25, ymax=qd$q75, fill=grey75), alpha=0.4) +
-        geom_line(aes(y = qd$q50), linetype = lty, colour=colour, size = 1)
+        geom_line(aes(y = qd$q50), linetype = lty, colour=colour, size = 0.5)
 
     result
 }
@@ -256,7 +256,7 @@ addExtraPlotQ2 <- function(plot, sample, dateRange, fun, colour, lty)
     result <- plot +
         geom_ribbon(aes(ymin = qd$cq5, ymax=qd$cq95, fill="grey70"), alpha=0.4) +
         geom_ribbon(aes(ymin = qd$cq25, ymax=qd$cq75, fill="grey60"), alpha=0.4) +
-        geom_line(aes(y = qd$cq50), linetype = lty, colour=colour, size = 1)
+        geom_line(aes(y = qd$cq50), linetype = lty, colour=colour, size = 0.5)
 
     result
 }

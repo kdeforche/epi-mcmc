@@ -371,7 +371,7 @@ calclogl <- function(params) {
     logPriorP <- 0
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=18, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=18, sd=1, log=T)
 
     logPriorP <- logPriorP + dnorm(Tef0, mean=2.5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(Tef0 - Teft, mean=0, sd=1.5, log=T)

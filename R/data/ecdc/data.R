@@ -25,6 +25,9 @@ optimpw <- function(par) {
 
     if (country2 == "BY" & i1 < 40)
         return(Inf)
+
+    if (country2 == "IT" & i1 < 10)
+        return(Inf)
     
     i1 <- max(2, min(i2, i1))
     i2 <- min(length(s)-1, max(i2, i1))
@@ -57,6 +60,10 @@ print(intersect(mob_countries, ecdc_countries))
 
 if (country2 == 'GB') {
     country2 = 'UK'
+}
+
+if (country2 == 'GR') {
+    country2 = 'EL'
 }
 
 country.data <- subset(ecdc, geoId == country2)

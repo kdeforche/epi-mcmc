@@ -40,8 +40,8 @@ all_plots <- function(date_markers) {
     dm1 <- numeric(length(p1$data$x))
     dm1[1:length(p1$data$x)] = NA
     dm1[1:length(dmort)] = dmorti
-    p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=1, color="#1144CC")
-
+    p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1), size=0.5, color="#1144CC")
+    
     p2 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$died, "#3366FF",
                    c("Count", "Total deaths"), date_markers, NULL)
@@ -49,7 +49,7 @@ all_plots <- function(date_markers) {
     dm2 <- numeric(length(p2$data$x))
     dm2[1:length(p2$data$x)] = NA
     dm2[1:length(dmort)] = dmort
-    p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2),  size=1, color="#1144CC")
+    p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2),  size=0.5, color="#1144CC")
 
     p3 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) state$hospi, "#FF6633",
@@ -57,7 +57,7 @@ all_plots <- function(date_markers) {
     dm3 <- numeric(length(p3$data$x))
     dm3[1:length(p3$data$x)] = NA
     dm3[1:length(dhospi)] = dhospi
-    p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=1, color="#CC4411")
+    p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=0.5, color="#CC4411")
 
     p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { (state$E + state$In + state$Is)/N * 100 },
@@ -103,7 +103,8 @@ all_plots_age <- function(date_markers) {
     dm1 <- numeric(length(p1$data$x))
     dm1[1:length(p1$data$x)] = NA
     dm1[1:length(dmorti)] = dmorti
-    p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=1, color="#1144CC")
+    p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=0.5, color="#1144CC")
+    p1 <- p1 + coord_cartesian(ylim = c(0, 50))
 
     ## Add y curves
     p1 <- addExtraPlot(p1, data_sample, dateRange, function(state) { state$y.deadi }, "#3366FF", "dashed")
@@ -112,7 +113,7 @@ all_plots_age <- function(date_markers) {
     dm1y[1:length(p1$data$x)] = NA
     dm1y[1:length(y.dmorti)] = y.dmorti
     
-    p1 <- p1 + geom_line(aes(y = dm1y), linetype="dashed") + geom_point(aes(y = dm1y),  size=1, color="#1144CC")
+    p1 <- p1 + geom_line(aes(y = dm1y), linetype="dashed") + geom_point(aes(y = dm1y),  size=0.5, color="#1144CC")
 
     ## Add o curves
     p1 <- addExtraPlot(p1, data_sample, dateRange, function(state) { state$o.deadi }, "#3366FF", "dotted")
@@ -121,7 +122,7 @@ all_plots_age <- function(date_markers) {
     dm1o[1:length(p1$data$x)] = NA
     dm1o[1:length(o.dmorti)] = o.dmorti
 
-    p1 <- p1 + geom_line(aes(y = dm1o), linetype="dotted") + geom_point(aes(y = dm1o),  size=1, color="#1144CC")
+    p1 <- p1 + geom_line(aes(y = dm1o), linetype="dotted") + geom_point(aes(y = dm1o),  size=0.5, color="#1144CC")
 
     p1 <- p1 + scale_colour_manual(values = c("#3366FF"), guide=FALSE) +
         scale_linetype_manual(name = 'Age group',
@@ -137,7 +138,7 @@ all_plots_age <- function(date_markers) {
     dm2 <- numeric(length(p2$data$x))
     dm2[1:length(p2$data$x)] = NA
     dm2[1:length(dmort)] = dmort
-    p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2), size=1, color="#1144CC")
+    p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2), size=0.5, color="#1144CC")
 
     ## Add y curves
     p2 <- addExtraPlot(p2, data_sample, dateRange, function(state) { state$y.died }, "#3366FF", "dashed")
@@ -146,7 +147,7 @@ all_plots_age <- function(date_markers) {
     dm2y[1:length(p2$data$x)] = NA
     dm2y[1:length(y.dmort)] = y.dmort
     
-    p2 <- p2 + geom_line(aes(y = dm2y), linetype="dashed") + geom_point(aes(y = dm2y),  size=1, color="#1144CC")
+    p2 <- p2 + geom_line(aes(y = dm2y), linetype="dashed") + geom_point(aes(y = dm2y),  size=0.5, color="#1144CC")
 
     ## Add o curves
     p2 <- addExtraPlot(p2, data_sample, dateRange, function(state) { state$o.died }, "#3366FF", "dotted")
@@ -155,7 +156,7 @@ all_plots_age <- function(date_markers) {
     dm2o[1:length(p2$data$x)] = NA
     dm2o[1:length(o.dmort)] = o.dmort
 
-    p2 <- p2 + geom_line(aes(y = dm2o), linetype="dotted") + geom_point(aes(y = dm2o),  size=1, color="#1144CC")
+    p2 <- p2 + geom_line(aes(y = dm2o), linetype="dotted") + geom_point(aes(y = dm2o),  size=0.5, color="#1144CC")
 
     p2 <- p2 + scale_colour_manual(values = c("#1144CC"), guide=FALSE) +
         scale_linetype_manual(name = 'Age group',
@@ -170,7 +171,8 @@ all_plots_age <- function(date_markers) {
     dm3 <- numeric(length(p3$data$x))
     dm3[1:length(p3$data$x)] = NA
     dm3[1:length(dhospi)] = dhospi
-    p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=1, color="#CC4411")
+    p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=0.5, color="#CC4411")
+    p3 <- p3 + coord_cartesian(ylim = c(0, 200))
 
     ## Add y/o curves
     p3 <- addExtraPlot(p3, data_sample, dateRange, function(state) { state$y.hospi }, "#FF6633", "dashed")
@@ -188,6 +190,7 @@ all_plots_age <- function(date_markers) {
     p4 <- makePlot(data_sample, dateRange,
                    function(state) { (state$y.E + state$y.I + state$o.E + state$o.I)/N * 100 },
                    "#A67514", c("Population group (%)", "Infected people (excl. WZC)"), date_markers, 'solid')
+    p4 <- p4 + coord_cartesian(ylim = c(0, 1))
 
     ## Add y/o curves
     p4 <- addExtraPlot(p4, data_sample, dateRange, function(state) { (state$y.E + state$y.I)/y.N * 100 }, "#A67514", "dashed")
@@ -264,12 +267,14 @@ data_sample <- readSample()
 ##pdf("current-state.pdf", width=12, height=16)
 
 plot_end_date <- as.Date("2020/7/1")
-all_plots(data.frame(pos=c(dstartdate + lockdown_offset, dstartdate + lockdown_offset + lockdown_transition_period), color=c("orange", "red")))
 
-plots <- function() {
-    plot_end_date <- as.Date("2020/7/1")
-    all_plots(data.frame(pos=c(dstartdate + lockdown_offset, dstartdate + lockdown_offset + lockdown_transition_period), color=c("orange", "red")))
-}
+dates <- data.frame(pos=c(dstartdate + lockdown_offset,
+                          dstartdate + lockdown_offset + lockdown_transition_period,
+                          dstartdate + Es.time[1],
+                          dstartdate + Es.time[2]),
+                    color=c("orange", "red", "lightgreen", "green"))
+
+all_plots(dates)
 
 ## current Re value
 est.Re <- data.frame(quantileData(data_sample, function(state) { state$Re }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))

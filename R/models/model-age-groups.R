@@ -435,17 +435,24 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(o.died_latency, mean=10, sd=10, log=T)
 
     ##
-    ## Based on literature estimates
+    ## Based on literature estimates, tightened now to converge more quickly
     ##
     Tinc = 1/a
-    logPriorP <- logPriorP + dnorm(Tinc, mean=5, sd=3, log=T)
+    logPriorP <- logPriorP + dnorm(Tinc, mean=2.5, sd=0.5, log=T)
     Tinf = 1/gamma
-    logPriorP <- logPriorP + dnorm(Tinf, mean=5, sd=3, log=T)
+    logPriorP <- logPriorP + dnorm(Tinf, mean=2.5, sd=0.5, log=T)
 
-    for (e in Es) {
-        logPriorP <- logPriorP + dnorm(e, mean=1.0, sd=0.1, log=T)
+    ## Es: prior is 1 for first one; prior for Es[i] = estimate for Es[i-1]
+    ## (thus assume for each subsequent period no change relative to the previous period)
+    if (length(Es) > 0) {
+        logPriorP <- logPriorP + dnorm(Es[1], mean=1.0, sd=0.1, log=T)
+        if (length(Es) > 1) {
+            for (eI in 2:length(Es)) {
+                logPriorP <- logPriorP + dnorm(Es[eI], mean=Es[eI-1], sd=0.1, log=T)
+            }
+        }
     }
-    
+
     ##
     ## Total deaths at lockdown is also the result of an observation
     ##
