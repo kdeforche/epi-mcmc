@@ -35,9 +35,9 @@ source("data.R")
 ## -> should increase hospitalisations for < 65 vs for > 65y and thus
 ##    predict higher number of 
 
-hosp_week_age_statistics <- data.frame(r0.49 = c(20, 18, 17, 15, 14, 13, 18, 18, 14))
-hosp_week_age_statistics$r50.79 = c(55, 59, 59, 56, 51, 47, 46, 47, 43)
-hosp_week_age_statistics$r80 = c(25, 25, 26, 29, 36, 41, 38, 37, 45)
+hosp_week_age_statistics <- data.frame(r0.49 = c(20, 18, 17, 15, 14, 13, 17, 18, 14, 14, 21))
+hosp_week_age_statistics$r50.79 = c(55, 59, 59, 56, 51, 47, 46, 47, 40, 43, 46)
+hosp_week_age_statistics$r80 = c(25, 25, 26, 29, 36, 41, 40, 37, 46, 43, 33)
 
 for (i in 1:dim(hosp_week_age_statistics)[1]) {
     hosp_week_age_statistics[i,] <- hosp_week_age_statistics[i,] / sum(hosp_week_age_statistics[i,])
@@ -47,14 +47,16 @@ bucket_50.79.y = 24.4/(24.4 + 30)
 hosp_week_age_statistics$y = hosp_week_age_statistics[,1] + hosp_week_age_statistics[,2] * bucket_50.79.y
 hosp_week_age_statistics$index = 1:dim(hosp_week_age_statistics)[1] * 7 - 5
 
-model <- lm(y ~ poly(index, 3), data=hosp_week_age_statistics)
+##model <- lm(y ~ poly(index, 3), data=hosp_week_age_statistics)
+model <- smooth.spline(hosp_week_age_statistics$index, hosp_week_age_statistics$y, df=6)
 yf <- data.frame(index=seq(1:length(dhospi)))
+p <- as.numeric(unlist(predict(model, yf)$y))
 
 pdf("hosp-age.pdf", width=8, height=6)
 
-plot(dstartdate + (yf$index - 1), predict(model, yf) * 100, type='l', ylim=c(0, 100), xlab="Date", ylab="Fraction of hospitalisations", main="Distribution of hospitalisations in younger and older groups", col='blue')
+plot(dstartdate + (yf$index - 1), p * 100, type='l', ylim=c(0, 100), xlab="Date", ylab="Fraction of hospitalisations", main="Distribution of hospitalisations in younger and older groups", col='blue')
 points(dstartdate + (hosp_week_age_statistics$index - 1), hosp_week_age_statistics$y * 100, col='blue')
-lines(dstartdate + (yf$index - 1), 100 - predict(model, yf) * 100, type='l', col='darkgreen')
+lines(dstartdate + (yf$index - 1), 100 - p * 100, type='l', col='darkgreen')
 points(dstartdate + (hosp_week_age_statistics$index - 1), 100 - hosp_week_age_statistics$y * 100, col='darkgreen')
 legend("topleft", inset=0.02, legend=c("< 65", ">= 65"),
        col=c("blue", "darkgreen"),lty=1)
@@ -66,7 +68,7 @@ lines(dstartdate + (hosp_week_age_statistics$index - 1), 100 - hosp_week_age_sta
 legend("topleft", inset=0.02, legend=c("< 65", ">= 65"),
        col=c("blue", "darkgreen"),lty=1)
 
-y.dhospi = round(dhospi * predict(model, yf))
+y.dhospi = round(dhospi * p)
 o.dhospi = dhospi - y.dhospi
 
 ##
@@ -100,7 +102,7 @@ o.wzcmorti = c(0, 0, 0, 0, 2, 1, 1, 2, 3, 10, 9, 12, 21, 19, 12, 24, 25,
                170, 199, 176, 240, 155, 165, 149, 153, 117, 130, 126, 120, # 20/04/20
                116, 112, 95, 74, 76, 95, 70, 55, 48, 46, 47, 33, 45, 40, 38, # 05/05/20
                37, 40, 28, 35, 38, 25, 24, 20, 23, 11, 8, 21, 13, 8, 13, # 20/05/20
-               12, 12, 3, 0, 0)
+               13, 15, 6, 13, 7, 20, 0, 0)
 
 print(paste("last day o.wzcmorti: ", dstartdate + length(o.wzcmorti) - 1))
 print(paste("last day o.dmorti: ", dstartdate + length(o.dmorti) - 1))
