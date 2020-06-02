@@ -23,7 +23,7 @@ source("settings.R")
 
 options(scipen=999)
 
-evaluation_data_count <- 0
+evaluation_data_count <- 14
 
 all_plots <- function(date_markers) {
     p1 <- makePlot(data_sample, c(dstartdate, plot_end_date),
