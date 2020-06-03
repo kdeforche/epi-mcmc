@@ -59,16 +59,27 @@ for (country2 in western) {
     plot(as.Date(c$date), s, type='l', xlab="Date", ylab="% transit + % workplaces", main=countryname)
     lxi <- c(1, round(o$par[1]), round(o$par[2]), length(c$date))
     ly <- c(o$par[3], o$par[3], o$par[4], o$par[4])
-    lines(as.Date(c$date[lxi]), ly, col='blue', width=2)
-    abline(v=as.Date(c$date[round(o$par[1])]), col='orange')
-    abline(v=as.Date(c$date[round(o$par[2])]), col='red')
+    lines(as.Date(c$date[lxi]), ly, col='blue', lw=2)
+
+    d1 <- as.Date(c$date[round(o$par[1])])
+    d2 <- as.Date(c$date[round(o$par[2])])
+    abline(v=d1, col='orange')
+    abline(v=d2, col='red')
+
+    mtext(c("D1", "D2"), at=c(d1, d2), side=c(1), cex=0.5)
+
+    y1 <- max(s)
+    y2 <- max(s) - 0.1 * (max(s) - min(s))
+    
+    text(x=max(as.Date(c$date)), y=y1, paste("D1=",substr(d1, 6, 10)), adj=c(1, NA))
+    text(x=max(as.Date(c$date)), y=y2, paste("D2=",substr(d2, 6, 10)), adj=c(1, NA))
 
     i = i + 1
 
     if (i == 21) {
         dev.off()
         pdf("graphs2.pdf", width=12, height=16)
-        par(mfrow=c(4, 5))
+        par(mfrow=c(5, 4))
     }
 }
 

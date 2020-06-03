@@ -111,7 +111,9 @@ read <- function() {
 
     ##print(ess(posterior))
 
+    pdf(paste(country2,"sample.pdf",sep='_'), width=12, height=16)
     plot(ts(subset(posterior, select=keyparamnames)))
+    dev.off()
 
     ## compute credibility intervals
     print(data.frame(ci(posterior, ci=0.01)))
