@@ -290,7 +290,7 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
-    logPriorP <- logPriorP + dnorm(Tinf0, mean=2.5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(Tinf0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(Tinf0 - Tinft, mean=0, sd=1.5, log=T)
 
     ##logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)

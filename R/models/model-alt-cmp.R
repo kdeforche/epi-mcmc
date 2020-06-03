@@ -47,27 +47,26 @@ cppFunction('NumericVector odesimstepc(double S, double E, double In, double Is,
      const double betaIs = 1.0/LOOPS * (l * betaIs1 + (LOOPS - l) * betaIs0);
      const double a = 1.0/LOOPS * (l * a1 + (LOOPS - l) * a0);
      const double Tin = 1.0/LOOPS * (l * Tin1 + (LOOPS - l) * Tin0);
+     const double Tis = 1.0/LOOPS * (l * Tis1 + (LOOPS - l) * Tis0);
 
-     const double Tinf = 14.0;
-     const double gamma = 1/Tinf;
-     const double gamman = 1/Tin - gamma;
+     const double gamma1 = 1/Tin;
+     const double gamma2 = 1/Tis;
 
      const double inf1 = (betaIn * In) / N * S;
      const double inf2 = (betaIs * Is) / N * S;
      const double got_infected = inf1 + inf2;
      const double got_infectious = a * E;
-     const double got_isolated = gamman * In;
-     const double got_removed = gamma * Is;
-     const double didnt_isolate = gamma * In;
+     const double got_isolated = gamma1 * In;
+     const double got_removed = gamma2 * Is;
    
      const double deltaS = -got_infected;
      const double deltaE = got_infected - got_infectious;
-     const double deltaIn = got_infectious - got_isolated - didnt_isolate;
+     const double deltaIn = got_infectious - got_isolated;
      const double deltaIs = got_isolated - got_removed;
-     const double deltaR = got_removed + didnt_isolate;
+     const double deltaR = got_removed;
 
      if (l == 0) {
-       out[5] = Tin * inf1 / In + Tinf * inf2 / Is;
+       out[5] = Tin * inf1 / In + Tis * inf2 / Is;
        out[6] = out[5] * N / S;
      }
 
@@ -166,21 +165,17 @@ calculateModel <- function(params, period)
     mort_lockdown_threshold <- params[10]
     Es <- tail(params, n=-10)
 
-    Tis0 = Tinf
-    Tin1 = 1 / (1 / Tin0 + 1 / Tinf) ## 1 / (gamman + gamma)
-    Rin0 = (Tef0 - Tin0 - Tinf) * R0 / (Tin1 - Tin0 - Tinf)
-    Ris0 = R0 - Rin0
+    Tis0 = Tinf - Tin0
+    Ris0 = R0 * (Tef0 - Tin0) / (Tinf - Tin0)
+    Rin0 = R0 - Ris0
     betaIn0 = Rin0 / Tin0
     betaIs0 = Ris0 / Tis0
-    beta0 = R0 / Tef0
 
-    Tist = Tinf
-    Tin1 = 1 / (1 / Tint + 1 / Tinf) ## 1 / (gamman + gamma)
-    Rint = (Teft - Tint - Tinf) * Rt / (Tin1 - Tint - Tinf)
-    Rist = Rt - Rint
+    Tist = Tinf - Tint
+    Rist = Rt * (Teft - Tint) / (Tinf - Tint)
+    Rint = Rt - Rist
     betaInt = Rint / Tint
     betaIst = Rist / Tist
-    betat = Rt / Teft
     
     a <- 1 / Tinc
 
@@ -207,19 +202,22 @@ calculateModel <- function(params, period)
     l.betaIn = betaIn0
     l.betaIs = betaIs0
     l.Tin = Tin0
+    l.Tis = Tis0
     
     for (i in (padding + 1):(padding + period)) {
         betaIn = calcpar(i - data_offset, betaIn0, betaInt, Es)
         betaIs = calcpar(i - data_offset, betaIs0, betaIst, Es)
         Tin = calcpar(i - data_offset, Tin0, Tint, Es)
+        Tis = Tinf - Tin
         
         state <- simstep.C(state, N,
-                           l.betaIn, l.betaIs, a, l.Tin, 0,
-                           betaIn, betaIs, a, Tin, 0)
+                           l.betaIn, l.betaIs, a, l.Tin, l.Tis,
+                           betaIn, betaIs, a, Tin, Tis)
 
         l.betaIn = betaIn
         l.betaIs = betaIs
         l.Tin = Tin
+        l.Tis = Tis
         
         s = convolute(state$S, i, hosp_cv_profile)
         state$hosp[i] <- (N - s) * hosp_rate
@@ -264,20 +262,18 @@ invTransformParams <- function(posterior)
     posterior$Tinf = Tinf
     posterior$Tinc = Tinc
 
-    posterior$Tis0 = posterior$Tinf
-    Tin1 = 1 / (1 / posterior$Tin0 + 1 / Tinf)
-    posterior$Rin0 = (posterior$Tef0 - posterior$Tin0 - posterior$Tinf) *
-        posterior$R0 / (Tin1 - posterior$Tin0 - posterior$Tinf)
-    posterior$Ris0 = posterior$R0 - posterior$Rin0
+    posterior$Tis0 = posterior$Tinf - posterior$Tin0
+    posterior$Ris0 = posterior$R0 * (posterior$Tef0 - posterior$Tin0) /
+        (posterior$Tinf - posterior$Tin0)
+    posterior$Rin0 = posterior$R0 - posterior$Ris0
     posterior$betaIn0 = posterior$Rin0 / posterior$Tin0
     posterior$betaIs0 = posterior$Ris0 / posterior$Tis0
     posterior$beta0 = posterior$R0 / posterior$Tef0
 
-    posterior$Tist = posterior$Tinf
-    Tin1 = 1 / (1 / posterior$Tint + 1 / Tinf)
-    posterior$Rint = (posterior$Teft - posterior$Tint - posterior$Tinf) *
-        posterior$Rt / (Tin1 - posterior$Tint - posterior$Tinf)
-    posterior$Rist = posterior$Rt - posterior$Rint
+    posterior$Tist = posterior$Tinf - posterior$Tint
+    posterior$Rist = posterior$Rt * (posterior$Teft - posterior$Tint) /
+        (posterior$Tinf - posterior$Tint)
+    posterior$Rint = posterior$Rt - posterior$Rist
     posterior$betaInt = posterior$Rint / posterior$Tint
     posterior$betaIst = posterior$Rist / posterior$Tist
     posterior$betat = posterior$Rt / posterior$Teft
@@ -324,18 +320,16 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    Tis0 = Tinf
-    Tin1 = 1 / (1 / Tin0 + 1 / Tinf) ## 1 / (gamman + gamma)
-    Rin0 = (Tef0 - Tin0 - Tinf) * R0 / (Tin1 - Tin0 - Tinf)
-    Ris0 = R0 - Rin0
+    Tis0 = Tinf - Tin0
+    Ris0 = R0 * (Tef0 - Tin0) / (Tinf - Tin0)
+    Rin0 = R0 - Ris0
     betaIn0 = Rin0 / Tin0
     betaIs0 = Ris0 / Tis0
     beta0 = R0 / Tef0
 
-    Tist = Tinf
-    Tin1 = 1 / (1 / Tint + 1 / Tinf) ## 1 / (gamman + gamma)
-    Rint = (Teft - Tint - Tinf) * Rt / (Tin1 - Tint - Tinf)
-    Rist = Rt - Rint
+    Tist = Tinf - Tint
+    Rist = Rt * (Teft - Tint) / (Tinf - Tint)
+    Rint = Rt - Rist
     betaInt = Rint / Tint
     betaIst = Rist / Tist
     betat = Rt / Teft
