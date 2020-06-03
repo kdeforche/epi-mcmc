@@ -7,7 +7,7 @@ readData <- function(files)
     print(dim(posterior))
     c = dim(posterior)[1]
 
-    posterior <- posterior[(c/8):c,]
+    posterior <- posterior[(c/2):c,]
 
     if (length(files) > 1) {
         for (i in 2:length(files)) {

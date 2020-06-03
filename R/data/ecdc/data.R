@@ -44,11 +44,12 @@ if (country2 == "BY")
     init <- c(41, 42, 0, -60)
 
 control <- NULL
-control$maxit <- 10000
+control$maxit <- 100000
 control$parscale <- c(1, 1, 1, 1)
 o <- optim(init, optimpw, control=control)
-print(o$par)
+o <- optim(o$par, optimpw, control=control)
 
+print(o$par)
 print(c$date[round(o$par[1:2])])
 
 ecdc <- read.csv("ecdc.csv")
