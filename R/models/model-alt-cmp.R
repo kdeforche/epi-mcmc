@@ -4,7 +4,7 @@ InvalidDataOffset <- 10000
 Initial <- 1
 
 Tinf <- 14
-Tinc <- 2.5
+Tinc <- 3
 died_rate <- 0.007
 
 calcConvolveProfile <- function(latency, latency_sd)
@@ -326,6 +326,7 @@ calclogl <- function(params) {
     betaIn0 = Rin0 / Tin0
     betaIs0 = Ris0 / Tis0
     beta0 = R0 / Tef0
+    G0 = Tinc + Tef0 / 2
 
     Tist = Tinf - Tint
     Rist = Rt * (Teft - Tint) / (Tinf - Tint)
@@ -333,6 +334,7 @@ calclogl <- function(params) {
     betaInt = Rint / Tint
     betaIst = Rist / Tist
     betat = Rt / Teft
+    Gt = Tinc + Teft / 2
 
     if (betaIn0 < 0 || betaInt < 0 || betaIs0 < 0 || betaIst < 0) {
         return(-Inf)
@@ -370,8 +372,8 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
-    logPriorP <- logPriorP + dnorm(Tef0, mean=5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(Tef0 - Teft, mean=0, sd=1.5, log=T)
+    logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
 
     ##logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)
     ##logPriorP <- logPriorP + dnorm(betaInt, mean=1, sd=0.1, log=T)

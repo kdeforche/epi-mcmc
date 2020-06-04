@@ -3,7 +3,7 @@ require(Rcpp)
 InvalidDataOffset <- 10000
 Initial <- 1
 
-Tinc <- 2.5
+Tinc <- 3
 died_rate <- 0.007
 
 calcConvolveProfile <- function(latency, latency_sd)
@@ -264,7 +264,9 @@ calclogl <- function(params) {
     }
 
     beta0 = R0 / Tinf0
+    G0 = Tinc + Tinf0/2
     betat = Rt / Tinft
+    Gt = Tinc + Tinft/2
 
     if (beta0 < 0 || betat < 0) {
         return(-Inf)
@@ -290,8 +292,8 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
 
-    logPriorP <- logPriorP + dnorm(Tinf0, mean=5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(Tinf0 - Tinft, mean=0, sd=1.5, log=T)
+    logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
 
     ##logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)
     ##logPriorP <- logPriorP + dnorm(betaInt, mean=1, sd=0.1, log=T)
