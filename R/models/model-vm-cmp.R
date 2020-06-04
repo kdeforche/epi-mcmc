@@ -50,7 +50,7 @@ cppFunction('NumericVector odesimstepc(double S, double E, double In, double Is,
 
      const double Tinf = 14.0;
      const double gamma = 1/Tinf;
-     const double gamman = 1/Tin - gamma;
+     const double gamman = 1/Tin;
 
      const double inf1 = (betaIn * In) / N * S;
      const double inf2 = (betaIs * Is) / N * S;
@@ -67,7 +67,7 @@ cppFunction('NumericVector odesimstepc(double S, double E, double In, double Is,
      const double deltaR = got_removed + didnt_isolate;
 
      if (l == 0) {
-       out[5] = Tin * inf1 / In + Tinf * inf2 / Is;
+       out[5] = 1 / (gamma + gamman) * inf1 / In + Tinf * inf2 / Is;
        out[6] = out[5] * N / S;
      }
 
