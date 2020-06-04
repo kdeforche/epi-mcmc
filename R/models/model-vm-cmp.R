@@ -156,8 +156,8 @@ calculateModel <- function(params, period)
 {
     R0 <- params[1]
     Rt <- params[2]
-    Tef0 <- params[3]
-    Teft <- params[4]
+    G0 <- params[3]
+    Gt <- params[4]
     Tin0 <- params[5]
     Tint <- params[6]
     hosp_rate <- params[7]
@@ -167,20 +167,24 @@ calculateModel <- function(params, period)
     Es <- tail(params, n=-10)
 
     Tis0 = Tinf
-    Tin1 = 1 / (1 / Tin0 + 1 / Tinf) ## 1 / (gamman + gamma)
-    Rin0 = (Tef0 - Tin0 - Tinf) * R0 / (Tin1 - Tin0 - Tinf)
+    K0 = Tin0 + 0.5 * Tinf
+    Tina0 = (1 / (1 / Tin0 + 1 / Tinf))
+    L0 = 0.5 * Tina0
+    Rin0 = (K0 - (G0 - Tinc)) * R0 / (K0 - L0)
     Ris0 = R0 - Rin0
-    betaIn0 = Rin0 / Tin0
+    betaIn0 = Rin0 / Tina0
     betaIs0 = Ris0 / Tis0
-    beta0 = R0 / Tef0
+    beta0 = R0 / Tinf
 
     Tist = Tinf
-    Tin1 = 1 / (1 / Tint + 1 / Tinf) ## 1 / (gamman + gamma)
-    Rint = (Teft - Tint - Tinf) * Rt / (Tin1 - Tint - Tinf)
+    Kt = Tint + 0.5 * Tinf
+    Tinat = (1 / (1 / Tint + 1 / Tinf))
+    Lt = 0.5 * Tinat
+    Rint = (Kt - (Gt - Tinc)) * Rt / (Kt - Lt)
     Rist = Rt - Rint
-    betaInt = Rint / Tint
+    betaInt = Rint / Tinat
     betaIst = Rist / Tist
-    betat = Rt / Teft
+    betat = Rt / Tinf
     
     a <- 1 / Tinc
 
@@ -265,26 +269,25 @@ invTransformParams <- function(posterior)
     posterior$Tinc = Tinc
 
     posterior$Tis0 = posterior$Tinf
-    Tin1 = 1 / (1 / posterior$Tin0 + 1 / Tinf)
-    posterior$Rin0 = (posterior$Tef0 - posterior$Tin0 - posterior$Tinf) *
-        posterior$R0 / (Tin1 - posterior$Tin0 - posterior$Tinf)
+    K0 = posterior$Tin0 + 0.5 * posterior$Tinf
+    Tina0 = (1 / (1 / posterior$Tin0 + 1 / posterior$Tinf))
+    L0 = 0.5 * Tina0
+    posterior$Rin0 = (K0 - (posterior$G0 - posterior$Tinc)) * posterior$R0 / (K0 - L0)
     posterior$Ris0 = posterior$R0 - posterior$Rin0
-    posterior$betaIn0 = posterior$Rin0 / posterior$Tin0
+    posterior$betaIn0 = posterior$Rin0 / Tina0
     posterior$betaIs0 = posterior$Ris0 / posterior$Tis0
-    posterior$beta0 = posterior$R0 / posterior$Tef0
+    posterior$beta0 = posterior$R0 / posterior$Tinf
 
     posterior$Tist = posterior$Tinf
-    Tin1 = 1 / (1 / posterior$Tint + 1 / Tinf)
-    posterior$Rint = (posterior$Teft - posterior$Tint - posterior$Tinf) *
-        posterior$Rt / (Tin1 - posterior$Tint - posterior$Tinf)
+    Kt = posterior$Tint + 0.5 * posterior$Tinf
+    Tinat = (1 / (1 / posterior$Tint + 1 / posterior$Tinf))
+    Lt = 0.5 * Tinat
+    posterior$Rint = (Kt - (posterior$Gt - posterior$Tinc)) * posterior$Rt / (Kt - Lt)
     posterior$Rist = posterior$Rt - posterior$Rint
-    posterior$betaInt = posterior$Rint / posterior$Tint
+    posterior$betaInt = posterior$Rint / Tinat
     posterior$betaIst = posterior$Rist / posterior$Tist
-    posterior$betat = posterior$Rt / posterior$Teft
+    posterior$betat = posterior$Rt / posterior$Tinf
 
-    posterior$deltaTeff = posterior$Teft - posterior$Tef0
-
-    posterior$frTef = posterior$Teft / posterior$Tef0
     posterior$frbeta = posterior$betat / posterior$beta0
     posterior$frR = posterior$Rt / posterior$R0
     
@@ -298,8 +301,8 @@ invTransformParams <- function(posterior)
 calclogl <- function(params) {
     R0 <- params[1]
     Rt <- params[2]
-    Tef0 <- params[3]
-    Teft <- params[4]
+    G0 <- params[3]
+    Gt <- params[4]
     Tin0 <- params[5]
     Tint <- params[6]
     hosp_rate <- params[7]
@@ -320,27 +323,33 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (Tef0 < 0.2 || Tef0 > Tinf - 0.2) {
+    if (G0 - Tinc < 0.2) {
+        return(-Inf)
+    }
+
+    if (Gt - Tinc < 0.2) {
         return(-Inf)
     }
 
     Tis0 = Tinf
-    Tin1 = 1 / (1 / Tin0 + 1 / Tinf) ## 1 / (gamman + gamma)
-    Rin0 = (Tef0 - Tin0 - Tinf) * R0 / (Tin1 - Tin0 - Tinf)
+    K0 = Tin0 + 0.5 * Tinf
+    Tina0 = (1 / (1 / Tin0 + 1 / Tinf))
+    L0 = 0.5 * Tina0
+    Rin0 = (K0 - (G0 - Tinc)) * R0 / (K0 - L0)
     Ris0 = R0 - Rin0
-    betaIn0 = Rin0 / Tin0
+    betaIn0 = Rin0 / Tina0
     betaIs0 = Ris0 / Tis0
-    beta0 = R0 / Tef0
-    G0 = Tinc + Tef0 / 2
+    beta0 = R0 / Tinf
 
     Tist = Tinf
-    Tin1 = 1 / (1 / Tint + 1 / Tinf) ## 1 / (gamman + gamma)
-    Rint = (Teft - Tint - Tinf) * Rt / (Tin1 - Tint - Tinf)
+    Kt = Tint + 0.5 * Tinf
+    Tinat = (1 / (1 / Tint + 1 / Tinf))
+    Lt = 0.5 * Tinat
+    Rint = (Kt - (Gt - Tinc)) * Rt / (Kt - Lt)
     Rist = Rt - Rint
-    betaInt = Rint / Tint
+    betaInt = Rint / Tinat
     betaIst = Rist / Tist
-    betat = Rt / Teft
-    Gt = Tinc + Teft / 2
+    betat = Rt / Tinf
 
     if (betaIn0 < 0 || betaInt < 0 || betaIs0 < 0 || betaIst < 0) {
         return(-Inf)
@@ -436,7 +445,7 @@ calclogl <- function(params) {
     
     if (it %% 1000 == 0) {
         print(params)
-        print(c(R0, Rt, Tef0, Teft, beta0, betat))
+        print(c(R0, Rt, G0, Gt, beta0, betat))
 	print(c(it, result))
 	graphs()
     }
@@ -445,13 +454,13 @@ calclogl <- function(params) {
 }
 
 
-fit.paramnames <- c("R0", "Rt", "Tef0", "Teft", "Tin0", "Tint",
+fit.paramnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint",
                     "logHR", "HL", "DL", "lockdownmort")
-keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "Tef0", "Teft",
+keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "G0", "Gt",
                    "Rin0", "Ris0")
-fitkeyparamnames <- c("R0", "Rt", "Tef0", "Teft", "Tin0", "Tint")
+fitkeyparamnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint")
 
-init <- c(2.9, 0.9, 3, 3, 2, 1, log(0.02), 10, 20, total_deaths_at_lockdown,
+init <- c(2.9, 0.9, 5, 5, 2, 1, log(0.02), 10, 20, total_deaths_at_lockdown,
           rep(0.9, length(Es.time)))
 scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20,
             rep(0.05, length(Es.time)))

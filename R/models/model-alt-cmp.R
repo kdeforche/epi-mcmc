@@ -155,8 +155,8 @@ calculateModel <- function(params, period)
 {
     R0 <- params[1]
     Rt <- params[2]
-    Tef0 <- params[3]
-    Teft <- params[4]
+    G0 <- params[3]
+    Gt <- params[4]
     Tin0 <- params[5]
     Tint <- params[6]
     hosp_rate <- params[7]
@@ -166,17 +166,19 @@ calculateModel <- function(params, period)
     Es <- tail(params, n=-10)
 
     Tis0 = Tinf - Tin0
-    Ris0 = R0 * (Tef0 - Tin0) / (Tinf - Tin0)
+    Ris0 = (G0 - Tinc - 0.5 * Tin0) / Tinf * R0
     Rin0 = R0 - Ris0
     betaIn0 = Rin0 / Tin0
     betaIs0 = Ris0 / Tis0
+    beta0 = R0 / Tinf
 
     Tist = Tinf - Tint
-    Rist = Rt * (Teft - Tint) / (Tinf - Tint)
+    Rist = (Gt - Tinc - 0.5 * Tint) / Tinf * Rt
     Rint = Rt - Rist
     betaInt = Rint / Tint
     betaIst = Rist / Tist
-    
+    betat = Rt / Tinf
+
     a <- 1 / Tinc
 
     hosp_cv_profile = calcConvolveProfile(-hosp_latency, 5)
@@ -263,24 +265,21 @@ invTransformParams <- function(posterior)
     posterior$Tinc = Tinc
 
     posterior$Tis0 = posterior$Tinf - posterior$Tin0
-    posterior$Ris0 = posterior$R0 * (posterior$Tef0 - posterior$Tin0) /
-        (posterior$Tinf - posterior$Tin0)
+    posterior$Ris0 = (posterior$G0 - posterior$Tinc - 0.5 * posterior$Tin0) /
+        posterior$Tinf * posterior$R0
     posterior$Rin0 = posterior$R0 - posterior$Ris0
     posterior$betaIn0 = posterior$Rin0 / posterior$Tin0
     posterior$betaIs0 = posterior$Ris0 / posterior$Tis0
-    posterior$beta0 = posterior$R0 / posterior$Tef0
+    posterior$beta0 = posterior$R0 / posterior$Tinf
 
     posterior$Tist = posterior$Tinf - posterior$Tint
-    posterior$Rist = posterior$Rt * (posterior$Teft - posterior$Tint) /
-        (posterior$Tinf - posterior$Tint)
+    posterior$Rist = (posterior$Gt - posterior$Tinc - 0.5 * posterior$Tint) /
+        posterior$Tinf * posterior$Rt
     posterior$Rint = posterior$Rt - posterior$Rist
     posterior$betaInt = posterior$Rint / posterior$Tint
     posterior$betaIst = posterior$Rist / posterior$Tist
-    posterior$betat = posterior$Rt / posterior$Teft
+    posterior$betat = posterior$Rt / posterior$Tinf
 
-    posterior$deltaTeff = posterior$Teft - posterior$Tef0
-
-    posterior$frTef = posterior$Teft / posterior$Tef0
     posterior$frbeta = posterior$betat / posterior$beta0
     posterior$frR = posterior$Rt / posterior$R0
     
@@ -294,8 +293,8 @@ invTransformParams <- function(posterior)
 calclogl <- function(params) {
     R0 <- params[1]
     Rt <- params[2]
-    Tef0 <- params[3]
-    Teft <- params[4]
+    G0 <- params[3]
+    Gt <- params[4]
     Tin0 <- params[5]
     Tint <- params[6]
     hosp_rate <- params[7]
@@ -316,26 +315,24 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (Tef0 < 0.2 || Tef0 > Tinf - 0.2) {
+    if (G0 - Tinc < 0.2) {
         return(-Inf)
     }
 
     Tis0 = Tinf - Tin0
-    Ris0 = R0 * (Tef0 - Tin0) / (Tinf - Tin0)
+    Ris0 = (G0 - Tinc - 0.5 * Tin0) / Tinf * R0
     Rin0 = R0 - Ris0
     betaIn0 = Rin0 / Tin0
     betaIs0 = Ris0 / Tis0
-    beta0 = R0 / Tef0
-    G0 = Tinc + Tef0 / 2
+    beta0 = R0 / Tinf
 
     Tist = Tinf - Tint
-    Rist = Rt * (Teft - Tint) / (Tinf - Tint)
+    Rist = (Gt - Tinc - 0.5 * Tint) / Tinf * Rt
     Rint = Rt - Rist
     betaInt = Rint / Tint
     betaIst = Rist / Tist
-    betat = Rt / Teft
-    Gt = Tinc + Teft / 2
-
+    betat = Rt / Tinf
+ 
     if (betaIn0 < 0 || betaInt < 0 || betaIs0 < 0 || betaIst < 0) {
         return(-Inf)
     }
@@ -430,7 +427,7 @@ calclogl <- function(params) {
     
     if (it %% 1000 == 0) {
         print(params)
-        print(c(R0, Rt, Tef0, Teft, beta0, betat))
+        print(c(R0, Rt, G0, Gt, beta0, betat))
 	print(c(it, result))
 	graphs()
     }
@@ -439,13 +436,13 @@ calclogl <- function(params) {
 }
 
 
-fit.paramnames <- c("R0", "Rt", "Tef0", "Teft", "Tin0", "Tint",
+fit.paramnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint",
                     "logHR", "HL", "DL", "lockdownmort")
-keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "Tef0", "Teft",
+keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "G0", "Gt",
                    "Rin0", "Ris0")
-fitkeyparamnames <- c("R0", "Rt", "Tef0", "Teft", "Tin0", "Tint")
+fitkeyparamnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint")
 
-init <- c(2.9, 0.9, 3, 3, 2, 1, log(0.02), 10, 20, total_deaths_at_lockdown,
+init <- c(2.9, 0.9, 5, 5, 2, 1, log(0.02), 10, 20, total_deaths_at_lockdown,
           rep(0.9, length(Es.time)))
 scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20,
             rep(0.05, length(Es.time)))
