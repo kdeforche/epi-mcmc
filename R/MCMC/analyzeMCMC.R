@@ -81,14 +81,14 @@ all_plots <- function(date_markers) {
         p3 <- p3 + geom_line(aes(y = dm3e), linetype='dashed', color="#555555") +
             geom_point(aes(y = dm3e), size=1, color="#555555")
     }
-    
-    p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                    function(state) { (state$E + state$In + state$Is)/N * 100 },
-                    "#FFFF66", c(paste("% of population of", country_adjective), "Infected individuals (%)"), date_markers, NULL)
 
-    ## p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-    ##               function(state) { (state$E + state$I)/N * 100 },
-    ##               "#FFFF66", c(paste("% of population of", country_adjective), "Infected individuals (%)"), date_markers, NULL)
+    p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+                   function(state) { if ("In" %in% names(state)) {
+                                         return ((state$E + state$In + state$Is)/N * 100)
+                                     } else {
+                                         return ((state$E + state$I)/N * 100)
+                                     }
+                   }, "#FFFF66", c(paste("% of population of", country_adjective), "Infected individuals (%)"), date_markers, NULL)
 
     p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state) { state$R/N * 100 }, "#33FF66",
@@ -334,7 +334,12 @@ quantileAllData <- function(sample, fun, period, quantiles, offset)
 
 max_offset <- offsets[4]
 
-infected <- data.frame(quantileAllData(data_sample, function(state) { state$E + state$In + state$Is }, lockdown_offset + 200, c(0.05, 0.5, 0.95), max_offset))
+infected <- data.frame(quantileAllData(data_sample, function(state) {
+    if ("In" %in% names(state)) {
+        return(state$E + state$In + state$Is)
+    } else {
+        return(state$E + state$I)
+    } }, lockdown_offset + 200, c(0.05, 0.5, 0.95), max_offset))
 colnames(infected) <- c("q5", "q50", "q95")
 
 result$d1.infected.median <- infected$q50[max_offset + lockdown_offset]
