@@ -3,7 +3,7 @@ require(Rcpp)
 InvalidDataOffset <- 10000
 Initial <- 1
 
-Tinf <- 14
+Tinf <- 8
 Tinc <- 3
 died_rate <- 0.007
 
@@ -125,7 +125,7 @@ if (!exists("Es.time")) {
 
 calcpar <- function(time, par0, part, Es, ldo, ldtp)
 {
-    pari = time - ldo
+    pari = time - ldo + 1
 
     par = 0
     
@@ -230,13 +230,11 @@ calculateModel <- function(params, period)
         l.betaIs = betaIs
         l.Tin = Tin
         
-        s = convolute(state$S, i, hosp_cv_profile)
-        state$hosp[i] <- (N - s) * hosp_rate
+        s1 = convolute(state$S, i, hosp_cv_profile)
+        state$hosp[i] <- (N - s1) * hosp_rate
 
-        ## died:
-        ##  from those that (ever) became infectious           
-        r = convolute(state$In + state$Is + state$R, i, died_cv_profile)
-        state$died[i] <- r * died_rate
+        s2 = convolute(state$S, i, died_cv_profile)
+        state$died[i] <- (N - s2) * died_rate
 
         ## assuming lockdown decision was based on a cumulative mort count, with some
         ## uncertainty on the exact value due to observed cumulative mort count being a
@@ -370,10 +368,6 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
-    if (Ris0 > Rin0) {
-        return(-Inf)
-    }
-
     if (hosp_latency < 0 || hosp_latency > 30) {
         ##print(paste("invalid hosp_latency", hosp_latency))
         return(-Inf)
@@ -392,7 +386,7 @@ calclogl <- function(params) {
     logPriorP <- 0
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=25, sd=2, log=T)
 
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
