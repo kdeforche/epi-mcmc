@@ -391,12 +391,12 @@ calclogl <- function(params) {
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
 
-    logPriorP <- logPriorP + dnorm(lockdown_transition_start_var, mean=0, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(lockdown_transition_start_var, mean=0, sd=3, log=T)
 
     if (lockdown_transition_end_var > 0)
         return(-Inf)
     
-    logPriorP <- logPriorP + dnorm(lockdown_transition_end_var, mean=0, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(lockdown_transition_end_var, mean=0, sd=3, log=T)
     
     ##logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)
     ##logPriorP <- logPriorP + dnorm(betaInt, mean=1, sd=0.1, log=T)
