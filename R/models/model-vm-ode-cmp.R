@@ -1,4 +1,6 @@
-require(Rcpp)
+library("deSolve")
+system("R CMD SHLIB model-vm-ode-cmp.cpp")
+dyn.load("model-vm-ode-cmp.so")
 
 InvalidDataOffset <- 10000
 Initial <- 1
@@ -6,6 +8,10 @@ Initial <- 1
 Tinf <- 8
 Tinc <- 3
 died_rate <- 0.007
+
+if (!exists("Es.time")) {
+    Es.time <- c()
+}
 
 calcConvolveProfile <- function(latency, latency_sd)
 {
@@ -28,128 +34,9 @@ calcConvolveProfile <- function(latency, latency_sd)
     result
 }
 
-convolute <- function(values, i, profile)
+convolute <- function(values, i1, i2, profile)
 {
-    i1 <- i + profile$kbegin
-    i2 <- i + profile$kend
-
-    (profile$values %*% values[i1:i2])[1,1]
-}
-
-cppFunction('NumericVector odesimstepc(double S, double E, double In, double Is, double R, int N, double betaIn0, double betaIs0, double a0, double Tin0, double Tis0, double betaIn1, double betaIs1, double a1, double Tin1, double Tis1) {
-   const int LOOPS = 10;
-   const double Ts = 1.0/LOOPS;
-
-   NumericVector out(7);
-
-   for (int l = 0; l < LOOPS; ++l) {
-     const double betaIn = 1.0/LOOPS * (l * betaIn1 + (LOOPS - l) * betaIn0);
-     const double betaIs = 1.0/LOOPS * (l * betaIs1 + (LOOPS - l) * betaIs0);
-     const double a = 1.0/LOOPS * (l * a1 + (LOOPS - l) * a0);
-     const double Tin = 1.0/LOOPS * (l * Tin1 + (LOOPS - l) * Tin0);
-
-     const double Tinf = 8.0;
-     const double gamma = 1/Tinf;
-     const double gamman = 1/Tin;
-
-     const double inf1 = (betaIn * In) / N * S;
-     const double inf2 = (betaIs * Is) / N * S;
-     const double got_infected = inf1 + inf2;
-     const double got_infectious = a * E;
-     const double got_isolated = gamman * In;
-     const double got_removed = gamma * Is;
-     const double didnt_isolate = gamma * In;
-   
-     const double deltaS = -got_infected;
-     const double deltaE = got_infected - got_infectious;
-     const double deltaIn = got_infectious - got_isolated - didnt_isolate;
-     const double deltaIs = got_isolated - got_removed;
-     const double deltaR = got_removed + didnt_isolate;
-
-     if (l == 0) {
-       out[5] = 1 / (gamma + gamman) * inf1 / In + Tinf * inf2 / Is;
-       out[6] = out[5] * N / S;
-     }
-
-     S += deltaS * Ts;
-     E += deltaE * Ts;
-     In += deltaIn * Ts;
-     Is += deltaIs * Ts;
-     R += deltaR * Ts;
-   }
-
-   out[0] = S;
-   out[1] = E;
-   out[2] = In;
-   out[3] = Is;
-   out[4] = R;
-
-   return out;
-}')
-
-simstep.C <- function(state, N,
-                      betaIn0, betaIs0, a0, Tin0, Tis0,
-                      betaIn1, betaIs1, a1, Tin1, Tis1)
-{
-    i = state$i
-
-    newState <- odesimstepc(state$S[i], state$E[i], state$In[i], state$Is[i],
-                            state$R[i], N,
-                            betaIn0, betaIs0, a0, Tin0, Tis0,
-                            betaIn1, betaIs1, a1, Tin1, Tis1)
-
-    state$S[i + 1] = newState[1]
-    state$E[i + 1] = newState[2]
-    state$In[i + 1] = newState[3]
-    state$Is[i + 1] = newState[4]
-    state$R[i + 1] = newState[5]
-    state$Re[i + 1] = newState[6]
-    state$Rt[i + 1] = newState[7]
-
-    i = i + 1
-    state$i = i
-
-    state
-}
-    
-##
-## Parameters are a function of time:
-##  t < lockdown_offset : par0
-##  t > lockdown_offset + lockdown_transition_period : part
-##  t > Es.time[i] : Es[i] * part + (1 - Es[i]) * par0
-##
-
-if (!exists("Es.time")) {
-    Es.time <- c()
-}
-
-calcpar <- function(time, par0, part, Es)
-{
-    pari = time - lockdown_offset + 1
-
-    par = 0
-    
-    if (pari < 0) {
-        par = par0
-    } else {
-        if (pari >= lockdown_transition_period) {
-            par = part
-            if (length(Es.time) > 0) {
-                for (i in length(Es.time):1) {
-                    if (time > Es.time[i]) {
-                        par = max(0.001, Es[i] * part + (1 - Es[i]) * par0)
-                        break;
-                    }
-                }
-            }
-        } else {
-            fract0 = (lockdown_transition_period - pari) / lockdown_transition_period
-            fractt = pari / lockdown_transition_period
-            par = fract0 * par0 + fractt * part
-        }
-    }
-
-    par
+    filter(values, profile$values, method="convolution", sides=1)[(i1 + profile$kend):(i2 + profile$kend)]
 }
 
 calculateModel <- function(params, period)
@@ -206,38 +93,53 @@ calculateModel <- function(params, period)
     state$Sr <- c()
     state$i <- padding + 1
 
-    data_offset = InvalidDataOffset
+    parms <- c(N = N, a = a, gamma = 1/Tinf,
+               ldts = 1E10, ldte = 1E10,
+               betaIn0 = betaIn0, betaIs0 = betaIs0, Tin0 = Tin0,
+               betaInt = betaInt, betaIst = betaIst, Tint = Tint)
 
-    l.betaIn = betaIn0
-    l.betaIs = betaIs0
-    l.Tin = Tin0
+    Y <- c(S = N - Initial, E = Initial, In = 0, Is = 0, R = 0)
+
+    times <- (padding + 1):(padding + period)
+
+    out <- ode(Y, times, func = "derivs", parms = parms,
+               jacfunc = "jac", dllname = "model-vm-ode-cmp",
+               initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
+
+    state$S[(padding + 1):(padding + period)] = out[,2]
+
+    s2 <- convolute(state$S, padding + 1, padding + period, died_cv_profile)
+    state$died[(padding + 1):(padding + period)] = (N - s2) * died_rate
     
-    for (i in (padding + 1):(padding + period)) {
-        betaIn = calcpar(i - data_offset, betaIn0, betaInt, Es)
-        betaIs = calcpar(i - data_offset, betaIs0, betaIst, Es)
-        Tin = calcpar(i - data_offset, Tin0, Tint, Es)
-        
-        state <- simstep.C(state, N,
-                           l.betaIn, l.betaIs, a, l.Tin, 0,
-                           betaIn, betaIs, a, Tin, 0)
+    data_offset = InvalidDataOffset          
+    
+    lds <- which(state$died > mort_lockdown_threshold)
+    if (length(lds) > 0) {
+        data_offset <- lds[1] - lockdown_offset
+        parms <- c(N = N, a = a, gamma = 1/Tinf,
+                   ldts = data_offset + lockdown_offset,
+                   ldte = data_offset + lockdown_offset + lockdown_transition_period,
+                   betaIn0 = betaIn0, betaIs0 = betaIs0, Tin0 = Tin0,
+                   betaInt = betaInt, betaIst = betaIst, Tint = Tint)
 
-        l.betaIn = betaIn
-        l.betaIs = betaIs
-        l.Tin = Tin
-        
-        s1 = convolute(state$S, i, hosp_cv_profile)
-        state$hosp[i] <- (N - s1) * hosp_rate
-
-        s2 = convolute(state$S, i, died_cv_profile)
-        state$died[i] <- (N - s2) * died_rate
-
-        ## assuming lockdown decision was based on a cumulative mort count, with some
-        ## uncertainty on the exact value due to observed cumulative mort count being a
-        ## sample
-        if (data_offset == InvalidDataOffset && state$died[i] > mort_lockdown_threshold) {
-            data_offset = i - lockdown_offset
-        }
+        out <- ode(Y, times, func = "derivs", parms = parms,
+               jacfunc = "jac", dllname = "model-vm-ode-cmp",
+               initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
     }
+
+    state$S[(padding + 1):(padding + period)] = out[,2]
+    state$E[(padding + 1):(padding + period)] = out[,3]
+    state$In[(padding + 1):(padding + period)] = out[,4]
+    state$Is[(padding + 1):(padding + period)] = out[,5]
+    state$R[(padding + 1):(padding + period)] = out[,6]
+    state$Re[(padding + 1):(padding + period)] = out[,7]
+    state$Rt[(padding + 1):(padding + period)] = out[,7]
+
+    s1 <- convolute(state$S, padding + 1, padding + period, hosp_cv_profile)
+    state$hosp[(padding + 1):(padding + period)] = (N - s1) * hosp_rate
+    
+    s2 <- convolute(state$S, padding + 1, padding + period, died_cv_profile)
+    state$died[(padding + 1):(padding + period)] = (N - s2) * died_rate
 
     state$deadi <- c(state$died[1], diff(state$died))
     state$hospi <- c(state$hosp[1], diff(state$hosp))
@@ -455,13 +357,5 @@ keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "G0",
                    "Rin0", "Ris0")
 fitkeyparamnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint")
 
-init <- c(2.9, 0.9, 5, 5, 2, 1, log(0.02), 10, 20, total_deaths_at_lockdown,
-          rep(0.9, length(Es.time)))
-scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20,
-            rep(0.05, length(Es.time)))
-
-if (length(Es.time) > 0) {
-    for (i in 1:length(Es.time)) {
-        fit.paramnames <- c(fit.paramnames, paste("E", i, sep=""))
-    }
-}
+init <- c(2.9, 0.9, 5, 5, 2, 1, log(0.02), 10, 20, total_deaths_at_lockdown)
+scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20)
