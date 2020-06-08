@@ -188,13 +188,11 @@ calculateModel <- function(params, period)
         l.beta = beta
         l.Tinf = Tinf
         
-        s = convolute(state$S, i, hosp_cv_profile)
-        state$hosp[i] <- (N - s) * hosp_rate
+        s1 = convolute(state$S, i, hosp_cv_profile)
+        state$hosp[i] <- (N - s1) * hosp_rate
 
-        ## died:
-        ##  from those that (ever) became infectious           
-        r = convolute(state$I + state$R, i, died_cv_profile)
-        state$died[i] <- r * died_rate
+        s2 = convolute(state$S, i, died_cv_profile)
+        state$died[i] <- (N - s2) * died_rate
 
         ## assuming lockdown decision was based on a cumulative mort count, with some
         ## uncertainty on the exact value due to observed cumulative mort count being a
@@ -290,7 +288,7 @@ calclogl <- function(params) {
     logPriorP <- 0
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=10, sd=20, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=25, sd=2, log=T)
 
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
