@@ -125,7 +125,7 @@ if (!exists("Es.time")) {
 
 calcpar <- function(time, par0, part, Es)
 {
-    pari = time - lockdown_offset
+    pari = time - lockdown_offset + 1
 
     par = 0
     
@@ -359,14 +359,6 @@ calclogl <- function(params) {
     }
 
     if (betaIs0 > betaIn0) {
-        return(-Inf)
-    }
-
-    if (Ris0 > Rin0) {
-        return(-Inf)
-    }
-
-    if (Rist > Rint) {
         return(-Inf)
     }
 

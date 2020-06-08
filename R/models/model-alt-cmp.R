@@ -124,7 +124,7 @@ if (!exists("Es.time")) {
 
 calcpar <- function(time, par0, part, Es)
 {
-    pari = time - lockdown_offset
+    pari = time - lockdown_offset + 1
 
     par = 0
     
@@ -166,14 +166,14 @@ calculateModel <- function(params, period)
     Es <- tail(params, n=-10)
 
     Tis0 = Tinf - Tin0
-    Ris0 = (G0 - Tinc - 0.5 * Tin0) / Tinf * R0
+    Ris0 = 2 * (G0 - Tinc - 0.5 * Tin0) / Tinf * R0
     Rin0 = R0 - Ris0
     betaIn0 = Rin0 / Tin0
     betaIs0 = Ris0 / Tis0
     beta0 = R0 / Tinf
 
     Tist = Tinf - Tint
-    Rist = (Gt - Tinc - 0.5 * Tint) / Tinf * Rt
+    Rist = 2 * (Gt - Tinc - 0.5 * Tint) / Tinf * Rt
     Rint = Rt - Rist
     betaInt = Rint / Tint
     betaIst = Rist / Tist
@@ -263,7 +263,7 @@ invTransformParams <- function(posterior)
     posterior$Tinc = Tinc
 
     posterior$Tis0 = posterior$Tinf - posterior$Tin0
-    posterior$Ris0 = (posterior$G0 - posterior$Tinc - 0.5 * posterior$Tin0) /
+    posterior$Ris0 = 2 * (posterior$G0 - posterior$Tinc - 0.5 * posterior$Tin0) /
         posterior$Tinf * posterior$R0
     posterior$Rin0 = posterior$R0 - posterior$Ris0
     posterior$betaIn0 = posterior$Rin0 / posterior$Tin0
@@ -271,7 +271,7 @@ invTransformParams <- function(posterior)
     posterior$beta0 = posterior$R0 / posterior$Tinf
 
     posterior$Tist = posterior$Tinf - posterior$Tint
-    posterior$Rist = (posterior$Gt - posterior$Tinc - 0.5 * posterior$Tint) /
+    posterior$Rist = 2 * (posterior$Gt - posterior$Tinc - 0.5 * posterior$Tint) /
         posterior$Tinf * posterior$Rt
     posterior$Rint = posterior$Rt - posterior$Rist
     posterior$betaInt = posterior$Rint / posterior$Tint
@@ -318,14 +318,14 @@ calclogl <- function(params) {
     }
 
     Tis0 = Tinf - Tin0
-    Ris0 = (G0 - Tinc - 0.5 * Tin0) / Tinf * R0
+    Ris0 = 2 * (G0 - Tinc - 0.5 * Tin0) / Tinf * R0
     Rin0 = R0 - Ris0
     betaIn0 = Rin0 / Tin0
     betaIs0 = Ris0 / Tis0
     beta0 = R0 / Tinf
 
     Tist = Tinf - Tint
-    Rist = (Gt - Tinc - 0.5 * Tint) / Tinf * Rt
+    Rist = 2 * (Gt - Tinc - 0.5 * Tint) / Tinf * Rt
     Rint = Rt - Rist
     betaInt = Rint / Tint
     betaIst = Rist / Tist
@@ -340,10 +340,6 @@ calclogl <- function(params) {
     }
 
     if (betaIs0 > betaIn0) {
-        return(-Inf)
-    }
-
-    if (Ris0 > Rin0) {
         return(-Inf)
     }
 
