@@ -386,7 +386,7 @@ calclogl <- function(params) {
     logPriorP <- 0
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=25, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=28, sd=4, log=T)
 
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
@@ -397,13 +397,6 @@ calclogl <- function(params) {
         return(-Inf)
     
     logPriorP <- logPriorP + dnorm(lockdown_transition_end_var, mean=0, sd=3, log=T)
-    
-    ##logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaInt, mean=1, sd=0.1, log=T)
-
-    for (e in Es) {
-        logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
-    }
     
     total_deaths_at_lockdown <-
         dmort[max(1, lockdown_offset + round(lockdown_transition_start_var))]

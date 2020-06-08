@@ -133,7 +133,7 @@ calculateModel <- function(params, period)
     state$Is[(padding + 1):(padding + period)] = out[,5]
     state$R[(padding + 1):(padding + period)] = out[,6]
     state$Re[(padding + 1):(padding + period)] = out[,7]
-    state$Rt[(padding + 1):(padding + period)] = out[,7]
+    state$Rt[(padding + 1):(padding + period)] = out[,8]
 
     s1 <- convolute(state$S, padding + 1, padding + period, hosp_cv_profile)
     state$hosp[(padding + 1):(padding + period)] = (N - s1) * hosp_rate
@@ -282,17 +282,10 @@ calclogl <- function(params) {
     logPriorP <- 0
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=25, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=28, sd=4, log=T)
 
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
-
-    ##logPriorP <- logPriorP + dnorm(betaIn0, mean=1, sd=0.1, log=T)
-    ##logPriorP <- logPriorP + dnorm(betaInt, mean=1, sd=0.1, log=T)
-
-    for (e in Es) {
-        logPriorP <- logPriorP + dnorm(e, mean=0.9, sd=0.1, log=T)
-    }
 
     loglLD <- dnbinom(total_deaths_at_lockdown, mu=pmax(0.1, mort_lockdown_threshold),
                       size=mort_nbinom_size, log=T)
