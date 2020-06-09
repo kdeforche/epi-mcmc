@@ -1,6 +1,6 @@
 library("deSolve")
-system("R CMD SHLIB model-vm-ode-cmp.cpp")
-dyn.load("model-vm-ode-cmp.so")
+system("R CMD SHLIB model-alt-ode-cmp.cpp")
+dyn.load("model-alt-ode-cmp.so")
 
 InvalidDataOffset <- 10000
 Initial <- 1
@@ -49,26 +49,20 @@ calculateModel <- function(params, period)
     mort_lockdown_threshold <- params[10]
     Es <- tail(params, n=-10)
 
-    Tis0 = Tinf
-    K0 = Tin0 + 0.5 * Tinf
-    Tina0 = (1 / (1 / Tin0 + 1 / Tinf))
-    L0 = 0.5 * Tina0
-    Rin0 = (K0 - (G0 - Tinc)) * R0 / (K0 - L0)
-    Ris0 = R0 - Rin0
-    betaIn0 = Rin0 / Tina0
+    Tis0 = Tinf - Tin0
+    Ris0 = 2 * (G0 - Tinc - 0.5 * Tin0) / Tinf * R0
+    Rin0 = R0 - Ris0
+    betaIn0 = Rin0 / Tin0
     betaIs0 = Ris0 / Tis0
     beta0 = R0 / Tinf
 
-    Tist = Tinf
-    Kt = Tint + 0.5 * Tinf
-    Tinat = (1 / (1 / Tint + 1 / Tinf))
-    Lt = 0.5 * Tinat
-    Rint = (Kt - (Gt - Tinc)) * Rt / (Kt - Lt)
-    Rist = Rt - Rint
-    betaInt = Rint / Tinat
+    Tist = Tinf - Tint
+    Rist = 2 * (Gt - Tinc - 0.5 * Tint) / Tinf * Rt
+    Rint = Rt - Rist
+    betaInt = Rint / Tint
     betaIst = Rist / Tist
     betat = Rt / Tinf
-    
+
     a <- 1 / Tinc
 
     hosp_cv_profile = calcConvolveProfile(-hosp_latency, 5)
@@ -89,7 +83,8 @@ calculateModel <- function(params, period)
     state$Sr <- c()
     state$i <- padding + 1
 
-    parms <- c(N = N, a = a, gamma = 1/Tinf,
+    
+    parms <- c(N = N, a = a, Tinf = Tinf,
                ldts = 1E10, ldte = 1E10,
                betaIn0 = betaIn0, betaIs0 = betaIs0, Tin0 = Tin0,
                betaInt = betaInt, betaIst = betaIst, Tint = Tint)
@@ -99,8 +94,10 @@ calculateModel <- function(params, period)
     times <- (padding + 1):(padding + period)
 
     out <- ode(Y, times, func = "derivs", parms = parms,
-               jacfunc = "jac", dllname = "model-vm-ode-cmp",
-               initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
+               jacfunc = "jac",
+               dllname = "model-alt-ode-cmp",
+               initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"),
+               atol = 1e-3)
 
     state$S[(padding + 1):(padding + period)] = out[,2]
 
@@ -112,15 +109,17 @@ calculateModel <- function(params, period)
     lds <- which(state$died > mort_lockdown_threshold)
     if (length(lds) > 0) {
         data_offset <- lds[1] - lockdown_offset
-        parms <- c(N = N, a = a, gamma = 1/Tinf,
+        parms <- c(N = N, a = a, Tinf = Tinf,
                    ldts = data_offset + lockdown_offset,
                    ldte = data_offset + lockdown_offset + lockdown_transition_period,
                    betaIn0 = betaIn0, betaIs0 = betaIs0, Tin0 = Tin0,
                    betaInt = betaInt, betaIst = betaIst, Tint = Tint)
 
         out <- ode(Y, times, func = "derivs", parms = parms,
-               jacfunc = "jac", dllname = "model-vm-ode-cmp",
-               initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
+                   jacfunc = "jac",
+                   dllname = "model-alt-ode-cmp",
+                   initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"),
+                   atol = 1e-3)
     }
 
     state$S[(padding + 1):(padding + period)] = out[,2]
@@ -164,29 +163,24 @@ invTransformParams <- function(posterior)
     posterior$Tinf = Tinf
     posterior$Tinc = Tinc
 
-    posterior$Tis0 = posterior$Tinf
-    K0 = posterior$Tin0 + 0.5 * posterior$Tinf
-    Tina0 = (1 / (1 / posterior$Tin0 + 1 / posterior$Tinf))
-    L0 = 0.5 * Tina0
-    posterior$Rin0 = (K0 - (posterior$G0 - posterior$Tinc)) * posterior$R0 / (K0 - L0)
-    posterior$Ris0 = posterior$R0 - posterior$Rin0
-    posterior$betaIn0 = posterior$Rin0 / Tina0
+    posterior$Tis0 = posterior$Tinf - posterior$Tin0
+    posterior$Ris0 = 2 * (posterior$G0 - posterior$Tinc - 0.5 * posterior$Tin0) /
+        posterior$Tinf * posterior$R0
+    posterior$Rin0 = posterior$R0 - posterior$Ris0
+    posterior$betaIn0 = posterior$Rin0 / posterior$Tin0
     posterior$betaIs0 = posterior$Ris0 / posterior$Tis0
+    posterior$beta0 = posterior$R0 / posterior$Tinf
 
-    posterior$Tinf.eff0 = 2 * (posterior$G0 - posterior$Tinc)
-    posterior$beta.eff0 = posterior$R0 / posterior$Tinf.eff0
-    
-    posterior$Tist = posterior$Tinf
-    Kt = posterior$Tint + 0.5 * posterior$Tinf
-    Tinat = (1 / (1 / posterior$Tint + 1 / posterior$Tinf))
-    Lt = 0.5 * Tinat
-    posterior$Rint = (Kt - (posterior$Gt - posterior$Tinc)) * posterior$Rt / (Kt - Lt)
-    posterior$Rist = posterior$Rt - posterior$Rint
-    posterior$betaInt = posterior$Rint / Tinat
+    posterior$Tist = posterior$Tinf - posterior$Tint
+    posterior$Rist = 2 * (posterior$Gt - posterior$Tinc - 0.5 * posterior$Tint) /
+        posterior$Tinf * posterior$Rt
+    posterior$Rint = posterior$Rt - posterior$Rist
+    posterior$betaInt = posterior$Rint / posterior$Tint
     posterior$betaIst = posterior$Rist / posterior$Tist
+    posterior$betat = posterior$Rt / posterior$Tinf
 
-    posterior$Tinf.efft = 2 * (posterior$Gt - posterior$Tinc)
-    posterior$beta.efft = posterior$Rt / posterior$Tinf.efft
+    posterior$frbeta = posterior$betat / posterior$beta0
+    posterior$frR = posterior$Rt / posterior$R0
     
     posterior$HR = exp(posterior$logHR)
 
@@ -205,26 +199,20 @@ calclogp <- function(params) {
     died_latency <- params[9]
     mort_lockdown_threshold <- params[10]
 
-    Tis0 = Tinf
-    K0 = Tin0 + 0.5 * Tinf
-    Tina0 = (1 / (1 / Tin0 + 1 / Tinf))
-    L0 = 0.5 * Tina0
-    Rin0 = (K0 - (G0 - Tinc)) * R0 / (K0 - L0)
-    Ris0 = R0 - Rin0
-    betaIn0 = Rin0 / Tina0
+    Tis0 = Tinf - Tin0
+    Ris0 = 2 * (G0 - Tinc - 0.5 * Tin0) / Tinf * R0
+    Rin0 = R0 - Ris0
+    betaIn0 = Rin0 / Tin0
     betaIs0 = Ris0 / Tis0
     beta0 = R0 / Tinf
 
-    Tist = Tinf
-    Kt = Tint + 0.5 * Tinf
-    Tinat = (1 / (1 / Tint + 1 / Tinf))
-    Lt = 0.5 * Tinat
-    Rint = (Kt - (Gt - Tinc)) * Rt / (Kt - Lt)
-    Rist = Rt - Rint
-    betaInt = Rint / Tinat
+    Tist = Tinf - Tint
+    Rist = 2 * (Gt - Tinc - 0.5 * Tint) / Tinf * Rt
+    Rint = Rt - Rist
+    betaInt = Rint / Tint
     betaIst = Rist / Tist
     betat = Rt / Tinf
-
+ 
     if (betaIn0 < 0 || betaInt < 0 || betaIs0 < 0 || betaIst < 0) {
         return(-Inf)
     }
@@ -256,7 +244,7 @@ calclogl <- function(params) {
     hosp_latency <- params[8]
     died_latency <- params[9]
     mort_lockdown_threshold <- params[10]
-
+ 
     state <<- calculateModel(params, FitTotalPeriod)
 
     if (state$offset == InvalidDataOffset)
@@ -322,7 +310,8 @@ fit.paramnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint",
 keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "G0", "Gt",
                    "Rin0", "Ris0")
 fitkeyparamnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint")
-init <- c(2.9, 0.9, 5, 5, 5, 5, log(0.02), 10, 20, total_deaths_at_lockdown)
+
+init <- c(2.9, 0.9, 5, 5, 2, 1, log(0.02), 10, 20, total_deaths_at_lockdown)
 scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20)
 
 df_params <- data.frame(name = fit.paramnames,

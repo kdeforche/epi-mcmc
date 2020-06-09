@@ -42,6 +42,17 @@ extern "C" {
   {
     if (ip[0] < 2) error("nout should be at least 2");
     
+    if (S < 0 || E < 0 || I < 0 || R < 0 ||
+	S >= N || E >= N || I >= N || R >= N) {
+      //std::cerr << S << " " << E << " " << In << " " << Is << " " << R
+      //          << std::endl;
+      /* dS  */ ydot[0] = 0;
+      /* dE  */ ydot[1] = 0;
+      /* dI  */ ydot[2] = 0;
+      /* dI  */ ydot[3] = 0;
+      return;
+    }
+
     const double beta = interpolate(*t, beta0, betat);
     const double Tinf = interpolate(*t, Tinf0, Tinft);
     const double gamma = 1/Tinf;
@@ -64,6 +75,13 @@ extern "C" {
   void jac(int *neq, double *t, double *y, int *ml, int *mu,
 	   double *pd, int *nrowpd, double *yout, int *ip)
   {
+    if (S < 0 || E < 0 || I < 0 || R < 0 ||
+	S >= N || E >= N || I >= N || R >= N) {
+      //std::cerr << S << " " << E << " " << In << " " << Is << " " << R
+      //	  << std::endl;
+      return;
+    }
+
     const double beta = interpolate(*t, beta0, betat);
     const double gamma = 1/interpolate(*t, Tinf0, Tinft);
   
