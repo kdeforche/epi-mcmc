@@ -343,6 +343,10 @@ calclogl <- function(params) {
         return(-Inf)
     }
 
+    if (Ris0 > Rin0) {
+        return(-Inf)
+    }
+    
     if (hosp_latency < 0 || hosp_latency > 30) {
         ##print(paste("invalid hosp_latency", hosp_latency))
         return(-Inf)
