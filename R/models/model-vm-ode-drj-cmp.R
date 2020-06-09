@@ -47,7 +47,6 @@ calculateModel <- function(params, period)
     hosp_latency <- params[8]
     died_latency <- params[9]
     mort_lockdown_threshold <- params[10]
-    Es <- tail(params, n=-10)
 
     Tis0 = Tinf
     K0 = Tin0 + 0.5 * Tinf
@@ -239,6 +238,7 @@ calclogp <- function(params) {
 
     logPriorP <- 0
 
+    logPriorP <- logPriorP + dnorm(died_latency, mean=21, sd=4, log=T)
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
 
@@ -327,6 +327,6 @@ scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(0.1, 0.1, Tinc + 0.2, Tinc + 0.2, 0.2, 0.2, log(0.001), 5, 5, 0),
-                        max = c(8, 8, 8, 8, 7.8, 7.8, log(0.5), 30, 30,
+                        max = c(8, 8, 8, 8, 7.8, 7.8, log(0.5), 30, 40,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10)),
                         init = init)

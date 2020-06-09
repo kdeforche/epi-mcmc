@@ -249,6 +249,7 @@ calclogp <- function(params) {
     
     logPriorP <- logPriorP + dnorm(lockdown_transition_end_var, mean=0, sd=3, log=T)
 
+    logPriorP <- logPriorP + dnorm(died_latency, mean=21, sd=4, log=T)
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
 
@@ -342,7 +343,7 @@ init <- c(2.9, 0.9, 5, 5, 5, 5, log(0.02), 10, 20, total_deaths_at_lockdown, 0, 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(0.1, 0.1, Tinc + 0.2, Tinc + 0.2, 0.2, 0.2, log(0.001), 5, 5, 0,
                                 -lockdown_offset, -lockdown_offset),
-                        max = c(8, 8, 8, 8, 7.8, 7.8, log(0.5), 30, 30,
+                        max = c(8, 8, 8, 8, 7.8, 7.8, log(0.5), 30, 40,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 40, 40),
                         init = init)
