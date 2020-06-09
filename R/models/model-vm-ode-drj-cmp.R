@@ -9,10 +9,6 @@ Tinf <- 8
 Tinc <- 3
 died_rate <- 0.007
 
-if (!exists("Es.time")) {
-    Es.time <- c()
-}
-
 calcConvolveProfile <- function(latency, latency_sd)
 {
     kend = min(0, ceiling(latency + latency_sd * 1.5))
@@ -262,22 +258,7 @@ calclogp <- function(params) {
         return(-Inf)
     }
 
-    if (Ris0 > Rin0) {
-        return(-Inf)
-    }
-
-    if (hosp_latency < 0 || hosp_latency > 30) {
-        return(-Inf)
-    }
-
-    if (died_latency < 0 || died_latency > 30) {
-        return(-Inf)
-    }
-
     logPriorP <- 0
-
-    logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=21, sd=4, log=T)
 
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
@@ -368,6 +349,6 @@ scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(0.1, 0.1, 1, 1, 0.2, 0.2, log(0.001), 5, 5, 0),
-                        max = c(8, 2, 8, 8, 7.8, 7.8, log(0.5), 30, 30,
+                        max = c(8, 8, 8, 8, 7.8, 7.8, log(0.5), 30, 30,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10)),
                         init = init)
