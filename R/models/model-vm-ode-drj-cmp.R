@@ -277,7 +277,7 @@ calclogp <- function(params) {
     logPriorP <- 0
 
     logPriorP <- logPriorP + dnorm(hosp_latency, mean=10, sd=20, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=28, sd=4, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=21, sd=4, log=T)
 
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
