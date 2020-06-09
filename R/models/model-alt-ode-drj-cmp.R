@@ -315,7 +315,7 @@ init <- c(2.9, 0.9, 5, 5, 2, 1, log(0.02), 10, 20, total_deaths_at_lockdown)
 scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, 1, 1, 0.2, 0.2, log(0.001), 5, 5, 0),
+                        min = c(0.1, 0.1, Tinc + 0.2, Tinc + 0.2, 0.2, 0.2, log(0.001), 5, 5, 0),
                         max = c(8, 8, 8, 8, 7.8, 7.8, log(0.5), 30, 30,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10)),
                         init = init)

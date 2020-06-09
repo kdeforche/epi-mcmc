@@ -47,7 +47,8 @@ calculateModel <- function(params, period)
     hosp_latency <- params[8]
     died_latency <- params[9]
     mort_lockdown_threshold <- params[10]
-    Es <- tail(params, n=-10)
+    lockdown_transition_start_var <- params[11]
+    lockdown_transition_end_var <- params[12]
 
     Tis0 = Tinf
     K0 = Tin0 + 0.5 * Tinf
@@ -111,10 +112,10 @@ calculateModel <- function(params, period)
     
     lds <- which(state$died > mort_lockdown_threshold)
     if (length(lds) > 0) {
-        data_offset <- lds[1] - lockdown_offset
+        data_offset <- lds[1] - lockdown_offset - lockdown_transition_start_var
         parms <- c(N = N, a = a, gamma = 1/Tinf,
-                   ldts = data_offset + lockdown_offset,
-                   ldte = data_offset + lockdown_offset + lockdown_transition_period,
+                   ldts = data_offset + lockdown_offset + lockdown_transition_start_var,
+                   ldte = data_offset + lockdown_offset + lockdown_transition_period + lockdown_transition_end_var,
                    betaIn0 = betaIn0, betaIs0 = betaIs0, Tin0 = Tin0,
                    betaInt = betaInt, betaIst = betaIst, Tint = Tint)
 
@@ -204,6 +205,8 @@ calclogp <- function(params) {
     hosp_latency <- params[8]
     died_latency <- params[9]
     mort_lockdown_threshold <- params[10]
+    lockdown_transition_start_var <- params[11]
+    lockdown_transition_end_var <- params[12]
 
     Tis0 = Tinf
     K0 = Tin0 + 0.5 * Tinf
@@ -239,6 +242,13 @@ calclogp <- function(params) {
 
     logPriorP <- 0
 
+    logPriorP <- logPriorP + dnorm(lockdown_transition_start_var, mean=0, sd=3, log=T)
+
+    if (lockdown_transition_end_var > lockdown_transition_start_var)
+        return(-Inf)
+    
+    logPriorP <- logPriorP + dnorm(lockdown_transition_end_var, mean=0, sd=3, log=T)
+
     logPriorP <- logPriorP + dnorm(G0, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(G0 - Gt, mean=0, sd=1.5, log=T)
 
@@ -256,11 +266,16 @@ calclogl <- function(params) {
     hosp_latency <- params[8]
     died_latency <- params[9]
     mort_lockdown_threshold <- params[10]
+    lockdown_transition_start_var <- params[11]
+    lockdown_transition_end_var <- params[12]
 
     state <<- calculateModel(params, FitTotalPeriod)
 
     if (state$offset == InvalidDataOffset)
         state$offset = 1
+
+    total_deaths_at_lockdown <-
+        dmort[max(1, lockdown_offset + round(lockdown_transition_start_var))]
 
     loglLD <- dnbinom(total_deaths_at_lockdown, mu=pmax(0.1, mort_lockdown_threshold),
                       size=mort_nbinom_size, log=T)
@@ -318,15 +333,16 @@ calclogl <- function(params) {
 }
 
 fit.paramnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint",
-                    "logHR", "HL", "DL", "lockdownmort")
+                    "logHR", "HL", "DL", "lockdownmort", "ldtsv", "ldtev")
 keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "G0", "Gt",
                    "Rin0", "Ris0")
 fitkeyparamnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint")
-init <- c(2.9, 0.9, 5, 5, 5, 5, log(0.02), 10, 20, total_deaths_at_lockdown)
-scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20)
+init <- c(2.9, 0.9, 5, 5, 5, 5, log(0.02), 10, 20, total_deaths_at_lockdown, 0, 0)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, Tinc + 0.2, Tinc + 0.2, 0.2, 0.2, log(0.001), 5, 5, 0),
+                        min = c(0.1, 0.1, Tinc + 0.2, Tinc + 0.2, 0.2, 0.2, log(0.001), 5, 5, 0,
+                                -lockdown_offset, -lockdown_offset),
                         max = c(8, 8, 8, 8, 7.8, 7.8, log(0.5), 30, 30,
-                                max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10)),
+                                max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
+                                40, 40),
                         init = init)
