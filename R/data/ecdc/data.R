@@ -4,6 +4,7 @@
 ##   https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide
 
 ## Needs a variable 'country2' which is the two-letter country code (e.g. 'BE')
+## and an endDate (date)
 
 mob <- read.csv("Global_Mobility_Report.csv")
 
@@ -70,6 +71,8 @@ if (country2 == 'GR') {
 country.data <- subset(ecdc, geoId == country2)
 
 country.data$date <- as.Date(paste(country.data$year,country.data$month,country.data$day,sep='/'))
+
+country.data <- subset(country.data, date < endDate)
 
 nzcases <- which(country.data$cases > 0)
 cases.starti <- nzcases[length(nzcases)]
