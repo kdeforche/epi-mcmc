@@ -51,7 +51,11 @@ o <- optim(init, optimpw, control=control)
 o <- optim(o$par, optimpw, control=control)
 
 print(o$par)
-print(c$date[round(o$par[1:2])])
+
+d1 <- as.Date(c$date[round(o$par[1])])
+d2 <- as.Date(c$date[round(o$par[2])])
+
+print(c(d1, d2, d2 + dataPeriod))
 
 ecdc <- read.csv("ecdc.csv")
 
@@ -72,7 +76,7 @@ country.data <- subset(ecdc, geoId == country2)
 
 country.data$date <- as.Date(paste(country.data$year,country.data$month,country.data$day,sep='/'))
 
-country.data <- subset(country.data, date < endDate)
+country.data <- subset(country.data, date <= d2 + dataPeriod)
 
 nzcases <- which(country.data$cases > 0)
 cases.starti <- nzcases[length(nzcases)]
@@ -98,7 +102,7 @@ country_adjective <- country.data$countriesAndTerritories[1]
 
 print(dstartdate)
 
-lockdown_offset <- as.numeric(as.Date(c$date[round(o$par[1])]) - dstartdate)
+lockdown_offset <- as.numeric(d1 - dstartdate)
 lockdown_transition_period <- round(o$par[2]) - round(o$par[1])
 total_deaths_at_lockdown <- max(1, dmort[lockdown_offset])
 
