@@ -313,7 +313,7 @@ calclogl <- function(params) {
 	print(c(it, result))
 	graphs()
     }
-
+    
     result
 }
 
@@ -322,8 +322,7 @@ fit.paramnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint",
 keyparamnames <- c("betaIn0", "betaInt", "betaIs0", "betaIst", "R0", "Rt", "G0", "Gt",
                    "Rin0", "Ris0")
 fitkeyparamnames <- c("R0", "Rt", "G0", "Gt", "Tin0", "Tint")
-init <- c(2.9, 0.9, 5, 5, 5, 5, log(0.02), 10, 20, total_deaths_at_lockdown)
-scales <- c(1, 1, 1, 1, 1, 1, 0.05, 1, 1, total_deaths_at_lockdown / 20)
+init <- c(2.4, 0.8, 5, 5, 2, 2, log(0.02), 10, 20, total_deaths_at_lockdown)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(0.1, 0.1, Tinc + 0.2, Tinc + 0.2, 0.2, 0.2, log(0.001), 5, 5, 0),

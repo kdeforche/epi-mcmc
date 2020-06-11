@@ -18,7 +18,7 @@ source("settings.R")
 
 print(fit.paramnames)
 
-print(c("initial logl: ", calcloglMCMC(init)))
+print(c("initial logl: ", calcloglMCMC(init), " logl prior: ", calclogp(transformParams(init))))
 
 r_mcmc_out <- run_mcmc(data = dhospi,
                        df_params = df_params,
