@@ -244,12 +244,13 @@ calclogp <- function(params) {
 
     logPriorP <- logPriorP + dnorm(lockdown_transition_start_var, mean=0, sd=8, log=T)
 
-    ## if (lockdown_transition_start_var < 0) {
-    ##     if (lockdown_transition_end_var > 0)
-    ##         return(-Inf)
-    ## } else
-    ##     if (lockdown_transition_end_var > lockdown_transition_start_var)
-    ##         return(-Inf)
+    ## only allow a 'longer' transition for a later start
+    if (lockdown_transition_start_var < 0) {
+        if (lockdown_transition_end_var > 0)
+            return(-Inf)
+    } else
+        if (lockdown_transition_end_var > lockdown_transition_start_var)
+            return(-Inf)
     
     logPriorP <- logPriorP + dnorm(lockdown_transition_end_var, mean=0, sd=8, log=T)
 
