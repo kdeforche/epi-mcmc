@@ -251,7 +251,7 @@ calclogl <- function(params, x) {
 }
 
 fit.paramnames <- c("Rt0", "Rt1", "Rt2", "HR", "HL", "DL", "phs_morts", "phs")
-keyparamnames <- c("beta0", "betat", "Rt0", "Rt1", "Rt2", "phs")
+keyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
 fitkeyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
 init <- c(2.9, 0.9, 0.9, 0.02, 10, 20, total_deaths_at_lockdown, 0)
 
