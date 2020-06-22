@@ -10,7 +10,8 @@ source(paste(Rdir, "lib/libfit.R", sep=""))
 options(scipen=999)
 
 calcloglMCMC <- function(params) {
-    return(calclogl(transformParams(params)))
+    tr <- transformParams(params)
+    return(calclogp(tr) + calclogl(tr, NULL))
 }
 
 ## source it again so that you can override things

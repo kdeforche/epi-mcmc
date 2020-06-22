@@ -23,66 +23,70 @@ source("settings.R")
 
 options(scipen=999)
 
-evaluation_data_count <- 9
+evaluation_data_count <- max(0, (dstartdate + length(dmorti)) - (d2 + fitPeriod))
+print(evaluation_data_count)
 
-all_plots <- function(date_markers) {
-    p1 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+all_plots <- function(date_markers, range) {
+    p1 <- makePlot(data_sample, range,
                    function(state) state$deadi, "#3366FF",
-                   c("Count", "Deaths per day"), date_markers, NULL)
+                   c("Death incidence", "Incidence of deaths and confirmed cases"), date_markers, NULL)
 
     dm1c = length(dmorti) - evaluation_data_count
 
+    start <- as.numeric(dstartdate - range[1])
+    
     dm1 <- numeric(length(p1$data$x))
     dm1[1:length(p1$data$x)] = NA
-    dm1[1:dm1c] = dmorti[1:dm1c]
+    dm1[(start + 1):(start + dm1c)] = dmorti[1:dm1c]
     p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=1, color="#1144CC")
 
     if (evaluation_data_count > 0) {
         dm1e <- numeric(length(p1$data$x))
         dm1e[1:length(p1$data$x)] = NA
-        dm1e[(dm1c + 1):length(dmorti)] = dmorti[(dm1c + 1):length(dmorti)]
+        dm1e[(start + dm1c + 1):(start + length(dmorti))] = dmorti[(dm1c + 1):length(dmorti)]
         p1 <- p1 + geom_line(aes(y = dm1e), linetype='dashed', color="#555555") +
             geom_point(aes(y = dm1e), size=1, color="#555555")
     }
-    
-    p2 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+
+    p2 <- makePlot(data_sample, range,
                    function(state) state$died, "#3366FF",
                    c("Count", "Total deaths"), date_markers, NULL)
 
     dm2c = length(dmort) - evaluation_data_count
-    
+
     dm2 <- numeric(length(p2$data$x))
     dm2[1:length(p2$data$x)] = NA
-    dm2[1:dm2c] = dmort[1:dm2c]
+    dm2[(start + 1):(start + dm2c)] = dmort[1:dm2c]
     p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2),  size=1, color="#1144CC")
 
     if (evaluation_data_count) {
-        dm2e <- numeric(length(p1$data$x))
-        dm2e[1:length(p1$data$x)] = NA
-        dm2e[(dm2c + 1):length(dmort)] = dmort[(dm2c + 1):length(dmort)]
+        dm2e <- numeric(length(p2$data$x))
+        dm2e[1:length(p2$data$x)] = NA
+        dm2e[(start + dm2c + 1):(start + length(dmort))] = dmort[(dm2c + 1):length(dmort)]
         p2 <- p2 + geom_line(aes(y = dm2e), linetype='dashed', color="#555555") +
             geom_point(aes(y = dm2e), size=1, color="#555555")
     }
 
-    dm3c = length(dhospi) - evaluation_data_count
-    
-    p3 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+    p3 <- makePlot(data_sample, range,
                    function(state) state$hospi, "#FF6633",
                    c("Count", paste(c(HospLabel, "per day"))), date_markers, NULL)
+
+    dm3c = length(dhospi) - evaluation_data_count
+
     dm3 <- numeric(length(p3$data$x))
     dm3[1:length(p3$data$x)] = NA
-    dm3[1:dm3c] = dhospi[1:dm3c]
+    dm3[(start + 1):(start + dm3c)] = dhospi[1:dm3c]
     p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=1, color="#CC4411")
 
     if (evaluation_data_count > 0) {
-        dm3e <- numeric(length(p1$data$x))
-        dm3e[1:length(p1$data$x)] = NA
-        dm3e[(dm3c + 1):length(dhospi)] = dhospi[(dm3c + 1):length(dhospi)]
+        dm3e <- numeric(length(p3$data$x))
+        dm3e[1:length(p3$data$x)] = NA
+        dm3e[(start + dm3c + 1):(start + length(dhospi))] = dhospi[(dm3c + 1):length(dhospi)]
         p3 <- p3 + geom_line(aes(y = dm3e), linetype='dashed', color="#555555") +
             geom_point(aes(y = dm3e), size=1, color="#555555")
     }
 
-    p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+    p4 <- makePlot(data_sample, range,
                    function(state) { if ("In" %in% names(state)) {
                                          return ((state$E + state$In + state$Is)/N * 100)
                                      } else {
@@ -90,22 +94,41 @@ all_plots <- function(date_markers) {
                                      }
                    }, "#FFFF66", c(paste("% of population of", country_adjective), "Infected individuals (%)"), date_markers, NULL)
 
-    p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+    p5 <- makePlot(data_sample, range,
                    function(state) { state$R/N * 100 }, "#33FF66",
-                   c(paste("% of population of", country_adjective), "Recovered from disease (%)"), date_markers, NULL)
+                   c(paste("% of population of", country_adjective), "Removed (%)"), date_markers, NULL)
 
-    p6 <- makePlot(data_sample, c(dstartdate, plot_end_date),
+    p6 <- makePlot(data_sample, range,
                    function(state) { state$Re }, "#33FFFF",
                    c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
 
     p6 <- p6 + coord_cartesian(ylim = c(0, NA)) +
         geom_hline(yintercept=1, linetype="solid", color="#11AA11", size=0.5)
 
+    ## Plot all mobility data
+    
+    
     grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
 }
 
 read <- function() {
-    all <- readData(inputfiles)
+    ## input files: try _1, _2, etc...
+    files <- c()
+    for (f1 in inputfiles) {
+        if (file.exists(f1))
+            files <- c(files, f1)
+        else {
+            for (i in 1:10) {
+                f <- paste(f1, "_", i, sep="")
+                if (file.exists(f))
+                    files <- c(files, f)
+            }
+        }
+    }
+
+    print(files)
+    
+    all <- readData(files)
 
     posterior <- all
 
@@ -123,7 +146,7 @@ read <- function() {
     posterior
 }
 
-posterior <- read()
+posterior <- read()[0:-7]
 
 takeSample <- function(posterior) {
     ##print(ess(posterior))
@@ -132,7 +155,7 @@ takeSample <- function(posterior) {
     selection <- 1:dim(posterior)[1]
     scount <- length(selection)
     draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
-    data_sample <- posterior[selection[draws],][0:-1]
+    data_sample <- posterior[selection[draws],]
 
     data_sample
 }
@@ -140,8 +163,11 @@ takeSample <- function(posterior) {
 data_sample <- takeSample(posterior)
 
 pdf(paste(country2,"graphs.pdf",sep='_'), width=12, height=16)
+plot_start_date <- min(as.Date("2020/2/15"), dstartdate)
 plot_end_date <- as.Date("2020/7/1")
-all_plots(data.frame(pos=c(dstartdate + lockdown_offset, dstartdate + lockdown_offset + lockdown_transition_period), color=c("orange", "red")))
+range <- c(plot_start_date, plot_end_date)
+dates <- data.frame(pos=c(dstartdate + lockdown_offset, dstartdate + lockdown_offset + lockdown_transition_period), color=c("orange", "red"))
+all_plots(dates, range)
 dev.off()
 
 result <- data.frame(country = c(country2))
@@ -185,11 +211,11 @@ result <- merge(result, d.cri95hi)
 selection <- 1:dim(posterior)[1]
 scount <- length(selection)
 draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
-data_sample <- posterior[selection[draws],][0:-1]
+data_sample <- posterior[selection[draws],]
 
 quantileData <- function(sample, fun, period, quantiles)
 {
-    simperiod = period * 3
+    simperiod = period * 2
     
     sampleSize <- dim(sample)[1]
     data <- matrix(nrow=simperiod, ncol=sampleSize)
@@ -199,7 +225,7 @@ quantileData <- function(sample, fun, period, quantiles)
         params <- sample[i,]
         params <- transformParams(unlist(params, use.names=FALSE))
         state <- calculateModel(params, simperiod)
-        v <- takeAndPad(fun(state), state$offset, simperiod)
+        v <- takeAndPad(fun(state, params), state$offset, simperiod)
         maxOffset <- max(maxOffset, state$offset)
         data[,i] = v
     }
@@ -212,7 +238,7 @@ quantileData <- function(sample, fun, period, quantiles)
     result
 }
 
-est.died <- data.frame(quantileData(data_sample, function(state) { state$died }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.died <- data.frame(quantileData(data_sample, function(state, params) { state$died }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.died) <- c("q5", "q50", "q95")
 
 result$d1.est.died.median <- est.died$q50[lockdown_offset]
@@ -231,7 +257,7 @@ result$d2.60.est.died.median <- est.died$q50[lockdown_offset + lockdown_transiti
 result$d2.60.est.died.cri95lo <- est.died$q5[lockdown_offset + lockdown_transition_period + 60]
 result$d2.60.est.died.cri95hi <- est.died$q95[lockdown_offset + lockdown_transition_period + 60]
 
-est.Re <- data.frame(quantileData(data_sample, function(state) { state$Re }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
 
 result$d1.est.Re.median <- est.Re$q50[lockdown_offset]
@@ -258,7 +284,7 @@ result$d2.60.est.Re.median <- est.Re$q50[lockdown_offset + lockdown_transition_p
 result$d2.60.est.Re.cri95lo <- est.Re$q5[lockdown_offset + lockdown_transition_period + 60]
 result$d2.60.est.Re.cri95hi <- est.Re$q95[lockdown_offset + lockdown_transition_period + 60]
 
-est.Rt <- data.frame(quantileData(data_sample, function(state) { state$Rt }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.Rt <- data.frame(quantileData(data_sample, function(state, params) { state$Rt }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.Rt) <- c("q5", "q50", "q95")
 
 result$d1.est.Rt.median <- est.Rt$q50[lockdown_offset]
@@ -285,6 +311,23 @@ result$d2.60.est.Rt.median <- est.Rt$q50[lockdown_offset + lockdown_transition_p
 result$d2.60.est.Rt.cri95lo <- est.Rt$q5[lockdown_offset + lockdown_transition_period + 60]
 result$d2.60.est.Rt.cri95hi <- est.Rt$q95[lockdown_offset + lockdown_transition_period + 60]
 
+est.fr0Rt <- data.frame(quantileData(data_sample, function(state, params) { state$Rt / params[1] }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+colnames(est.fr0Rt) <- c("q5", "q50", "q95")
+
+result$d1.est.frRt0.median <- est.fr0Rt$q50[lockdown_offset]
+result$d1.est.frRt0.cri95lo <- est.fr0Rt$q5[lockdown_offset]
+result$d1.est.frRt0.cri95hi <- est.fr0Rt$q95[lockdown_offset]
+
+## Rt2 / Rt@d1
+est.fr1Rt <- data.frame(quantileData(data_sample, function(state, params) { params[3] / state$Rt }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+colnames(est.fr1Rt) <- c("q5", "q50", "q95")
+
+result$d1.est.frRt2.median <- est.fr1Rt$q50[lockdown_offset]
+result$d1.est.frRt2.cri95lo <- est.fr1Rt$q5[lockdown_offset]
+result$d1.est.frRt2.cri95hi <- est.fr1Rt$q95[lockdown_offset]
+
+print(c(result$d1.est.frRt2.median, result$d1.est.frRt0.median))
+
 ## offset
 
 integrate <- function(sample, fun)
@@ -303,7 +346,7 @@ integrate <- function(sample, fun)
     result
 }
 
-offsets <- quantile(integrate(data_sample, function(state) { state$offset }), c(0.05, 0.5, 0.95, 0))
+offsets <- quantile(integrate(data_sample, function(state, params) { state$offset }), c(0.05, 0.5, 0.95, 0))
 
 result$p0.d1.median <- offsets[2] + lockdown_offset
 result$p0.d1.cri95lo <- offsets[1] + lockdown_offset
@@ -334,7 +377,7 @@ quantileAllData <- function(sample, fun, period, quantiles, offset)
 
 max_offset <- offsets[4]
 
-infected <- data.frame(quantileAllData(data_sample, function(state) {
+infected <- data.frame(quantileAllData(data_sample, function(state, params) {
     if ("In" %in% names(state)) {
         return(state$E + state$In + state$Is)
     } else {
@@ -401,7 +444,7 @@ if (max_offset + lockdown_offset - 90 > 0) {
 }
 
 ## Analyze predictive performance
-est.deadi <- data.frame(quantileData(data_sample, function(state) { state$deadi }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.deadi <- data.frame(quantileData(data_sample, function(state, params) { state$deadi }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.deadi) <- c("q5", "q50", "q95")
 
 fitl <-length(dmorti) - evaluation_data_count
@@ -430,23 +473,23 @@ gm <- c
 gmbl <- subset(gm[1:o$par[1],])
 gmal <- subset(gm[o$par[2]:(dim(gm)[1]),])
 
-result$gm.bl.retail_and_recreation_percent_change_from_baseline <- mean(gmbl$retail_and_recreation_percent_change_from_baseline)
-result$gm.al.retail_and_recreation_percent_change_from_baseline <- mean(gmal$retail_and_recreation_percent_change_from_baseline)
+result$gm.bl.retail_and_recreation_percent_change_from_baseline <- mean(gmbl$retail_and_recreation_percent_change_from_baseline, na.rm = T)
+result$gm.al.retail_and_recreation_percent_change_from_baseline <- mean(gmal$retail_and_recreation_percent_change_from_baseline, na.rm = T)
 
-result$gm.bl.grocery_and_pharmacy_percent_change_from_baseline <- mean(gmbl$grocery_and_pharmacy_percent_change_from_baseline)
-result$gm.al.grocery_and_pharmacy_percent_change_from_baseline <- mean(gmal$grocery_and_pharmacy_percent_change_from_baseline)
+result$gm.bl.grocery_and_pharmacy_percent_change_from_baseline <- mean(gmbl$grocery_and_pharmacy_percent_change_from_baseline, na.rm = T)
+result$gm.al.grocery_and_pharmacy_percent_change_from_baseline <- mean(gmal$grocery_and_pharmacy_percent_change_from_baseline, na.rm = T)
 
-result$gm.bl.parks_percent_change_from_baseline <- mean(gmbl$parks_percent_change_from_baseline)
-result$gm.al.parks_percent_change_from_baseline <- mean(gmal$parks_percent_change_from_baseline)
+result$gm.bl.parks_percent_change_from_baseline <- mean(gmbl$parks_percent_change_from_baseline, na.rm = T)
+result$gm.al.parks_percent_change_from_baseline <- mean(gmal$parks_percent_change_from_baseline, na.rm = T)
 
-result$gm.bl.transit_stations_percent_change_from_baseline <- mean(gmbl$transit_stations_percent_change_from_baseline)
-result$gm.al.transit_stations_percent_change_from_baseline <- mean(gmal$transit_stations_percent_change_from_baseline)
+result$gm.bl.transit_stations_percent_change_from_baseline <- mean(gmbl$transit_stations_percent_change_from_baseline, na.rm = T)
+result$gm.al.transit_stations_percent_change_from_baseline <- mean(gmal$transit_stations_percent_change_from_baseline, na.rm = T)
 
-result$gm.bl.workplaces_percent_change_from_baseline <- mean(gmbl$workplaces_percent_change_from_baseline)
-result$gm.al.workplaces_percent_change_from_baseline <- mean(gmal$workplaces_percent_change_from_baseline)
+result$gm.bl.workplaces_percent_change_from_baseline <- mean(gmbl$workplaces_percent_change_from_baseline, na.rm = T)
+result$gm.al.workplaces_percent_change_from_baseline <- mean(gmal$workplaces_percent_change_from_baseline, na.rm = T)
 
-result$gm.bl.residential_percent_change_from_baseline <- mean(gmbl$residential_percent_change_from_baseline)
-result$gm.al.residential_percent_change_from_baseline <- mean(gmal$residential_percent_change_from_baseline)
+result$gm.bl.residential_percent_change_from_baseline <- mean(gmbl$residential_percent_change_from_baseline, na.rm = T)
+result$gm.al.residential_percent_change_from_baseline <- mean(gmal$residential_percent_change_from_baseline, na.rm = T)
 
 write.csv(result, paste(country2,"analysis.csv",sep='_'))
 

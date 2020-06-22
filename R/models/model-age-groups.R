@@ -54,46 +54,6 @@ cppFunction('NumericVector odesimstepc(double yS, double yE, double yI, double y
    return out;
 }')
 
-ode.simstep <- function(i, state.seir, parameters) {
-    with(as.list(c(state.seir, parameters)), {
-        y.got_infected = y.beta * y.I * y.S / y.N
-        y.got_infectious = a * y.E
-        y.got_removed = gamma * y.I
-
-        y.deltaS = -y.got_infected
-        y.deltaE = y.got_infected - y.got_infectious
-        y.deltaI = y.got_infectious - y.got_removed
-        y.deltaR = y.got_removed
-
-        o.got_infected = (o.beta * o.I + yo.beta * y.I) * o.S / o.N
-        o.got_infectious = a * o.E
-        o.got_removed = gamma * o.I
-
-        o.deltaS = -o.got_infected
-        o.deltaE = o.got_infected - o.got_infectious
-        o.deltaI = o.got_infectious - o.got_removed
-        o.deltaR = o.got_removed
-
-        c(y.deltaS, y.deltaE, y.deltaI, y.deltaR,
-          o.deltaS, o.deltaE, o.deltaI, o.deltaR)
-    })
-}
-
-ode.simstep <- function(state, i, y.beta, o.beta, yo.beta, a, gamma)
-{
-    state.seir <- as.list(state)
-    names(state.seir) <- c("y.S", "y.E", "y.I", "y.R",
-                           "o.S", "o.E", "o.I", "o.R")
-
-    delta = ode.simstep(i, state.seir, list(y.beta = y.beta,
-                                            o.beta = o.beta,
-                                            yo.beta = yo.beta,
-                                            a = a,
-                                            gamma = gamma))
-
-    state + delta
-}
-
 simstep <- function(state, y.beta, o.beta, yo.beta, a, gamma)
 {
     i = state$i

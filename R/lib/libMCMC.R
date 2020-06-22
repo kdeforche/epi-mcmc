@@ -7,15 +7,11 @@ readData <- function(files)
     print(dim(posterior))
     c = dim(posterior)[1]
 
-    posterior <- posterior[(c/2):c,]
-
     if (length(files) > 1) {
         for (i in 2:length(files)) {
             posteriorb <- read.csv(files[i])
             print(dim(posteriorb))
             c = dim(posteriorb)[1]
-
-            posteriorb <- posteriorb[(c/8):c,]
             posterior <- rbind(posterior, posteriorb)
         }
     }
@@ -150,20 +146,18 @@ predict_cum_plot <- function(sample, overlay, color) {
 ##
 ## Calculates quantiles of the given fun, over the given period, for the posterior state sample
 ##
-quantileData <- function(sample, fun, period, quantiles)
+quantileData <- function(sample, fun, startoffset, period, quantiles)
 {
     simperiod = period * 3
     
     sampleSize <- dim(sample)[1]
     data <- matrix(nrow=simperiod, ncol=sampleSize)
 
-    maxOffset <- 0
     for (i in 1:sampleSize) {
         params <- sample[i,]
         params <- transformParams(unlist(params, use.names=FALSE))
         state <- calculateModel(params, simperiod)
-        v <- takeAndPad(fun(state), state$offset, simperiod)
-        maxOffset <- max(maxOffset, state$offset)
+        v <- takeAndPad(fun(state), state$offset - startoffset, simperiod)
         data[,i] = v
     }
 
@@ -185,7 +179,8 @@ grey75 <- "grey60"
 makePlot <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
 {
     period <- as.numeric(dateRange[2] - dateRange[1])
-    qd <- data.frame(quantileData(sample, fun, period, c(0.05, 0.25, 0.5, 0.75, 0.95)))
+    startoffset <- as.numeric(dstartdate - dateRange[1])
+    qd <- data.frame(quantileData(sample, fun, startoffset, period, c(0.05, 0.25, 0.5, 0.75, 0.95)))
 
     colnames(qd) <- c("q5", "q25", "q50", "q75", "q95")
     qd$x <- seq(dateRange[1], dateRange[1] + dim(qd)[1] - 1, 1)

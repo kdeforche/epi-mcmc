@@ -166,6 +166,9 @@ invTransformParams <- function(posterior)
     posterior$betat1 = posterior$Rt1 / posterior$Tinft1
     posterior$betat2 = posterior$Rt2 / posterior$Tinft2
 
+    posterior$frRt0_1 = posterior$Rt1 / posterior$Rt0
+    posterior$frRt1_2 = posterior$Rt2 / posterior$Rt1
+    
     posterior
 }
 
@@ -181,7 +184,7 @@ calclogp <- function(params) {
 
     logPriorP <- 0
 
-    logPriorP <- logPriorP + dnorm(phs, mean=0, sd=8, log=T)
+    logPriorP <- logPriorP + dnorm(phs, mean=0, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=21, sd=4, log=T)
