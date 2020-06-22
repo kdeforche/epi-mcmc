@@ -233,9 +233,25 @@ all_plots_age <- function(date_markers) {
 options(scipen=999)
 
 readSample <- function() {
-    all <- readData(inputfiles)
+    ## input files: try _1, _2, etc...
+    files <- c()
+    for (f1 in inputfiles) {
+        if (file.exists(f1))
+            files <- c(files, f1)
+        else {
+            for (i in 1:10) {
+                f <- paste(f1, "_", i, sep="")
+                if (file.exists(f))
+                    files <- c(files, f)
+            }
+        }
+    }
 
-    posterior <- all
+    print(files)
+   
+    all <- readData(files)
+
+    posterior <- all[0:-7]
 
     print(ess(posterior))
 
@@ -251,7 +267,7 @@ readSample <- function() {
     selection <- 1:dim(posterior)[1]
     scount <- length(selection)
     draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
-    data_sample <- posterior[selection[draws],][0:-1]
+    data_sample <- posterior[selection[draws],]
 
     data_sample
 }
