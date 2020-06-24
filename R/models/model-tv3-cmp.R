@@ -1,6 +1,6 @@
 library("deSolve")
-system("R CMD SHLIB model-tv-cmp.cpp")
-dyn.load("model-tv-cmp.so")
+system("R CMD SHLIB model-tv3-cmp.cpp")
+dyn.load("model-tv3-cmp.so")
 
 InvalidDataOffset <- 10000
 Initial <- 1
@@ -45,14 +45,17 @@ calculateModel <- function(params, period)
     Rt0 <- params[1]
     Rt1 <- params[2]
     Rt2 <- params[3]
-    hosp_rate <- params[4]
-    hosp_latency <- params[5]
-    died_latency <- params[6]
-    phs_morts <- params[7]
-    phs <- params[8]
+    Rt3 <- params[4]
+    hosp_rate <- params[5]
+    hosp_latency <- params[6]
+    died_latency <- params[7]
+    phs_morts <- params[8]
+    phs <- params[9]
+    ef2d2o <- params[10]
+    ef2d <- params[11]
 
     Tinf <- (G - Tinc) * 2
-    Tinft0 = Tinft1 = Tinft2 = Tinf
+    Tinft0 = Tinft1 = Tinft2 = Tinft3 = Tinf
     
     if (phs > 0) { ## no physical distancing
         Rt01 = (Rt0 + Rt1) / 2
@@ -65,6 +68,7 @@ calculateModel <- function(params, period)
     betat0 = Rt0 / Tinft0
     betat1 = Rt1 / Tinft1
     betat2 = Rt2 / Tinft2
+    betat3 = Rt3 / Tinft3
 
     a <- 1 / Tinc
 
@@ -87,16 +91,18 @@ calculateModel <- function(params, period)
 
     parms <- c(N = N, a = a,
                phts = 1E10, ldts = 1E10, ldte = 1E10,
+               ef2s = 1E10, ef2e = 1E10,
                betat0 = betat0, Tinft0 = Tinft0,
                betat1 = betat1, Tinft1 = Tinft1,
-               betat2 = betat2, Tinft2 = Tinft2)
+               betat2 = betat2, Tinft2 = Tinft2,
+               betat3 = betat3, Tinft3 = Tinft3)
 
     Y <- c(S = N - Initial, E = Initial, I = 0, R = 0)
 
     times <- (padding + 1):(padding + period)
 
     out <- ode(Y, times, func = "derivs", parms = parms,
-               jacfunc = "jac", dllname = "model-tv-cmp",
+               jacfunc = "jac", dllname = "model-tv3-cmp",
                initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
 
     state$S[(padding + 1):(padding + period)] = out[,2]
@@ -114,12 +120,15 @@ calculateModel <- function(params, period)
                    phts = data_offset + lockdown_offset + phs,
                    ldts = data_offset + lockdown_offset + max(phs, 0),
                    ldte = data_offset + lockdown_offset + lockdown_transition_period,
+                   ef2s = data_offset + lockdown_offset + lockdown_transition_period + ef2d2o,
+                   ef2e = data_offset + lockdown_offset + lockdown_transition_period + ef2d2o + ef2d,
                    betat0 = betat0, Tinft0 = Tinft0,
                    betat1 = betat1, Tinft1 = Tinft1,
-                   betat2 = betat2, Tinft2 = Tinft2)
+                   betat2 = betat2, Tinft2 = Tinft2,
+                   betat3 = betat3, Tinft3 = Tinft3)
 
         out <- ode(Y, times, func = "derivs", parms = parms,
-                   jacfunc = "jac", dllname = "model-tv-cmp",
+                   jacfunc = "jac", dllname = "model-tv3-cmp",
                    initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
     }
 
@@ -160,14 +169,17 @@ invTransformParams <- function(posterior)
     posterior$Tinc = Tinc
 
     Tinf <- (G - Tinc) * 2
-    posterior$Tinft0 = posterior$Tinft1 = posterior$Tinft2 = Tinf
+    posterior$Tinft0 = posterior$Tinft1 = posterior$Tinft2 = posterior$Tinft3 = Tinf
+    posterior$ef2d2e = posterior$ef2d2o + posterior$ef2d
 
     posterior$betat0 = posterior$Rt0 / posterior$Tinft0
     posterior$betat1 = posterior$Rt1 / posterior$Tinft1
     posterior$betat2 = posterior$Rt2 / posterior$Tinft2
+    posterior$betat3 = posterior$Rt3 / posterior$Tinft3
 
     posterior$frRt0_1 = posterior$Rt1 / posterior$Rt0
     posterior$frRt1_2 = posterior$Rt2 / posterior$Rt1
+    posterior$frRt2_3 = posterior$Rt3 / posterior$Rt2
     
     posterior
 }
@@ -176,18 +188,38 @@ calclogp <- function(params) {
     Rt0 <- params[1]
     Rt1 <- params[2]
     Rt2 <- params[3]
-    hosp_rate <- params[4]
-    hosp_latency <- params[5]
-    died_latency <- params[6]
-    phs_morts <- params[7]
-    phs <- params[8]
+    Rt3 <- params[4]
+    hosp_rate <- params[5]
+    hosp_latency <- params[6]
+    died_latency <- params[7]
+    phs_morts <- params[8]
+    phs <- params[9]
+    ef2d2o <- params[10]
+    ef2d <- params[11]
 
     logPriorP <- 0
 
-    logPriorP <- logPriorP + dnorm(phs, mean=0, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=1, log=T)
-    ##logPriorP <- logPriorP + dnorm(died_latency, mean=21, sd=4, log=T)
+    if (ef2d2o < 0 || ef2d < 0)
+        return(-Inf)
+
+    ## Based on estimate with died_latency prior
+    ## logPriorP <- logPriorP + dnorm(Rt0, mean=3.6, sd=0.6, log=T)
+    ## logPriorP <- logPriorP + dnorm(Rt1, mean=2.3, sd=0.4, log=T)
+    ## logPriorP <- logPriorP + dnorm(Rt2, mean=0.8, sd=0.2, log=T)
+    ## logPriorP <- logPriorP + dnorm(Rt3 - Rt2, mean=0, sd=1, log=T)
+    ## logPriorP <- logPriorP + dnorm(phs, mean=-6, sd=8, log=T)
+    ## logPriorP <- logPriorP + dnorm(ef2d, mean=0, sd=5, log=T)
+    ## logPriorP <- logPriorP + dnorm(died_latency, mean=24, sd=4, log=T)
+    ## logPriorP <- logPriorP + dnorm(hosp_latency, mean=15, sd=4, log=T)
+
+    logPriorP <- logPriorP + dnorm(Rt0, mean=3.6, sd=0.6, log=T)
+    logPriorP <- logPriorP + dnorm(Rt1, mean=2.1, sd=0.4, log=T)
+    logPriorP <- logPriorP + dnorm(Rt2, mean=0.8, sd=0.3, log=T)
+    logPriorP <- logPriorP + dnorm(Rt3 - Rt2, mean=0, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(phs, mean=-9, sd=8, log=T)
+    logPriorP <- logPriorP + dnorm(ef2d, mean=0, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=27, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(hosp_latency, mean=18, sd=5, log=T)
 
     logPriorP
 }
@@ -255,14 +287,14 @@ calclogl <- function(params, x) {
     result
 }
 
-fit.paramnames <- c("Rt0", "Rt1", "Rt2", "HR", "HL", "DL", "phs_morts", "phs")
-keyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
-fitkeyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
-init <- c(2.9, 0.9, 0.9, 0.02, 10, 20, total_deaths_at_lockdown, 0)
+fit.paramnames <- c("Rt0", "Rt1", "Rt2", "Rt3", "HR", "HL", "DL", "phs_morts", "phs", "ef2d2o", "ef2d")
+keyparamnames <- c("Rt0", "Rt1", "Rt2", "Rt3", "phs", "ef2d2o")
+fitkeyparamnames <- keyparamnames
+init <- c(2.9, 0.9, 0.9, 0.9, 0.02, 10, 20, total_deaths_at_lockdown, 0, 1, 1)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, 0.1, 0.001, 5, 5, 0, -30),
-                        max = c(8, 8, 8, 0.5, 30, 50,
+                        min = c(0.1, 0.1, 0.1, 0.1, 0.001, 5, 5, 0, -30, 0, 0.1),
+                        max = c(8, 8, 8, 8, 0.5, 30, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
-                                30),
+                                30, 60, 30),
                         init = init)
