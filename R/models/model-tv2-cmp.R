@@ -262,7 +262,7 @@ init <- c(2.9, 0.9, 0.9, 0.02, 10, 20, total_deaths_at_lockdown, 0)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(0.1, 0.1, 0.1, 0.001, 5, 5, 0, -30),
-                        max = c(8, 8, 8, 0.5, 30, 50,
+                        max = c(8, 8, 8, 1, 50, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30),
                         init = init)

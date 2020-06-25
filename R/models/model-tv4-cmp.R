@@ -54,9 +54,11 @@ calculateModel <- function(params, period)
     ef2d2o <- params[10]
     ef2d <- params[11]
 
+    ## Tinf0 = Tinft = fixed based on generation time
+    ## We estimate betat0 and betat1
     Tinf <- (G - Tinc) * 2
-    Tinft0 = Tinft1 = Tinft2 = Tinft3 = Tinf
-    
+    Tinft0 = Tinft1 = Tinf
+
     if (phs > 0) { ## no physical distancing
         Rt01 = (Rt0 + Rt1) / 2
         Tinft01 = (Tinft0 + Tinft1) / 2
@@ -67,7 +69,10 @@ calculateModel <- function(params, period)
 
     betat0 = Rt0 / Tinft0
     betat1 = Rt1 / Tinft1
-    betat2 = Rt2 / Tinft2
+
+    ## Tinft2 = Tint3 = based on Rt2, assuming betat2 = betat1
+    betat2 = betat1
+    Tinft2 = Tinft3 = Rt2 / betat2
     betat3 = Rt3 / Tinft3
 
     a <- 1 / Tinc
@@ -169,13 +174,14 @@ invTransformParams <- function(posterior)
     posterior$Tinc = Tinc
 
     Tinf <- (G - Tinc) * 2
-    posterior$Tinft0 = posterior$Tinft1 = posterior$Tinft2 = posterior$Tinft3 = Tinf
-    posterior$ef2d2e = posterior$ef2d2o + posterior$ef2d
-
+    posterior$Tinft0 = posterior$Tinft1 = Tinf 
     posterior$betat0 = posterior$Rt0 / posterior$Tinft0
     posterior$betat1 = posterior$Rt1 / posterior$Tinft1
-    posterior$betat2 = posterior$Rt2 / posterior$Tinft2
+    posterior$betat2 = posterior$betat1   
+    posterior$Tinft2 = posterior$Tinft3 = posterior$Rt2 / posterior$betat2
     posterior$betat3 = posterior$Rt3 / posterior$Tinft3
+    
+    posterior$ef2d2e = posterior$ef2d2o + posterior$ef2d
 
     posterior$frRt0_1 = posterior$Rt1 / posterior$Rt0
     posterior$frRt1_2 = posterior$Rt2 / posterior$Rt1
@@ -214,7 +220,7 @@ calclogp <- function(params) {
 
     logPriorP <- logPriorP + dnorm(Rt0, mean=3.6, sd=0.6, log=T)
     logPriorP <- logPriorP + dnorm(Rt1, mean=2.1, sd=0.4, log=T)
-    logPriorP <- logPriorP + dnorm(Rt2, mean=0.8, sd=0.2, log=T)
+    logPriorP <- logPriorP + dnorm(Rt2, mean=0.8, sd=0.3, log=T)
     logPriorP <- logPriorP + dnorm(Rt3 - Rt2, mean=0, sd=0.3, log=T)
     logPriorP <- logPriorP + dnorm(phs, mean=-9, sd=8, log=T)
     logPriorP <- logPriorP + dnorm(ef2d2o, mean=15, sd=5, log=T)
