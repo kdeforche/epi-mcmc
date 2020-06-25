@@ -14,23 +14,27 @@ if (!exists("Es.time")) {
     Es.time <- c()
 }
 
-calcConvolveProfile <- function(latency, latency_sd)
+calcLogNormalProfile <- function(mean, sd)
 {
-    kend = min(0, ceiling(latency + latency_sd * 1.5))
-    kbegin = min(kend - 1, floor(latency - latency_sd * 1.5))
+    logm = log(mean) - 0.5*log((sd/mean)^2 + 1)
+    logsd = sqrt(log((sd/mean)^2 + 1))
+
+    kbegin = max(0, ceiling(mean - sd * 2))
+    kend = max(kbegin + 1, floor(mean + sd * 3))
 
     result = NULL
-    result$kbegin = kbegin
-    result$kend = kend
-    result$values = numeric(kend - kbegin)
+    result$kbegin = -kend
+    result$kend = -kbegin
+    result$values = numeric(result$kend - result$kbegin)
     i = 1
     for (k in kbegin:kend) {
-        result$values[i] = pnorm(k-0.5, mean=latency, sd=latency_sd) -
-            pnorm(k+0.5, mean=latency, sd=latency_sd)
+        result$values[i] = plnorm(k-0.5, logm, logsd) -
+            plnorm(k+0.5, logm, sd=logsd)
         i = i + 1
     }
 
-    result$values = result$values / sum(result$values)    
+    result$values = result$values / sum(result$values)
+    result$values = rev(result$values)
 
     result
 }
@@ -77,8 +81,9 @@ calculateModel <- function(params, period)
 
     a <- 1 / Tinc
 
-    hosp_cv_profile = calcConvolveProfile(-hosp_latency, 5)
-    died_cv_profile = calcConvolveProfile(-died_latency, 5)
+    ## https://twitter.com/cheianov/status/1275803863719837696?s=20
+    hosp_cv_profile = calcLogNormalProfile(hosp_latency, 8)
+    died_cv_profile = calcLogNormalProfile(died_latency, 10)
 
     padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
@@ -225,8 +230,8 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(phs, mean=-9, sd=8, log=T)
     logPriorP <- logPriorP + dnorm(ef2d2o, mean=15, sd=5, log=T)
     logPriorP <- logPriorP + dnorm(ef2d, mean=0, sd=5, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=27, sd=5, log=T)
-    logPriorP <- logPriorP + dnorm(hosp_latency, mean=18, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=21, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(hosp_latency, mean=14, sd=5, log=T)
 
     logPriorP
 }

@@ -14,23 +14,27 @@ if (!exists("Es.time")) {
     Es.time <- c()
 }
 
-calcConvolveProfile <- function(latency, latency_sd)
+calcLogNormalProfile <- function(mean, sd)
 {
-    kend = min(0, ceiling(latency + latency_sd * 1.5))
-    kbegin = min(kend - 1, floor(latency - latency_sd * 1.5))
+    logm = log(mean) - 0.5*log((sd/mean)^2 + 1)
+    logsd = sqrt(log((sd/mean)^2 + 1))
+
+    kbegin = max(0, ceiling(mean - sd * 2))
+    kend = max(kbegin + 1, floor(mean + sd * 3))
 
     result = NULL
-    result$kbegin = kbegin
-    result$kend = kend
-    result$values = numeric(kend - kbegin)
+    result$kbegin = -kend
+    result$kend = -kbegin
+    result$values = numeric(result$kend - result$kbegin)
     i = 1
     for (k in kbegin:kend) {
-        result$values[i] = pnorm(k-0.5, mean=latency, sd=latency_sd) -
-            pnorm(k+0.5, mean=latency, sd=latency_sd)
+        result$values[i] = plnorm(k-0.5, logm, logsd) -
+            plnorm(k+0.5, logm, sd=logsd)
         i = i + 1
     }
 
-    result$values = result$values / sum(result$values)    
+    result$values = result$values / sum(result$values)
+    result$values = rev(result$values)
 
     result
 }
@@ -68,8 +72,9 @@ calculateModel <- function(params, period)
 
     a <- 1 / Tinc
 
-    hosp_cv_profile = calcConvolveProfile(-hosp_latency, 5)
-    died_cv_profile = calcConvolveProfile(-died_latency, 5)
+    ## https://twitter.com/cheianov/status/1275803863719837696?s=20
+    hosp_cv_profile = calcLogNormalProfile(hosp_latency, 8)
+    died_cv_profile = calcLogNormalProfile(died_latency, 10)
 
     padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
@@ -262,7 +267,7 @@ init <- c(2.9, 0.9, 0.9, 0.02, 10, 20, total_deaths_at_lockdown, 0)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(0.1, 0.1, 0.1, 0.001, 5, 5, 0, -30),
-                        max = c(8, 8, 8, 1, 50, 50,
+                        max = c(8, 8, 8, 1, 30, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30),
                         init = init)
