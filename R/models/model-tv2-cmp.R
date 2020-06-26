@@ -54,6 +54,7 @@ calculateModel <- function(params, period)
     died_latency <- params[6]
     phs_morts <- params[7]
     phs <- params[8]
+    lnsd <- params[9]
 
     Tinf <- (G - Tinc) * 2
     Tinft0 = Tinft1 = Tinft2 = Tinf
@@ -73,8 +74,8 @@ calculateModel <- function(params, period)
     a <- 1 / Tinc
 
     ## https://twitter.com/cheianov/status/1275803863719837696?s=20
-    hosp_cv_profile = calcLogNormalProfile(hosp_latency, 8)
-    died_cv_profile = calcLogNormalProfile(died_latency, 10)
+    hosp_cv_profile = calcLogNormalProfile(hosp_latency, lnsd)
+    died_cv_profile = calcLogNormalProfile(died_latency, lnsd)
 
     padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
@@ -186,6 +187,7 @@ calclogp <- function(params) {
     died_latency <- params[6]
     phs_morts <- params[7]
     phs <- params[8]
+    lnsd <- params[9]
 
     logPriorP <- 0
 
@@ -193,6 +195,7 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(died_latency, mean=20, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(lnsd, mean=8, sd=2, log=T)
 
     logPriorP
 }
@@ -260,14 +263,14 @@ calclogl <- function(params, x) {
     result
 }
 
-fit.paramnames <- c("Rt0", "Rt1", "Rt2", "HR", "HL", "DL", "phs_morts", "phs")
+fit.paramnames <- c("Rt0", "Rt1", "Rt2", "HR", "HL", "DL", "phs_morts", "phs", "lnsd")
 keyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
 fitkeyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
-init <- c(2.9, 0.9, 0.9, 0.02, 10, 20, total_deaths_at_lockdown, 0)
+init <- c(2.9, 0.9, 0.9, 0.02, 10, 20, total_deaths_at_lockdown, 0, 9)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, 0.1, 0.001, 5, 5, 0, -30),
+                        min = c(0.1, 0.1, 0.1, 0.001, 5, 18, 0, -30, 4),
                         max = c(8, 8, 8, 1, 30, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
-                                30),
+                                30, 12),
                         init = init)
