@@ -7,6 +7,7 @@ Initial <- 1
 
 G <- 5.2
 Tinc <- 3
+DL <- 20
 
 died_rate <- 0.007
 
@@ -194,7 +195,7 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(phs, mean=0, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=20, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=DL, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(lnsd, mean=8, sd=2, log=T)
 
     logPriorP
@@ -266,10 +267,10 @@ calclogl <- function(params, x) {
 fit.paramnames <- c("Rt0", "Rt1", "Rt2", "HR", "HL", "DL", "phs_morts", "phs", "lnsd")
 keyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
 fitkeyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
-init <- c(2.9, 0.9, 0.9, 0.02, 10, 20, total_deaths_at_lockdown, 0, 9)
+init <- c(2.9, 0.9, 0.9, 0.02, 10, DL, total_deaths_at_lockdown, 0, 9)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, 0.1, 0.001, 5, 18, 0, -30, 4),
+                        min = c(0.1, 0.1, 0.1, 0.001, 5, DL-2, 0, -30, 4),
                         max = c(8, 8, 8, 1, 30, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30, 12),
