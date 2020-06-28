@@ -239,7 +239,7 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(Rt0, mean=3.6, sd=0.6, log=T)
     logPriorP <- logPriorP + dnorm(Rt1, mean=2.0, sd=0.6, log=T)
     logPriorP <- logPriorP + dnorm(Rt2, mean=0.8, sd=0.1, log=T)
-    logPriorP <- logPriorP + dnorm(Rt3 - Rt2, mean=0, sd=0.1, log=T)
+    logPriorP <- logPriorP + dnorm(Rt3 - Rt2, mean=0, sd=0.2, log=T)
     logPriorP <- logPriorP + dnorm(phs, mean=-8, sd=4, log=T)
     logPriorP <- logPriorP + dnorm(ef2d2o, mean=15, sd=5, log=T)
     logPriorP <- logPriorP + dnorm(ef2d, mean=0, sd=2, log=T)
