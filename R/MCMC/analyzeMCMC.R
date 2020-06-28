@@ -29,7 +29,7 @@ print(evaluation_data_count)
 all_plots <- function(date_markers, range) {
     p1 <- makePlot(data_sample, range,
                    function(state) state$deadi, "#3366FF",
-                   c("Death incidence", "Incidence of deaths and confirmed cases"), date_markers, NULL)
+                   c("Death incidence", "Incidence of deaths"), date_markers, NULL)
 
     dm1c = length(dmorti) - evaluation_data_count
 
