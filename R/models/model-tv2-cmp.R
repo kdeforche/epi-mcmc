@@ -7,7 +7,7 @@ Initial <- 1
 
 G <- 5.2
 Tinc <- 3
-DL <- 20
+DL <- 19
 
 died_rate <- 0.007
 
@@ -31,6 +31,31 @@ calcLogNormalProfile <- function(mean, sd)
     for (k in kbegin:kend) {
         result$values[i] = plnorm(k-0.5, logm, logsd) -
             plnorm(k+0.5, logm, sd=logsd)
+        i = i + 1
+    }
+
+    result$values = result$values / sum(result$values)
+    result$values = rev(result$values)
+
+    result
+}
+
+calcGammaProfile <- function(mean, sd)
+{
+    shape = mean^2 / sd^2
+    scale = sd^2 / mean
+    
+    kbegin = max(0, ceiling(mean - sd * 2))
+    kend = max(kbegin + 1, floor(mean + sd * 3))
+
+    result = NULL
+    result$kbegin = -kend
+    result$kend = -kbegin
+    result$values = numeric(result$kend - result$kbegin)
+    i = 1
+    for (k in kbegin:kend) {
+        result$values[i] = pgamma(k-0.5, shape=shape, scale=scale) -
+            pgamma(k+0.5, shape=shape, scale=scale)
         i = i + 1
     }
 
@@ -74,9 +99,9 @@ calculateModel <- function(params, period)
 
     a <- 1 / Tinc
 
-    ## https://twitter.com/cheianov/status/1275803863719837696?s=20
-    hosp_cv_profile = calcLogNormalProfile(hosp_latency, lnsd)
-    died_cv_profile = calcLogNormalProfile(died_latency, lnsd)
+    ## https://www.imperial.ac.uk/media/imperial-college/medicine/mrc-gida/2020-06-08-COVID19-Report-26.pdf p.4 : gamma mean = 18.8, sd = 8.46
+    hosp_cv_profile = calcGammaProfile(hosp_latency, lnsd)
+    died_cv_profile = calcGammaProfile(died_latency, lnsd)
 
     padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
@@ -270,7 +295,7 @@ fitkeyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
 init <- c(2.9, 0.9, 0.9, 0.02, 10, DL, total_deaths_at_lockdown, 0, 9)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, 0.1, 0.001, 5, DL-2, 0, -30, 4),
+                        min = c(0.1, 0.1, 0.1, 0.001, 5, DL-5, 0, -30, 4),
                         max = c(8, 8, 8, 1, 30, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30, 12),

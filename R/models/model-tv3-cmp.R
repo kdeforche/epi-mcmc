@@ -7,6 +7,7 @@ Initial <- 1
 
 G <- 5.2
 Tinc <- 3
+DL <- 19
 
 died_rate <- 0.007
 
@@ -30,6 +31,31 @@ calcLogNormalProfile <- function(mean, sd)
     for (k in kbegin:kend) {
         result$values[i] = plnorm(k-0.5, logm, logsd) -
             plnorm(k+0.5, logm, sd=logsd)
+        i = i + 1
+    }
+
+    result$values = result$values / sum(result$values)
+    result$values = rev(result$values)
+
+    result
+}
+
+calcGammaProfile <- function(mean, sd)
+{
+    shape = mean^2 / sd^2
+    scale = sd^2 / mean
+    
+    kbegin = max(0, ceiling(mean - sd * 2))
+    kend = max(kbegin + 1, floor(mean + sd * 3))
+
+    result = NULL
+    result$kbegin = -kend
+    result$kend = -kbegin
+    result$values = numeric(result$kend - result$kbegin)
+    i = 1
+    for (k in kbegin:kend) {
+        result$values[i] = pgamma(k-0.5, shape=shape, scale=scale) -
+            pgamma(k+0.5, shape=shape, scale=scale)
         i = i + 1
     }
 
@@ -78,8 +104,9 @@ calculateModel <- function(params, period)
     a <- 1 / Tinc
 
     ## https://twitter.com/cheianov/status/1275803863719837696?s=20
-    hosp_cv_profile = calcLogNormalProfile(hosp_latency, lnsd)
-    died_cv_profile = calcLogNormalProfile(died_latency, lnsd)
+    
+    hosp_cv_profile = calcGammaProfile(hosp_latency, lnsd)
+    died_cv_profile = calcGammaProfile(died_latency, lnsd)
 
     padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
@@ -209,26 +236,15 @@ calclogp <- function(params) {
     if (ef2d2o < 0 || ef2d < 0)
         return(-Inf)
 
-    ## Based on estimate with died_latency prior
-    ## logPriorP <- logPriorP + dnorm(Rt0, mean=3.6, sd=0.6, log=T)
-    ## logPriorP <- logPriorP + dnorm(Rt1, mean=2.3, sd=0.4, log=T)
-    ## logPriorP <- logPriorP + dnorm(Rt2, mean=0.8, sd=0.2, log=T)
-    ## logPriorP <- logPriorP + dnorm(Rt3 - Rt2, mean=0, sd=1, log=T)
-    ## logPriorP <- logPriorP + dnorm(phs, mean=-6, sd=8, log=T)
-    ## logPriorP <- logPriorP + dnorm(ef2d, mean=0, sd=5, log=T)
-    ## logPriorP <- logPriorP + dnorm(died_latency, mean=24, sd=4, log=T)
-    ## logPriorP <- logPriorP + dnorm(hosp_latency, mean=15, sd=4, log=T)
-
-    ## FIX PRIORS HERE THEN RERUN
     logPriorP <- logPriorP + dnorm(Rt0, mean=3.6, sd=0.6, log=T)
     logPriorP <- logPriorP + dnorm(Rt1, mean=2.0, sd=0.6, log=T)
     logPriorP <- logPriorP + dnorm(Rt2, mean=0.8, sd=0.1, log=T)
-    logPriorP <- logPriorP + dnorm(Rt3 - Rt2, mean=0, sd=0.3, log=T)
+    logPriorP <- logPriorP + dnorm(Rt3 - Rt2, mean=0, sd=0.1, log=T)
     logPriorP <- logPriorP + dnorm(phs, mean=-8, sd=4, log=T)
     logPriorP <- logPriorP + dnorm(ef2d2o, mean=15, sd=5, log=T)
     logPriorP <- logPriorP + dnorm(ef2d, mean=0, sd=2, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=20, sd=2, log=T)
-    logPriorP <- logPriorP + dnorm(lnsd, mean=8, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=DL, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(lnsd, mean=5.6, sd=1, log=T)
     
     logPriorP
 }
@@ -299,10 +315,10 @@ calclogl <- function(params, x) {
 fit.paramnames <- c("Rt0", "Rt1", "Rt2", "Rt3", "HR", "HL", "DL", "phs_morts", "phs", "ef2d2o", "ef2d", "lnsd")
 keyparamnames <- c("Rt0", "Rt1", "Rt2", "Rt3", "phs", "ef2d2o")
 fitkeyparamnames <- keyparamnames
-init <- c(2.9, 0.9, 0.9, 0.9, 0.02, 10, 20, total_deaths_at_lockdown, 0, 1, 1, 9)
+init <- c(2.9, 0.9, 0.9, 0.9, 0.02, 10, DL, total_deaths_at_lockdown, 0, 1, 1, 9)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, 0.1, 0.1, 0.001, 5, 18, 0, -30, 0, 0.1, 4),
+                        min = c(0.1, 0.1, 0.1, 0.1, 0.001, 5, DL-5, 0, -30, 0, 0.1, 4),
                         max = c(8, 8, 8, 8, 1, 30, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30, 30, 30, 12),
