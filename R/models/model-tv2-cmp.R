@@ -17,8 +17,8 @@ if (!exists("Es.time")) {
 
 calcNormalProfile <- function(mean, sd)
 {
-    kbegin = max(0, ceiling(mean - sd * 2.5))
-    kend = max(kbegin + 1, floor(mean + sd * 2.5))
+    kbegin = max(0, ceiling(mean - sd * 3))
+    kend = max(kbegin + 1, floor(mean + sd * 3))
 
     result = NULL
     result$kbegin = -kend
@@ -42,7 +42,7 @@ calcLogNormalProfile <- function(mean, sd)
     logm = log(mean) - 0.5*log((sd/mean)^2 + 1)
     logsd = sqrt(log((sd/mean)^2 + 1))
 
-    kbegin = max(0, ceiling(mean - sd * 2))
+    kbegin = max(0, ceiling(mean - sd * 3))
     kend = max(kbegin + 1, floor(mean + sd * 3))
 
     result = NULL
@@ -67,7 +67,7 @@ calcGammaProfile <- function(mean, sd)
     shape = mean^2 / sd^2
     scale = sd^2 / mean
     
-    kbegin = max(0, ceiling(mean - sd * 2))
+    kbegin = max(0, ceiling(mean - sd * 3))
     kend = max(kbegin + 1, floor(mean + sd * 3))
 
     result = NULL
@@ -246,7 +246,7 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=1, log=T)
     ##logPriorP <- logPriorP + dnorm(died_latency, mean=DL, sd=2, log=T)
-    logPriorP <- logPriorP + dnorm(lnsd, mean=8.5, sd=3, log=T)
+    logPriorP <- logPriorP + dnorm(lnsd, mean=5, sd=1, log=T)
 
     logPriorP
 }
