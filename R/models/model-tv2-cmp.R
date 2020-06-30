@@ -320,7 +320,7 @@ fitkeyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
 init <- c(2.9, 0.9, 0.9, 0.02, 10, DL, total_deaths_at_lockdown, 0, 9)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, 0.1, 0.001, 5, DL-5, 0, -30, 4),
+                        min = c(0.1, 0.1, 0.1, 0.001, 5, 10, 0, -30, 4),
                         max = c(8, 8, 8, 1, 30, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30, 12),
