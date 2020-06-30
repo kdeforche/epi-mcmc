@@ -15,6 +15,28 @@ if (!exists("Es.time")) {
     Es.time <- c()
 }
 
+calcNormalProfile <- function(mean, sd)
+{
+    kbegin = max(0, ceiling(mean - sd * 2.5))
+    kend = max(kbegin + 1, floor(mean + sd * 2.5))
+
+    result = NULL
+    result$kbegin = -kend
+    result$kend = -kbegin
+    result$values = numeric(result$kend - result$kbegin)
+    i = 1
+    for (k in kbegin:kend) {
+        result$values[i] = pnorm(k-0.5, mean, sd) -
+            pnorm(k+0.5, mean, sd)
+        i = i + 1
+    }
+
+    result$values = result$values / sum(result$values)
+    result$values = rev(result$values)
+
+    result
+}
+
 calcLogNormalProfile <- function(mean, sd)
 {
     logm = log(mean) - 0.5*log((sd/mean)^2 + 1)
@@ -65,6 +87,9 @@ calcGammaProfile <- function(mean, sd)
     result
 }
 
+hospProfile <- calcGammaProfile
+diedProfile <- calcNormalProfile
+
 convolute <- function(values, i1, i2, profile)
 {
     filter(values, profile$values, method="convolution", sides=1)[(i1 + profile$kend):(i2 + profile$kend)]
@@ -100,8 +125,8 @@ calculateModel <- function(params, period)
     a <- 1 / Tinc
 
     ## https://www.imperial.ac.uk/media/imperial-college/medicine/mrc-gida/2020-06-08-COVID19-Report-26.pdf p.4 : gamma mean = 18.8, sd = 8.46
-    hosp_cv_profile = calcGammaProfile(hosp_latency, lnsd)
-    died_cv_profile = calcGammaProfile(died_latency, lnsd)
+    hosp_cv_profile = hospProfile(hosp_latency, lnsd)
+    died_cv_profile = diedProfile(died_latency, lnsd)
 
     padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
@@ -220,8 +245,8 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(phs, mean=0, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=DL, sd=2, log=T)
-    logPriorP <- logPriorP + dnorm(lnsd, mean=8.5, sd=2, log=T)
+    ##logPriorP <- logPriorP + dnorm(died_latency, mean=DL, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(lnsd, mean=8.5, sd=3, log=T)
 
     logPriorP
 }
