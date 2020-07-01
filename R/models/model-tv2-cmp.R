@@ -83,7 +83,7 @@ calcGammaProfile <- function(mean, sd)
 }
 
 hospProfile <- calcGammaProfile
-diedProfile <- calcNormalProfile
+diedProfile <- calcGammaProfile
 
 convolute <- function(values, i1, i2, profile)
 {
@@ -100,7 +100,8 @@ calculateModel <- function(params, period)
     died_latency <- params[6]
     phs_morts <- params[7]
     phs <- params[8]
-    lnsd <- params[9]
+    HLsd <- params[9]
+    DLsd <- params[10]
 
     Tinf <- (G - Tinc) * 2
     Tinft0 = Tinft1 = Tinft2 = Tinf
@@ -120,8 +121,8 @@ calculateModel <- function(params, period)
     a <- 1 / Tinc
 
     ## https://www.imperial.ac.uk/media/imperial-college/medicine/mrc-gida/2020-06-08-COVID19-Report-26.pdf p.4 : gamma mean = 18.8, sd = 8.46
-    hosp_cv_profile = hospProfile(hosp_latency, lnsd)
-    died_cv_profile = diedProfile(died_latency, lnsd)
+    hosp_cv_profile = hospProfile(hosp_latency, HLsd)
+    died_cv_profile = diedProfile(died_latency, DLsd)
 
     padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
@@ -233,14 +234,16 @@ calclogp <- function(params) {
     died_latency <- params[6]
     phs_morts <- params[7]
     phs <- params[8]
-    lnsd <- params[9]
+    HLsd <- params[9]
+    DLsd <- params[10]
 
     logPriorP <- 0
 
     logPriorP <- logPriorP + dnorm(phs, mean=0, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(lnsd, mean=5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
 
     logPriorP
 }
@@ -308,14 +311,14 @@ calclogl <- function(params, x) {
     result
 }
 
-fit.paramnames <- c("Rt0", "Rt1", "Rt2", "HR", "HL", "DL", "phs_morts", "phs", "lnsd")
+fit.paramnames <- c("Rt0", "Rt1", "Rt2", "HR", "HL", "DL", "phs_morts", "phs", "HLsd", "DLsd")
 keyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
 fitkeyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
-init <- c(2.9, 0.9, 0.9, 0.02, 10, 21, total_deaths_at_lockdown, 0, 5)
+init <- c(2.9, 0.9, 0.9, 0.02, 10, 21, total_deaths_at_lockdown, 0, 5, 5)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, 0.1, 0.001, 5, 10, 0, -30, 2),
+                        min = c(0.1, 0.1, 0.1, 0.001, 5, 10, 0, -30, 2, 2),
                         max = c(8, 8, 8, 1, 30, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
-                                30, 9),
+                                30, 9, 9),
                         init = init)
