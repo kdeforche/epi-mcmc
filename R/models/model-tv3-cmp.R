@@ -7,12 +7,29 @@ Initial <- 1
 
 G <- 5.2
 Tinc <- 3
-DL <- 19
 
 died_rate <- 0.007
 
-if (!exists("Es.time")) {
-    Es.time <- c()
+calcNormalProfile <- function(mean, sd)
+{
+    kbegin = max(0, ceiling(mean - sd * 3))
+    kend = max(kbegin + 1, floor(mean + sd * 3))
+
+    result = NULL
+    result$kbegin = -kend
+    result$kend = -kbegin
+    result$values = numeric(result$kend - result$kbegin)
+    i = 1
+    for (k in kbegin:kend) {
+        result$values[i] = pnorm(k-0.5, mean, sd) -
+            pnorm(k+0.5, mean, sd)
+        i = i + 1
+    }
+
+    result$values = result$values / sum(result$values)
+    result$values = rev(result$values)
+
+    result
 }
 
 calcLogNormalProfile <- function(mean, sd)
@@ -20,7 +37,7 @@ calcLogNormalProfile <- function(mean, sd)
     logm = log(mean) - 0.5*log((sd/mean)^2 + 1)
     logsd = sqrt(log((sd/mean)^2 + 1))
 
-    kbegin = max(0, ceiling(mean - sd * 2))
+    kbegin = max(0, ceiling(mean - sd * 3))
     kend = max(kbegin + 1, floor(mean + sd * 3))
 
     result = NULL
@@ -45,7 +62,7 @@ calcGammaProfile <- function(mean, sd)
     shape = mean^2 / sd^2
     scale = sd^2 / mean
     
-    kbegin = max(0, ceiling(mean - sd * 2))
+    kbegin = max(0, ceiling(mean - sd * 3))
     kend = max(kbegin + 1, floor(mean + sd * 3))
 
     result = NULL
@@ -65,6 +82,9 @@ calcGammaProfile <- function(mean, sd)
     result
 }
 
+hospProfile <- calcGammaProfile
+diedProfile <- calcGammaProfile
+
 convolute <- function(values, i1, i2, profile)
 {
     filter(values, profile$values, method="convolution", sides=1)[(i1 + profile$kend):(i2 + profile$kend)]
@@ -83,7 +103,8 @@ calculateModel <- function(params, period)
     phs <- params[9]
     ef2d2o <- params[10]
     ef2d <- params[11]
-    lnsd <- params[12]
+    HLsd <- params[12]
+    DLsd <- params[13]
 
     Tinf <- (G - Tinc) * 2
     Tinft0 = Tinft1 = Tinft2 = Tinft3 = Tinf
@@ -103,10 +124,8 @@ calculateModel <- function(params, period)
 
     a <- 1 / Tinc
 
-    ## https://twitter.com/cheianov/status/1275803863719837696?s=20
-    
-    hosp_cv_profile = calcGammaProfile(hosp_latency, lnsd)
-    died_cv_profile = calcGammaProfile(died_latency, lnsd)
+    hosp_cv_profile = hospProfile(hosp_latency, HLsd)
+    died_cv_profile = diedProfile(died_latency, DLsd)
 
     padding = max(-hosp_cv_profile$kbegin, -died_cv_profile$kbegin) + 1
 
@@ -229,7 +248,8 @@ calclogp <- function(params) {
     phs <- params[9]
     ef2d2o <- params[10]
     ef2d <- params[11]
-    lnsd <- params[12]
+    HLsd <- params[12]
+    DLsd <- params[13]
 
     logPriorP <- 0
 
@@ -237,14 +257,15 @@ calclogp <- function(params) {
         return(-Inf)
 
     logPriorP <- logPriorP + dnorm(Rt0, mean=3.6, sd=0.6, log=T)
-    logPriorP <- logPriorP + dnorm(Rt1, mean=2.0, sd=0.6, log=T)
+    logPriorP <- logPriorP + dnorm(Rt1, mean=2.1, sd=0.4, log=T)
     logPriorP <- logPriorP + dnorm(Rt2, mean=0.8, sd=0.1, log=T)
     logPriorP <- logPriorP + dnorm(Rt3 - Rt2, mean=0, sd=0.2, log=T)
-    logPriorP <- logPriorP + dnorm(phs, mean=-8, sd=4, log=T)
+    logPriorP <- logPriorP + dnorm(phs, mean=-6.5, sd=4, log=T)
     logPriorP <- logPriorP + dnorm(ef2d2o, mean=15, sd=5, log=T)
     logPriorP <- logPriorP + dnorm(ef2d, mean=0, sd=2, log=T)
-    logPriorP <- logPriorP + dnorm(died_latency, mean=DL, sd=2, log=T)
-    logPriorP <- logPriorP + dnorm(lnsd, mean=5.6, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=26.5, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(HLsd, mean=4.8, sd=0.5, log=T)
+    logPriorP <- logPriorP + dnorm(DLsd, mean=5.2, sd=0.5, log=T)
     
     logPriorP
 }
@@ -312,14 +333,14 @@ calclogl <- function(params, x) {
     result
 }
 
-fit.paramnames <- c("Rt0", "Rt1", "Rt2", "Rt3", "HR", "HL", "DL", "phs_morts", "phs", "ef2d2o", "ef2d", "lnsd")
+fit.paramnames <- c("Rt0", "Rt1", "Rt2", "Rt3", "HR", "HL", "DL", "phs_morts", "phs", "ef2d2o", "ef2d", "HLsd", "DLsd")
 keyparamnames <- c("Rt0", "Rt1", "Rt2", "Rt3", "phs", "ef2d2o")
 fitkeyparamnames <- keyparamnames
-init <- c(2.9, 0.9, 0.9, 0.9, 0.02, 10, DL, total_deaths_at_lockdown, 0, 1, 1, 9)
+init <- c(2.9, 0.9, 0.9, 0.9, 0.02, 10, 27, total_deaths_at_lockdown, 0, 1, 1, 5, 5)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(0.1, 0.1, 0.1, 0.1, 0.001, 5, DL-5, 0, -30, 0, 0.1, 4),
+                        min = c(0.1, 0.1, 0.1, 0.1, 0.001, 5, 10, 0, -30, 0, 0.1, 2, 2),
                         max = c(8, 8, 8, 8, 1, 30, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
-                                30, 30, 30, 12),
+                                30, 30, 30, 9, 9),
                         init = init)
