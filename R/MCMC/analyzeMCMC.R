@@ -23,6 +23,27 @@ source("settings.R")
 
 options(scipen=999)
 
+DIC <- function(posterior) {
+  draw = posterior
+
+  x = draw[0:-7]
+  lik = draw$loglikelihood
+  lik.fun = function(x) { calclogl(transformParams(x)) }
+
+  dmorti <<- dmorti[1:(length(dmorti) - evaluation_data_count)]
+  dmort <<- dmort[1:(length(dmorti) - evaluation_data_count)]
+  dhospi <<- dhospi[1:(length(dhospi) - evaluation_data_count)]
+  dhosp <<- dhosp[1:(length(dhosp) - evaluation_data_count)]
+  
+  D.bar <- -2*mean(lik)
+  if(is.vector(x)) theta.bar = mean(x) else theta.bar <- apply(x,2,mean)
+  D.hat <- -2*lik.fun(theta.bar)
+  pD <- D.bar - D.hat
+  pV <- var(-2*lik)/2
+  list(DIC=pD+D.bar,IC=2*pD+D.bar,pD=pD,pV=pV,Dbar=D.bar,Dhat=D.hat)
+}
+
+
 evaluation_data_count <- max(0, (dstartdate + length(dmorti)) - (d2 + fitPeriod))
 print(evaluation_data_count)
 
@@ -146,7 +167,8 @@ read <- function() {
     posterior
 }
 
-posterior <- read()[0:-7]
+posterior1 <- read()
+posterior <- posterior1[0:-7]
 
 takeSample <- function(posterior) {
     ##print(ess(posterior))
@@ -490,6 +512,15 @@ result$gm.al.workplaces_percent_change_from_baseline <- mean(gmal$workplaces_per
 
 result$gm.bl.residential_percent_change_from_baseline <- mean(gmbl$residential_percent_change_from_baseline, na.rm = T)
 result$gm.al.residential_percent_change_from_baseline <- mean(gmal$residential_percent_change_from_baseline, na.rm = T)
+
+## Must be last since it modifies the data
+dic = DIC(posterior1)
+result$DIC = dic$DIC
+result$IC = dic$IC
+result$pD = dic$pD
+result$pV = dic$pV
+result$Dbar = dic$Dbar
+result$Dhat = dic$Dhat
 
 write.csv(result, paste(country2,"analysis.csv",sep='_'))
 
