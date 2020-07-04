@@ -256,9 +256,6 @@ calclogl <- function(params, x) {
     if (state$offset == InvalidDataOffset)
         state$offset = 1
 
-    ##    loglLD <- dnbinom(total_deaths_at_lockdown, mu=pmax(0.1, mort_lockdown_threshold),
-    ##                      size=mort_nbinom_size, log=T)
-
     dstart <- state$offset
     dend <- state$offset + length(dhospi) - 1
 
@@ -318,7 +315,7 @@ init <- c(2.9, 0.9, 0.9, 0.02, 10, 21, total_deaths_at_lockdown, 0, 5, 5)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(0.1, 0.1, 0.1, 0.001, 5, 10, 0, -30, 2, 2),
-                        max = c(8, 8, 8, 1, 30, 50,
+                        max = c(8, 8, 8, 1, 25, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30, 9, 9),
                         init = init)
