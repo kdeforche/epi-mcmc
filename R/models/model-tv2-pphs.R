@@ -239,14 +239,26 @@ calclogp <- function(params) {
 
     logPriorP <- 0
 
-    if (phs > 0)
+    if (Rt0 < Rt1)
         return(-Inf)
 
-    logPriorP <- logPriorP + dnorm(phs, mean=0, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
+    if (Rt1 < Rt2)
+        return(-Inf)
+
+    ##logPriorP <- logPriorP + dnorm(phs, mean=0, sd=10, log=T)
+    ##logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=1, log=T)
+    ##logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=1, log=T)
+    ##logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
+    ##logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
+
+    logPriorP <- logPriorP + dnorm(Rt0, mean=3.6, sd=0.6, log=T)
+    logPriorP <- logPriorP + dnorm(Rt1, mean=2.1, sd=0.4, log=T)
+    logPriorP <- logPriorP + dnorm(Rt2, mean=0.8, sd=0.1, log=T)
+    logPriorP <- logPriorP + dnorm(phs, mean=-6.5, sd=4, log=T)
+    logPriorP <- logPriorP + dnorm(died_latency, mean=26.5, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(hosp_latency, mean=14.2, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(HLsd, mean=4.8, sd=0.5, log=T)
+    logPriorP <- logPriorP + dnorm(DLsd, mean=5.2, sd=0.5, log=T)
 
     logPriorP
 }
@@ -314,11 +326,11 @@ calclogl <- function(params, x) {
 fit.paramnames <- c("Rt0", "Rt1", "Rt2", "HR", "HL", "DL", "phs_morts", "phs", "HLsd", "DLsd")
 keyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
 fitkeyparamnames <- c("Rt0", "Rt1", "Rt2", "phs")
-init <- c(2.9, 0.9, 0.9, 0.02, 10, 21, total_deaths_at_lockdown, 0, 5, 5)
+init <- c(2.9, 0.9, 0.9, 0.02, 10, 21, total_deaths_at_lockdown, -0.5, 5, 5)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(0.1, 0.1, 0.1, 0.001, 5, 10, 0, -30, 2, 2),
                         max = c(8, 8, 8, 1, 25, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
-                                30, 9, 9),
+                                0, 9, 9),
                         init = init)

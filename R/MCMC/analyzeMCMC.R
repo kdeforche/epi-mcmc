@@ -23,8 +23,8 @@ source("settings.R")
 
 options(scipen=999)
 
-DIC <- function(posterior) {
-  draw = posterior
+DIC <- function(posterior1) {
+  draw = posterior1
 
   x = draw[0:-7]
   lik = draw$loglikelihood
@@ -40,7 +40,7 @@ DIC <- function(posterior) {
   D.hat <- -2*lik.fun(theta.bar)
   pD <- D.bar - D.hat
   pV <- var(-2*lik)/2
-  list(DIC=pD+D.bar,IC=2*pD+D.bar,pD=pD,pV=pV,Dbar=D.bar,Dhat=D.hat)
+  list(DIC=pD+D.bar,DIC2=pV+D.bar,IC=2*pD+D.bar,pD=pD,pV=pV,Dbar=D.bar,Dhat=D.hat)
 }
 
 
@@ -515,7 +515,11 @@ result$gm.al.residential_percent_change_from_baseline <- mean(gmal$residential_p
 
 ## Must be last since it modifies the data
 dic = DIC(posterior1)
+
+print(dic)
+
 result$DIC = dic$DIC
+result$DIC2 = dic$DIC2
 result$IC = dic$IC
 result$pD = dic$pD
 result$pV = dic$pV
