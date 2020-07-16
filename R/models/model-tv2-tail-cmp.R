@@ -251,6 +251,15 @@ calclogp <- function(params) {
     ##if ((Rt2 - Rt3) > (Rt1 - Rt2))
     ##    return(-Inf)
 
+    if (Rt0 < Rt1)
+       return(-Inf)
+
+    if (Rt1 < Rt2)
+       return(-Inf)
+
+    if (Rt2 < Rt3)
+       return(-Inf)
+
     logPriorP <- logPriorP + dnorm(phs, mean=0, sd=5, log=T)
     logPriorP <- logPriorP + dnorm(Rt0 - Rt1, mean=0, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(Rt1 - Rt2, mean=0, sd=2, log=T)
