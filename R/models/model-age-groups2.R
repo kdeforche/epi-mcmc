@@ -1,0 +1,400 @@
+library("deSolve")
+system("R CMD SHLIB model-age.cpp")
+dyn.load("model-age.so")
+
+InvalidDataOffset <- 10000
+Initial <- 1
+
+G <- 5.2
+Tinc <- 2
+y.died_rate <- 0.0009
+o.died_rate <- 0.03
+a <- 1/Tinc
+gamma <- 1/((G - Tinc) * 2)
+
+calcGammaProfile <- function(mean, sd)
+{
+    shape = mean^2 / sd^2
+    scale = sd^2 / mean
+    
+    kbegin = max(0, ceiling(mean - sd * 3))
+    kend = max(kbegin + 1, floor(mean + sd * 3))
+
+    result = NULL
+    result$kbegin = -kend
+    result$kend = -kbegin
+    result$values = numeric(result$kend - result$kbegin)
+    i = 1
+    for (k in kbegin:kend) {
+        result$values[i] = pgamma(k-0.5, shape=shape, scale=scale) -
+            pgamma(k+0.5, shape=shape, scale=scale)
+        i = i + 1
+    }
+
+    result$values = result$values / sum(result$values)
+    result$values = rev(result$values)
+
+    result
+}
+
+convolute <- function(values, i1, i2, profile)
+{
+    filter(values, profile$values, method="convolution", sides=1)[(i1 + profile$kend):(i2 + profile$kend)]
+}
+
+hospProfile <- calcGammaProfile
+diedProfile <- calcGammaProfile
+
+calculateModel <- function(params, period)
+{
+    betay0 <- params[1]
+    betao0 <- params[2]
+    betayo0 <- params[3]
+    betay1 <- params[4]
+    betao1 <- params[5]
+    betayo1 <- params[6]
+    betay2 <- params[7]
+    betao2 <- params[8]
+    betayo2 <- params[9]
+    yhosp_rate <- params[10]
+    yhosp_latency <- params[11]
+    ydied_latency <- params[12]
+    ohosp_rate <- params[13]
+    ohosp_latency <- params[14]
+    odied_latency <- params[15]
+    phs_morts <- params[16]
+    phs <- params[17]
+    HLsd <- params[18]
+    DLsd <- params[19]
+    betay3 <- params[20]
+    betao3 <- params[21]
+    betayo3 <- params[22]
+    betay4 <- params[23]
+    betao4 <- params[24]
+    betayo4 <- params[25]
+
+    ## convolution profile to infer hospitalisation count
+    y.hosp_cv_profile = hospProfile(yhosp_latency, HLsd)
+    o.hosp_cv_profile = hospProfile(ohosp_latency, HLsd)
+    y.died_cv_profile = diedProfile(ydied_latency, DLsd)
+    o.died_cv_profile = diedProfile(odied_latency, DLsd)
+
+    padding = max(-y.hosp_cv_profile$kbegin, -y.died_cv_profile$kbegin,
+                  -o.hosp_cv_profile$kbegin, -o.died_cv_profile$kbegin) + 1
+
+    state <- NULL
+
+    state$y.S <- rep(y.N - Initial, padding + period)
+    state$y.E <- rep(Initial, padding + period)
+    state$y.I <- rep(0, padding + period)
+    state$y.R <- rep(0, padding + period)
+    state$y.hosp <- rep(0, padding + period)
+    state$y.died <- rep(0, padding + period)
+
+    state$o.S <- rep(o.N, padding + period)
+    state$o.E <- rep(0, padding + period)
+    state$o.I <- rep(0, padding + period)
+    state$o.R <- rep(0, padding + period)
+    state$o.hosp <- rep(0, padding + period)
+    state$o.died <- rep(0, padding + period)
+
+    state$Re <- rep(0, padding + period)
+    state$Rt <- rep(0, padding + period)
+    
+    state$i <- padding + 1
+    
+    parms <- c(Ny = y.N, No = o.N,
+               a = a, gamma = gamma,
+               phts = 1E10, ldts = 1E10, ldte = 1E10,
+               betay0 = betay0, betao0 = betao0, betayo0 = betayo0,
+               betay1 = betay1, betao1 = betao1, betayo1 = betayo1,
+               betay2 = betay2, betao2 = betao2, betayo2 = betayo2,
+               t3 = 1E10, betay3 = betay3, betao3 = betao3, betayo3 = betayo3,
+               t4 = 1E10, betay4 = betay4, betao4 = betao4, betayo4 = betayo4)
+
+    Y <- c(Sy = y.N - Initial, Ey = Initial, Iy = 0, Ry = 0,
+           So = o.N - Initial, Eo = Initial, Io = 0, Ro = 0)
+
+    times <- (padding + 1):(padding + period)
+
+    out <- ode(Y, times, func = "derivs", parms = parms,
+               dllname = "model-age",
+               initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
+
+    state$y.S[(padding + 1):(padding + period)] = out[,2]
+    state$o.S[(padding + 1):(padding + period)] = out[,6]
+
+    s2 <- convolute(state$y.S, padding + 1, padding + period, y.died_cv_profile)
+    state$y.died[(padding + 1):(padding + period)] = (y.N - s2) * y.died_rate
+
+    s2 <- convolute(state$o.S, padding + 1, padding + period, o.died_cv_profile)
+    state$o.died[(padding + 1):(padding + period)] = (o.N - s2) * o.died_rate
+
+    state$died = state$y.died + state$o.died
+
+    data_offset = InvalidDataOffset
+
+    lds <- which(state$died > phs_morts)
+    if (length(lds) > 0) {
+        data_offset <- lds[1] - lockdown_offset
+
+        parms <- c(Ny = y.N, No = o.N,
+                   a = a, gamma = gamma,
+                   phts = data_offset + lockdown_offset + phs,
+                   ldts = data_offset + lockdown_offset + max(phs, 0),
+                   ldte = data_offset + lockdown_offset + lockdown_transition_period,
+                   betay0 = betay0, betao0 = betao0, betayo0 = betayo0,
+                   betay1 = betay1, betao1 = betao1, betayo1 = betayo1,
+                   betay2 = betay2, betao2 = betao2, betayo2 = betayo2,
+                   t3 = data_offset + d3, betay3 = betay3, betao3 = betao3, betayo3 = betayo3,
+                   t4 = data_offset + d4, betay4 = betay4, betao4 = betao4, betayo4 = betayo4)
+
+        out <- ode(Y, times, func = "derivs", parms = parms,
+                   dllname = "model-age",
+                   initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
+    }
+
+    state$y.S[(padding + 1):(padding + period)] = out[,2]
+    state$y.E[(padding + 1):(padding + period)] = out[,3]
+    state$y.I[(padding + 1):(padding + period)] = out[,4]
+    state$y.R[(padding + 1):(padding + period)] = out[,5]
+    state$o.S[(padding + 1):(padding + period)] = out[,6]
+    state$o.E[(padding + 1):(padding + period)] = out[,7]
+    state$o.I[(padding + 1):(padding + period)] = out[,8]
+    state$o.R[(padding + 1):(padding + period)] = out[,9]
+    state$Re[(padding + 1):(padding + period)] = out[,10]
+    state$Rt[(padding + 1):(padding + period)] = out[,11]
+
+    s1 <- convolute(state$y.S, padding + 1, padding + period, y.hosp_cv_profile)
+    state$y.hosp[(padding + 1):(padding + period)] = (y.N - s1) * yhosp_rate
+    
+    s2 <- convolute(state$y.S, padding + 1, padding + period, y.died_cv_profile)
+    state$y.died[(padding + 1):(padding + period)] = (y.N - s2) * y.died_rate
+
+    state$y.deadi <- c(state$y.died[1], diff(state$y.died))
+    state$y.hospi <- c(state$y.hosp[1], diff(state$y.hosp))
+
+    s1 <- convolute(state$o.S, padding + 1, padding + period, o.hosp_cv_profile)
+    state$o.hosp[(padding + 1):(padding + period)] = (o.N - s1) * ohosp_rate
+    
+    s2 <- convolute(state$o.S, padding + 1, padding + period, o.died_cv_profile)
+    state$o.died[(padding + 1):(padding + period)] = (o.N - s2) * o.died_rate
+
+    state$o.deadi <- c(state$o.died[1], diff(state$o.died))
+    state$o.hospi <- c(state$o.hosp[1], diff(state$o.hosp))
+
+    state$padding <- padding
+    state$offset <- data_offset
+
+    state
+}
+
+transformParams <- function(params)
+{
+    params
+}
+
+invTransformParams <- function(posterior)
+{
+    posterior$Tinf <- 1/gamma
+
+    posterior$y.Rt0 = posterior$betay0 / gamma
+    posterior$o.Rt0 = posterior$betao0 / gamma
+    posterior$yo.Rt0 = posterior$betayo0 / gamma
+
+    posterior$y.Rt1 = posterior$betay1 / gamma
+    posterior$o.Rt1 = posterior$betao1 / gamma
+    posterior$yo.Rt1 = posterior$betayo1 / gamma
+
+    posterior$y.Rt2 = posterior$betay2 / gamma
+    posterior$o.Rt2 = posterior$betao2 / gamma
+    posterior$yo.Rt2 = posterior$betayo2 / gamma
+
+    posterior$y.Rt3 = posterior$betay3 / gamma
+    posterior$o.Rt3 = posterior$betao3 / gamma
+    posterior$yo.Rt3 = posterior$betayo3 / gamma
+
+    posterior
+}
+
+calcNominalState <- function(state)
+{
+    state$hosp <- state$y.hosp + state$o.hosp
+    state$died <- state$y.died + state$o.died
+    state$hospi <- state$y.hospi + state$o.hospi
+    state$deadi <- state$y.deadi + state$o.deadi
+
+    state
+}
+
+## log likelihood function for fitting this model to observed data:
+##   y.dhospi, o.dhospi, y.dmorti, o.dmorti
+calclogp <- function(params) {
+    betay0 <- params[1]
+    betao0 <- params[2]
+    betayo0 <- params[3]
+    betay1 <- params[4]
+    betao1 <- params[5]
+    betayo1 <- params[6]
+    betay2 <- params[7]
+    betao2 <- params[8]
+    betayo2 <- params[9]
+    yhosp_rate <- params[10]
+    yhosp_latency <- params[11]
+    ydied_latency <- params[12]
+    ohosp_rate <- params[13]
+    ohosp_latency <- params[14]
+    odied_latency <- params[15]
+    phs_morts <- params[16]
+    phs <- params[17]
+    HLsd <- params[18]
+    DLsd <- params[19]
+    betay3 <- params[20]
+    betao3 <- params[21]
+    betayo3 <- params[22]
+    betay4 <- params[23]
+    betao4 <- params[24]
+    betayo4 <- params[25]
+
+    logPriorP <- 0
+
+    logPriorP <- logPriorP + dnorm(phs, mean=0, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(betay0 - betay1, mean=0, sd=2*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao0 - betao1, mean=0, sd=2*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betayo0 - betayo1, mean=0, sd=2*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betay1 - betay2, mean=0, sd=2*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao1 - betao2, mean=0, sd=2*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betayo1 - betayo2, mean=0, sd=2*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betay2 - betay3, mean=0, sd=0.5*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao2 - betao3, mean=0, sd=0.5*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betayo2 - betayo3, mean=0, sd=0.5*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betay3 - betay4, mean=0, sd=0.5*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao3 - betao4, mean=0, sd=0.5*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betayo3 - betayo4, mean=0, sd=0.5*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=4, log=T)
+    logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=4, log=T)
+
+    logPriorP
+}
+
+calclogl <- function(params, x) {
+    state <<- calculateModel(params, FitTotalPeriod)
+
+    if (state$offset == InvalidDataOffset)
+        state$offset = 1
+
+    ##    loglLD <- dnbinom(total_deaths_at_lockdown, mu=pmax(0.1, mort_lockdown_threshold),
+    ##                      size=mort_nbinom_size, log=T)
+
+    dstart <- state$offset
+    dend <- state$offset + length(y.dhospi) - 1
+
+    if (dend > length(state$y.hospi)) {
+        ##print("=========================== Increase FitTotalPeriod ===================")
+        dend <- length(state$y.hospi)
+        dstart <- dend - length(y.dhospi) + 1
+    }
+
+    di <- y.dhospi
+
+    if (dstart < 1) {
+        ##print("=========================== Increase Padding ? ===================")
+        dstart <- 1
+        dend <- dstart + length(y.dhospi) - 1
+    }
+
+    ## FIXME: use higher certainty for dhospi since 1 May
+    
+    y.loglH <- sum(dnbinom(y.dhospi[1:(d.reliable.cases-1)],
+                           mu=pmax(0.1, state$y.hospi[dstart:(dstart + d.reliable.cases)]),
+                           size=hosp_nbinom_size1, log=T)) +
+               sum(dnbinom(y.dhospi[d.reliable.cases:length(y.dhospi)],
+                           mu=pmax(0.1, state$y.hospi[(dstart + d.reliable.cases + 1):dend]),
+                           size=hosp_nbinom_size2, log=T))
+
+    o.loglH <- sum(dnbinom(o.dhospi[1:(d.reliable.cases-1)],
+                           mu=pmax(0.1, state$o.hospi[dstart:(dstart + d.reliable.cases)]),
+                           size=hosp_nbinom_size1, log=T)) +
+               sum(dnbinom(o.dhospi[d.reliable.cases:length(o.dhospi)],
+                           mu=pmax(0.1, state$o.hospi[(dstart + d.reliable.cases + 1):dend]),
+                           size=hosp_nbinom_size2, log=T))
+
+    dstart <- state$offset
+    dend <- state$offset + length(y.dmorti) - 1
+
+    if (dend > length(state$y.deadi)) {
+        ##print("=========================== Increase FitTotalPeriod ===================")
+        dend <- length(state$y.deadi)
+        dstart <- dend - length(y.dmorti) + 1
+    }
+
+    if (dstart < 1) {
+        ##print("=========================== Increase Padding ? ===================")
+        dstart <- 1
+        dend <- dstart + length(y.dmorti) - 1
+    }
+
+    y.loglD <- sum(dnbinom(y.dmorti,
+                           mu=pmax(0.1, state$y.deadi[dstart:dend]),
+                           size=mort_nbinom_size, log=T))
+
+    o.loglD <- sum(dnbinom(o.dmorti,
+                           mu=pmax(0.1, state$o.deadi[dstart:dend]),
+                           size=mort_nbinom_size, log=T))
+
+    it <<- it + 1
+
+    result <- y.loglH + o.loglH + y.loglD + o.loglD
+    
+    if (it %% 1000 == 0) {
+        print(params)
+	print(c(it, result))
+        state <<- calcNominalState(state)
+	graphs()
+    }
+
+    result
+}
+
+fit.paramnames <- c("betay0", "betao0", "betayo0",
+                    "betay1", "betao1", "betayo1",
+                    "betay2", "betao2", "betayo2",
+                    "y.HR", "y.HL", "y.DL",
+                    "o.HR", "o.HL", "o.DL",
+                    "phsmorts", "phs",
+                    "HLsd", "DLsd",
+                    "betay3", "betao3", "betayo3",
+                    "betay4", "betao4", "betayo4")
+keyparamnames <- c("betay0", "betao0", "betayo0", "betay1", "betao1", "betayo1")
+fitkeyparamnames <- keyparamnames
+
+init <- c(3.6 * gamma, 3.6 * gamma, 3.6 * gamma,
+          2.0 * gamma, 2.0 * gamma, 2.0 * gamma,
+          0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
+          0.05, 10, 21,
+          0.05, 10, 21,
+          total_deaths_at_lockdown, -1, 5, 5,
+          0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
+          0.8 * gamma, 0.8 * gamma, 0.8 * gamma)
+
+df_params <- data.frame(name = fit.paramnames,
+                        min = c(2 * gamma, 2 * gamma, 2 * gamma,
+                                1 * gamma, 1 * gamma, 1 * gamma,
+                                0.5 * gamma, 0.5 * gamma, 0.5 * gamma,
+                                0.001, 5, 10,
+                                0.001, 5, 10,
+                                0, -30, 2, 2,
+                                0.5 * gamma, 0.5 * gamma, 0.5 * gamma,
+                                0.5 * gamma, 0.5 * gamma, 0.5 * gamma),
+                        max = c(8 * gamma, 8 * gamma, 8 * gamma,
+                                5 * gamma, 5 * gamma, 5 * gamma,
+                                2 * gamma, 2 * gamma, 2 * gamma,
+                                1, 25, 50,
+                                1, 25, 50,
+                                max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
+                                30, 9, 9,
+                                3 * gamma, 3 * gamma, 3 * gamma,
+                                3 * gamma, 3 * gamma, 3 * gamma),
+                        init = init)

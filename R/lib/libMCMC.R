@@ -216,7 +216,8 @@ makePlot <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
 addExtraPlot <- function(plot, sample, dateRange, fun, colour, lty)
 {
     period <- as.numeric(dateRange[2] - dateRange[1])
-    qd <- data.frame(quantileData(sample, fun, period, c(0.5)))
+    startoffset <- as.numeric(dstartdate - dateRange[1])
+    qd <- data.frame(quantileData(sample, fun, startoffset, period, c(0.5)))
 
     colnames(qd) <- c("q50")
     

@@ -33,6 +33,16 @@ dmort <- cumsum(dmorti)
 
 print(paste("last day morti: ", dstartdate + length(dmorti) - 1))
 
+be.case <- read.csv("COVID19BE_CASES_AGESEX.csv")
+print(aggregate(be.case$CASES, by=list(date=be.case$DATE), FUN=sum))
+dcasei <- aggregate(be.case$CASES, by=list(date=be.case$DATE), FUN=sum)$x
+
+## also start from 10/3
+dcasei <- dcasei[10:length(dcasei)]
+## remove two latest data point, may be incomplete because of WZC
+dcasei <- dcasei[1:(length(dcasei) - 2)]
+dcase <- cumsum(dcasei)
+
 #####################
 ## Population size
 #####################
@@ -53,9 +63,10 @@ lockdown_transition_period <- 7
 ## how many deaths at date of lockdown
 total_deaths_at_lockdown <- 5
 
-## Additional times for which a change in policy may require a new
-## estimate of Rt (Es are interpolation factors between R0 and Rt)
-## 04: work
-## 11: shops
-## 17: mothersday social contacts
-Es.time <- c(as.Date("2020-05-04"), as.Date("2020-05-17")) - dstartdate
+## Relax t3
+d3 <- as.numeric(as.Date("2020/6/8") - dstartdate)
+
+## Relax t4
+d4 <- as.numeric(as.Date("2020/7/1") - dstartdate)
+
+d.reliable.cases <- as.numeric(as.Date("2020/5/15") - dstartdate)
