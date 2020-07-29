@@ -58,6 +58,9 @@ dhosp = dcase
 ##
 ## dmorti : ages are recorded
 
+levs <- as.character(seq(min(as.Date(be.mort$DATE)), max(as.Date(be.mort$DATE)), by=1))
+df.2 <- transform(be.mort, DATE=factor(DATE, sort(unique(levs))))
+be.mort <- df.2
 be.mort$y = (be.mort$AGEGROUP == "0-24" | be.mort$AGEGROUP == "25-44" | be.mort$AGEGROUP == "45-64")
 be.mort.na = subset(be.mort, is.na(be.mort$y))
 na.dmorti = aggregate(be.mort.na$DEATHS, by=list(date=be.mort.na$DATE), FUN=sum, drop=F)
@@ -77,8 +80,8 @@ o.dmorti = mortaggr$x[mortaggr$y == F]
 y.dmorti = y.dmorti + floor(yfract * na.dmorti$x)
 o.dmorti = o.dmorti + floor((1 - yfract) * na.dmorti$x)
 
-y.dmorti <- y.dmorti[1:(length(y.dmorti) - 2)]
-o.dmorti <- o.dmorti[1:(length(o.dmorti) - 2)]
+##y.dmorti <- y.dmorti[1:(length(y.dmorti)]
+##o.dmorti <- o.dmorti[1:(length(o.dmorti)]
 
 y.dmort <- cumsum(y.dmorti)
 o.dmort <- cumsum(o.dmorti)

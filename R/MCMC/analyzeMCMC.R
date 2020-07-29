@@ -43,13 +43,12 @@ DIC <- function(posterior1) {
   list(DIC=pD+D.bar,DIC2=pV+D.bar,IC=2*pD+D.bar,pD=pD,pV=pV,Dbar=D.bar,Dhat=D.hat)
 }
 
-
 evaluation_data_count <- max(0, (dstartdate + length(dmorti)) - (d2 + fitPeriod))
 print(evaluation_data_count)
 
 all_plots <- function(date_markers, range) {
     p1 <- makePlot(data_sample, range,
-                   function(state) state$deadi, "#3366FF",
+                   function(state, params) state$deadi, "#3366FF",
                    c("Death incidence", "Incidence of deaths"), date_markers, NULL)
 
     dm1c = length(dmorti) - evaluation_data_count
@@ -70,7 +69,7 @@ all_plots <- function(date_markers, range) {
     }
 
     p2 <- makePlot(data_sample, range,
-                   function(state) state$died, "#3366FF",
+                   function(state, params) state$died, "#3366FF",
                    c("Count", "Total deaths"), date_markers, NULL)
 
     dm2c = length(dmort) - evaluation_data_count
@@ -89,7 +88,7 @@ all_plots <- function(date_markers, range) {
     }
 
     p3 <- makePlot(data_sample, range,
-                   function(state) state$hospi, "#FF6633",
+                   function(state, params) state$hospi, "#FF6633",
                    c("Count", paste(c(HospLabel, "per day"))), date_markers, NULL)
 
     dm3c = length(dhospi) - evaluation_data_count
@@ -108,7 +107,7 @@ all_plots <- function(date_markers, range) {
     }
 
     p4 <- makePlot(data_sample, range,
-                   function(state) { if ("In" %in% names(state)) {
+                   function(state, params) { if ("In" %in% names(state)) {
                                          return ((state$E + state$In + state$Is)/N * 100)
                                      } else {
                                          return ((state$E + state$I)/N * 100)
@@ -116,11 +115,11 @@ all_plots <- function(date_markers, range) {
                    }, "#FFFF66", c(paste("% of population of", country_adjective), "Infected individuals (%)"), date_markers, NULL)
 
     p5 <- makePlot(data_sample, range,
-                   function(state) { state$R/N * 100 }, "#33FF66",
+                   function(state, params) { state$R/N * 100 }, "#33FF66",
                    c(paste("% of population of", country_adjective), "Removed (%)"), date_markers, NULL)
 
     p6 <- makePlot(data_sample, range,
-                   function(state) { state$Re }, "#33FFFF",
+                   function(state, params) { state$Re }, "#33FFFF",
                    c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
 
     p6 <- p6 + coord_cartesian(ylim = c(0, NA)) +
@@ -187,8 +186,17 @@ data_sample <- takeSample(posterior)
 pdf(paste(country2,"graphs.pdf",sep='_'), width=12, height=16)
 plot_start_date <- min(as.Date("2020/2/15"), dstartdate)
 plot_end_date <- as.Date("2020/7/1")
+##plot_end_date <- as.Date("2020/11/1")
+##plot_end_date <- as.Date("2020/7/15")
 range <- c(plot_start_date, plot_end_date)
-dates <- data.frame(pos=c(dstartdate + lockdown_offset, dstartdate + lockdown_offset + lockdown_transition_period), color=c("orange", "red"))
+## dates <- data.frame(pos=c(dstartdate + lockdown_offset,
+##                           dstartdate + lockdown_offset + lockdown_transition_period,
+##                           dstartdate + relax_offset,
+##                           dstartdate + lockdown2_offset),
+##                     color=c("orange", "red", "green", "red"))
+dates <- data.frame(pos=c(dstartdate + lockdown_offset,
+                          dstartdate + lockdown_offset + lockdown_transition_period),
+                    color=c("orange", "red"))
 all_plots(dates, range)
 dev.off()
 
@@ -235,32 +243,7 @@ scount <- length(selection)
 draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
 data_sample <- posterior[selection[draws],]
 
-quantileData <- function(sample, fun, period, quantiles)
-{
-    simperiod = period * 2
-    
-    sampleSize <- dim(sample)[1]
-    data <- matrix(nrow=simperiod, ncol=sampleSize)
-
-    maxOffset <- 0
-    for (i in 1:sampleSize) {
-        params <- sample[i,]
-        params <- transformParams(unlist(params, use.names=FALSE))
-        state <- calculateModel(params, simperiod)
-        v <- takeAndPad(fun(state, params), state$offset, simperiod)
-        maxOffset <- max(maxOffset, state$offset)
-        data[,i] = v
-    }
-
-    result <- data.frame()
-    result <- matrix(nrow=period, ncol=length(quantiles))
-    for (j in 1:(dim(result)[1])) {
-        result[j,] = quantile(data[j,], quantiles, na.rm=T)
-    }
-    result
-}
-
-est.died <- data.frame(quantileData(data_sample, function(state, params) { state$died }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.died <- data.frame(quantileData(data_sample, function(state, params) { state$died }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.died) <- c("q5", "q50", "q95")
 
 result$d1.est.died.median <- est.died$q50[lockdown_offset]
@@ -279,7 +262,7 @@ result$d2.60.est.died.median <- est.died$q50[lockdown_offset + lockdown_transiti
 result$d2.60.est.died.cri95lo <- est.died$q5[lockdown_offset + lockdown_transition_period + 60]
 result$d2.60.est.died.cri95hi <- est.died$q95[lockdown_offset + lockdown_transition_period + 60]
 
-est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
 
 result$d1.est.Re.median <- est.Re$q50[lockdown_offset]
@@ -306,49 +289,105 @@ result$d2.60.est.Re.median <- est.Re$q50[lockdown_offset + lockdown_transition_p
 result$d2.60.est.Re.cri95lo <- est.Re$q5[lockdown_offset + lockdown_transition_period + 60]
 result$d2.60.est.Re.cri95hi <- est.Re$q95[lockdown_offset + lockdown_transition_period + 60]
 
-est.Rt <- data.frame(quantileData(data_sample, function(state, params) { state$Rt }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.Rt <- data.frame(quantileData(data_sample, function(state, params) { state$Rt }, 10, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.Rt) <- c("q5", "q50", "q95")
 
-result$d1.est.Rt.median <- est.Rt$q50[lockdown_offset]
-result$d1.est.Rt.cri95lo <- est.Rt$q5[lockdown_offset]
-result$d1.est.Rt.cri95hi <- est.Rt$q95[lockdown_offset]
+result$d1.est.Rt.median <- est.Rt$q50[10 + lockdown_offset]
+result$d1.est.Rt.cri95lo <- est.Rt$q5[10 + lockdown_offset]
+result$d1.est.Rt.cri95hi <- est.Rt$q95[10 + lockdown_offset]
 
-result$d1.30.est.Rt.median <- est.Rt$q50[lockdown_offset + 30]
-result$d1.30.est.Rt.cri95lo <- est.Rt$q5[lockdown_offset + 30]
-result$d1.30.est.Rt.cri95hi <- est.Rt$q95[lockdown_offset + 30]
+result$d1.30.est.Rt.median <- est.Rt$q50[10 + lockdown_offset + 30]
+result$d1.30.est.Rt.cri95lo <- est.Rt$q5[10 + lockdown_offset + 30]
+result$d1.30.est.Rt.cri95hi <- est.Rt$q95[10 + lockdown_offset + 30]
 
-result$d1.60.est.Rt.median <- est.Rt$q50[lockdown_offset + 60]
-result$d1.60.est.Rt.cri95lo <- est.Rt$q5[lockdown_offset + 60]
-result$d1.60.est.Rt.cri95hi <- est.Rt$q95[lockdown_offset + 60]
+result$d1.60.est.Rt.median <- est.Rt$q50[10 + lockdown_offset + 60]
+result$d1.60.est.Rt.cri95lo <- est.Rt$q5[10 + lockdown_offset + 60]
+result$d1.60.est.Rt.cri95hi <- est.Rt$q95[10 + lockdown_offset + 60]
 
-result$d2.est.Rt.median <- est.Rt$q50[lockdown_offset + lockdown_transition_period]
-result$d2.est.Rt.cri95lo <- est.Rt$q5[lockdown_offset + lockdown_transition_period]
-result$d2.est.Rt.cri95hi <- est.Rt$q95[lockdown_offset + lockdown_transition_period]
+result$d2.est.Rt.median <- est.Rt$q50[10 + lockdown_offset + lockdown_transition_period]
+result$d2.est.Rt.cri95lo <- est.Rt$q5[10 + lockdown_offset + lockdown_transition_period]
+result$d2.est.Rt.cri95hi <- est.Rt$q95[10 + lockdown_offset + lockdown_transition_period]
 
-result$d2.30.est.Rt.median <- est.Rt$q50[lockdown_offset + lockdown_transition_period + 30]
-result$d2.30.est.Rt.cri95lo <- est.Rt$q5[lockdown_offset + lockdown_transition_period + 30]
-result$d2.30.est.Rt.cri95hi <- est.Rt$q95[lockdown_offset + lockdown_transition_period + 30]
+result$d2.30.est.Rt.median <- est.Rt$q50[10 + lockdown_offset + lockdown_transition_period + 30]
+result$d2.30.est.Rt.cri95lo <- est.Rt$q5[10 + lockdown_offset + lockdown_transition_period + 30]
+result$d2.30.est.Rt.cri95hi <- est.Rt$q95[10 + lockdown_offset + lockdown_transition_period + 30]
 
-result$d2.60.est.Rt.median <- est.Rt$q50[lockdown_offset + lockdown_transition_period + 60]
-result$d2.60.est.Rt.cri95lo <- est.Rt$q5[lockdown_offset + lockdown_transition_period + 60]
-result$d2.60.est.Rt.cri95hi <- est.Rt$q95[lockdown_offset + lockdown_transition_period + 60]
+result$d2.60.est.Rt.median <- est.Rt$q50[10 + lockdown_offset + lockdown_transition_period + 60]
+result$d2.60.est.Rt.cri95lo <- est.Rt$q5[10 + lockdown_offset + lockdown_transition_period + 60]
+result$d2.60.est.Rt.cri95hi <- est.Rt$q95[10 + lockdown_offset + lockdown_transition_period + 60]
 
-est.fr0Rt <- data.frame(quantileData(data_sample, function(state, params) { state$Rt / params[1] }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+result$d1min1.est.Rt.median <- est.Rt$q50[10 + lockdown_offset - 1]
+result$d1min1.est.Rt.cri95lo <- est.Rt$q5[10 + lockdown_offset - 1]
+result$d1min1.est.Rt.cri95hi <- est.Rt$q95[10 + lockdown_offset - 1]
+
+result$d1min2.est.Rt.median <- est.Rt$q50[10 + lockdown_offset - 2]
+result$d1min2.est.Rt.cri95lo <- est.Rt$q5[10 + lockdown_offset - 2]
+result$d1min2.est.Rt.cri95hi <- est.Rt$q95[10 + lockdown_offset - 2]
+
+result$d1min3.est.Rt.median <- est.Rt$q50[10 + lockdown_offset - 3]
+result$d1min3.est.Rt.cri95lo <- est.Rt$q5[10 + lockdown_offset - 3]
+result$d1min3.est.Rt.cri95hi <- est.Rt$q95[10 + lockdown_offset - 3]
+
+est.fr0Rt <- data.frame(quantileData(data_sample, function(state, params) { state$Rt / params[1] }, 10, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.fr0Rt) <- c("q5", "q50", "q95")
 
-result$d1.est.frRt0.median <- est.fr0Rt$q50[lockdown_offset]
-result$d1.est.frRt0.cri95lo <- est.fr0Rt$q5[lockdown_offset]
-result$d1.est.frRt0.cri95hi <- est.fr0Rt$q95[lockdown_offset]
+result$d1.est.frRt0.median <- est.fr0Rt$q50[10 + lockdown_offset]
+result$d1.est.frRt0.cri95lo <- est.fr0Rt$q5[10 + lockdown_offset]
+result$d1.est.frRt0.cri95hi <- est.fr0Rt$q95[10 + lockdown_offset]
+
+result$d1min1.est.frRt0.median <- est.fr0Rt$q50[10 + lockdown_offset - 1]
+result$d1min1.est.frRt0.cri95lo <- est.fr0Rt$q5[10 + lockdown_offset - 1]
+result$d1min1.est.frRt0.cri95hi <- est.fr0Rt$q95[10 + lockdown_offset - 1]
+
+result$d1min2.est.frRt0.median <- est.fr0Rt$q50[10 + lockdown_offset - 2]
+result$d1min2.est.frRt0.cri95lo <- est.fr0Rt$q5[10 + lockdown_offset - 2]
+result$d1min2.est.frRt0.cri95hi <- est.fr0Rt$q95[10 + lockdown_offset - 2]
+
+result$d1min3.est.frRt0.median <- est.fr0Rt$q50[10 + lockdown_offset - 3]
+result$d1min3.est.frRt0.cri95lo <- est.fr0Rt$q5[10 + lockdown_offset - 3]
+result$d1min3.est.frRt0.cri95hi <- est.fr0Rt$q95[10 + lockdown_offset - 3]
 
 ## Rt2 / Rt@d1
-est.fr1Rt <- data.frame(quantileData(data_sample, function(state, params) { params[3] / state$Rt }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.fr1Rt <- data.frame(quantileData(data_sample, function(state, params) { params[3] / state$Rt }, 10, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.fr1Rt) <- c("q5", "q50", "q95")
 
-result$d1.est.frRt2.median <- est.fr1Rt$q50[lockdown_offset]
-result$d1.est.frRt2.cri95lo <- est.fr1Rt$q5[lockdown_offset]
-result$d1.est.frRt2.cri95hi <- est.fr1Rt$q95[lockdown_offset]
+result$d1.est.frRt2.median <- est.fr1Rt$q50[10 + lockdown_offset]
+result$d1.est.frRt2.cri95lo <- est.fr1Rt$q5[10 + lockdown_offset]
+result$d1.est.frRt2.cri95hi <- est.fr1Rt$q95[10 + lockdown_offset]
 
-print(c(result$d1.est.frRt2.median, result$d1.est.frRt0.median))
+result$d1min1.est.frRt2.median <- est.fr1Rt$q50[10 + lockdown_offset - 1]
+result$d1min1.est.frRt2.cri95lo <- est.fr1Rt$q5[10 + lockdown_offset - 1]
+result$d1min1.est.frRt2.cri95hi <- est.fr1Rt$q95[10 + lockdown_offset - 1]
+
+result$d1min2.est.frRt2.median <- est.fr1Rt$q50[10 + lockdown_offset - 2]
+result$d1min2.est.frRt2.cri95lo <- est.fr1Rt$q5[10 + lockdown_offset - 2]
+result$d1min2.est.frRt2.cri95hi <- est.fr1Rt$q95[10 + lockdown_offset - 2]
+
+result$d1min3.est.frRt2.median <- est.fr1Rt$q50[10 + lockdown_offset - 3]
+result$d1min3.est.frRt2.cri95lo <- est.fr1Rt$q5[10 + lockdown_offset - 3]
+result$d1min3.est.frRt2.cri95hi <- est.fr1Rt$q95[10 + lockdown_offset - 3]
+
+
+est.contribLD <- data.frame(quantileData(data_sample, function(state, params) { (state$Rt - params[3]) / (params[1] - params[3]) }, 10, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+colnames(est.contribLD) <- c("q5", "q50", "q95")
+
+result$est.contribLD.median <- est.contribLD$q50[10 + lockdown_offset]
+result$est.contribLD.cri95lo <- est.contribLD$q5[10 + lockdown_offset]
+result$est.contribLD.cri95hi <- est.contribLD$q95[10 + lockdown_offset]
+
+result$est.min1.contribLD.median <- est.contribLD$q50[10 + lockdown_offset - 1]
+result$est.min1.contribLD.cri95lo <- est.contribLD$q5[10 + lockdown_offset - 1]
+result$est.min1.contribLD.cri95hi <- est.contribLD$q95[10 + lockdown_offset - 1]
+
+result$est.min2.contribLD.median <- est.contribLD$q50[10 + lockdown_offset - 2]
+result$est.min2.contribLD.cri95lo <- est.contribLD$q5[10 + lockdown_offset - 2]
+result$est.min2.contribLD.cri95hi <- est.contribLD$q95[10 + lockdown_offset - 2]
+
+result$est.min3.contribLD.median <- est.contribLD$q50[10 + lockdown_offset - 3]
+result$est.min3.contribLD.cri95lo <- est.contribLD$q5[10 + lockdown_offset - 3]
+result$est.min3.contribLD.cri95hi <- est.contribLD$q95[10 + lockdown_offset - 3]
+
+print(c(result$d1.est.frRt2.median, result$d1.est.frRt0.median, result$est.contribLD.median))
 
 ## offset
 
@@ -466,7 +505,7 @@ if (max_offset + lockdown_offset - 90 > 0) {
 }
 
 ## Analyze predictive performance
-est.deadi <- data.frame(quantileData(data_sample, function(state, params) { state$deadi }, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.deadi <- data.frame(quantileData(data_sample, function(state, params) { state$deadi }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
 colnames(est.deadi) <- c("q5", "q50", "q95")
 
 fitl <-length(dmorti) - evaluation_data_count

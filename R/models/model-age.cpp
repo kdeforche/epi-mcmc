@@ -1,15 +1,15 @@
 #include <R.h>
 
-static const int PARAM_N = 24;
+static const int PARAM_N = 32;
 static double parms[PARAM_N];
 
 #define Ny parms[0]
 #define No parms[1]
 #define a parms[2]
 #define gamma parms[3]
-#define phts parms[4] // Start of physical distancing beta0
-#define ldts parms[5] // Start of lockdown            beta1
-#define ldte parms[6] // End of lockdown transition   beta2
+#define t0 parms[4] // Start of physical distancing beta0
+#define t1 parms[5] // Start of lockdown            beta1
+#define t2 parms[6] // End of lockdown transition   beta2
 #define betay0 parms[7]
 #define betao0 parms[8]
 #define betayo0 parms[9]
@@ -27,6 +27,14 @@ static double parms[PARAM_N];
 #define betay4 parms[21]
 #define betao4 parms[22]
 #define betayo4 parms[23]
+#define t5 parms[24]
+#define betay5 parms[25]
+#define betao5 parms[26]
+#define betayo5 parms[27]
+#define t6 parms[28]
+#define betay6 parms[29]
+#define betao6 parms[30]
+#define betayo6 parms[31]
 
 #define Sy y[0]
 #define Ey y[1]
@@ -46,33 +54,34 @@ extern "C" {
   }
 }
 
-static double interpolate(double t, double vt0, double vt1, double vt2, double vt3, double vt4)
+static double interpolate(double t,
+			  double vt0, double vt1, double vt2, double vt3,
+			  double vt4, double vt5, double vt6)
 {
-  if (t < phts)
+  if (t > t6)
+    return vt6;
+  else if (t > t5)
+    return vt5;
+  else if (t > t4)
+    return vt4 + (t - t4) / (t5 - t4) * (vt5 - vt4);
+  else if (t > t3)
+    return vt3 + (t - t3) / (t4 - t3) * (vt4 - vt3);
+  else if (t > t2)
+    return vt2 + (t - t2) / (t3 - t2) * (vt3 - vt2);
+  else if (t > t1)
+    return vt1 + (t - t1) / (t2 - t1) * (vt2 - vt1);
+  else if (t > t0)
+    return vt0 + (t - t0) / (t1 - t0) * (vt1 - vt0);
+  else
     return vt0;
-  else if (t > ldts) {
-    if (t > ldte) {
-      if (t > t3)
-	if (t > t4)
-	  return vt4;
-	else
-	  return vt3;
-      else
-	return vt2;
-    } else
-      return vt1 + (t - ldts) / (ldte - ldts) * (vt2 - vt1);
-  } else {
-    return vt0 + (t - phts) / (ldts - phts) * (vt1 - vt0);
-  }
 }
-
 
 /* Derivatives and 1 output variable */
 extern "C" {
   void derivs (int *neq, double *t, double *y, double *ydot,
 	       double *yout, int *ip)
   {
-    if (ip[0] < 2) error("nout should be at least 2");
+    if (ip[0] < 4) error("nout should be at least 4");
     
     if (Sy < 0   || Ey < 0   || Iy < 0   || Ry < 0   ||
 	Sy >= Ny || Ey >= Ny || Iy >= Ny || Ry >= Ny ||
@@ -89,10 +98,16 @@ extern "C" {
       return;
     }
 
-    const double betay = interpolate(*t, betay0, betay1, betay2, betay3, betay4);
-    const double betao = interpolate(*t, betao0, betao1, betao2, betao3, betao4);
-    const double betayo = interpolate(*t, betayo0, betayo1, betayo2, betayo3, betayo4);
-  
+    const double betay = interpolate(*t,
+				     betay0, betay1, betay2, betay3, betay4,
+				     betay5, betay6);
+    const double betao = interpolate(*t,
+				     betao0, betao1, betao2, betao3, betao4,
+				     betao5, betao6);
+    const double betayo = interpolate(*t,
+				      betayo0, betayo1, betayo2, betayo3, betayo4,
+				      betayo5, betayo6);
+
     const double ygot_infected = (betay * Iy) / Ny * Sy;
     const double ygot_infectious = a * Ey;
     const double ygot_removed = gamma * Iy;
@@ -113,5 +128,8 @@ extern "C" {
 
     yout[0] = 1/gamma * (ygot_infected + ogot_infected) / (Iy + Io);
     yout[1] = yout[0] * (Ny + No) / (Sy + So);
+
+    yout[2] = 1/gamma * ((betay * Iy) / Ny * Sy + (betayo * Iy) / Ny * So) / Iy;
+    yout[3] = 1/gamma *                            (betao * Io) / No * So / Io;
   }
 }

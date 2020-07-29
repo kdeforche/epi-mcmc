@@ -62,16 +62,22 @@ calculateModel <- function(params, period)
     ohosp_rate <- params[13]
     ohosp_latency <- params[14]
     odied_latency <- params[15]
-    phs_morts <- params[16]
-    phs <- params[17]
+    t0_morts <- params[16]
+    t0o <- params[17]
     HLsd <- params[18]
     DLsd <- params[19]
-    betay3 <- params[20]
-    betao3 <- params[21]
-    betayo3 <- params[22]
-    betay4 <- params[23]
-    betao4 <- params[24]
-    betayo4 <- params[25]
+    t3o <- params[20]
+    betay3 <- params[21]
+    betao3 <- params[22]
+    betayo3 <- params[23]
+    t4o <- params[24]
+    betay4 <- params[25]
+    betao4 <- params[26]
+    betayo4 <- params[27]
+    t5o <- params[28]
+    betay5 <- params[29]
+    betao5 <- params[30]
+    betayo5 <- params[31]
 
     ## convolution profile to infer hospitalisation count
     y.hosp_cv_profile = hospProfile(yhosp_latency, HLsd)
@@ -100,17 +106,21 @@ calculateModel <- function(params, period)
 
     state$Re <- rep(0, padding + period)
     state$Rt <- rep(0, padding + period)
-    
+    state$y.Re <- rep(0, padding + period)
+    state$o.Re <- rep(0, padding + period)
+
     state$i <- padding + 1
     
     parms <- c(Ny = y.N, No = o.N,
                a = a, gamma = gamma,
-               phts = 1E10, ldts = 1E10, ldte = 1E10,
+               t0 = 1E10, t1 = 1E10, t2 = 1E10,
                betay0 = betay0, betao0 = betao0, betayo0 = betayo0,
                betay1 = betay1, betao1 = betao1, betayo1 = betayo1,
                betay2 = betay2, betao2 = betao2, betayo2 = betayo2,
                t3 = 1E10, betay3 = betay3, betao3 = betao3, betayo3 = betayo3,
-               t4 = 1E10, betay4 = betay4, betao4 = betao4, betayo4 = betayo4)
+               t4 = 1E10, betay4 = betay4, betao4 = betao4, betayo4 = betayo4,
+               t5 = 1E10, betay5 = betay5, betao5 = betao5, betayo5 = betayo5,
+               t6 = 1E10, betay6 = betay5, betao6 = betao5, betayo6 = betayo5)
 
     Y <- c(Sy = y.N - Initial, Ey = Initial, Iy = 0, Ry = 0,
            So = o.N - Initial, Eo = Initial, Io = 0, Ro = 0)
@@ -119,7 +129,7 @@ calculateModel <- function(params, period)
 
     out <- ode(Y, times, func = "derivs", parms = parms,
                dllname = "model-age",
-               initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
+               initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
     state$o.S[(padding + 1):(padding + period)] = out[,6]
@@ -134,24 +144,36 @@ calculateModel <- function(params, period)
 
     data_offset = InvalidDataOffset
 
-    lds <- which(state$died > phs_morts)
+    lds <- which(state$died > t0_morts)
     if (length(lds) > 0) {
         data_offset <- lds[1] - lockdown_offset
 
+        t2 <- data_offset + lockdown_offset + lockdown_transition_period
+        t3 <- t2 + t3o
+        t4 <- t3 + t4o
+        t5 <- t4 + t5o
+
+        t6 <- data_offset + d6
+        betay6 <- betay3
+        betao6 <- betao3
+        betayo6 <- betayo3
+        
         parms <- c(Ny = y.N, No = o.N,
                    a = a, gamma = gamma,
-                   phts = data_offset + lockdown_offset + phs,
-                   ldts = data_offset + lockdown_offset + max(phs, 0),
-                   ldte = data_offset + lockdown_offset + lockdown_transition_period,
+                   t0 = data_offset + lockdown_offset + t0o,
+                   t1 = data_offset + lockdown_offset + max(t0o, 0),
+                   t2 = t2,
                    betay0 = betay0, betao0 = betao0, betayo0 = betayo0,
                    betay1 = betay1, betao1 = betao1, betayo1 = betayo1,
                    betay2 = betay2, betao2 = betao2, betayo2 = betayo2,
-                   t3 = data_offset + d3, betay3 = betay3, betao3 = betao3, betayo3 = betayo3,
-                   t4 = data_offset + d4, betay4 = betay4, betao4 = betao4, betayo4 = betayo4)
+                   t3 = t3, betay3 = betay3, betao3 = betao3, betayo3 = betayo3,
+                   t4 = t4, betay4 = betay4, betao4 = betao4, betayo4 = betayo4,
+                   t5 = t5, betay5 = betay5, betao5 = betao5, betayo5 = betayo5,
+                   t6 = t6, betay6 = betay6, betao6 = betao6, betayo6 = betayo6)
 
         out <- ode(Y, times, func = "derivs", parms = parms,
                    dllname = "model-age",
-                   initfunc = "initmod", nout = 2, outnames = c("Re", "Rt"))
+                   initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
     }
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
@@ -164,6 +186,8 @@ calculateModel <- function(params, period)
     state$o.R[(padding + 1):(padding + period)] = out[,9]
     state$Re[(padding + 1):(padding + period)] = out[,10]
     state$Rt[(padding + 1):(padding + period)] = out[,11]
+    state$y.Re[(padding + 1):(padding + period)] = out[,12]
+    state$o.Re[(padding + 1):(padding + period)] = out[,13]
 
     s1 <- convolute(state$y.S, padding + 1, padding + period, y.hosp_cv_profile)
     state$y.hosp[(padding + 1):(padding + period)] = (y.N - s1) * yhosp_rate
@@ -213,6 +237,14 @@ invTransformParams <- function(posterior)
     posterior$y.Rt3 = posterior$betay3 / gamma
     posterior$o.Rt3 = posterior$betao3 / gamma
     posterior$yo.Rt3 = posterior$betayo3 / gamma
+    
+    posterior$y.Rt4 = posterior$betay4 / gamma
+    posterior$o.Rt4 = posterior$betao4 / gamma
+    posterior$yo.Rt4 = posterior$betayo4 / gamma
+
+    posterior$y.Rt5 = posterior$betay5 / gamma
+    posterior$o.Rt5 = posterior$betao5 / gamma
+    posterior$yo.Rt5 = posterior$betayo5 / gamma
 
     posterior
 }
@@ -245,20 +277,29 @@ calclogp <- function(params) {
     ohosp_rate <- params[13]
     ohosp_latency <- params[14]
     odied_latency <- params[15]
-    phs_morts <- params[16]
-    phs <- params[17]
+    t0_morts <- params[16]
+    t0o <- params[17]
     HLsd <- params[18]
     DLsd <- params[19]
-    betay3 <- params[20]
-    betao3 <- params[21]
-    betayo3 <- params[22]
-    betay4 <- params[23]
-    betao4 <- params[24]
-    betayo4 <- params[25]
+    t3o <- params[20]
+    betay3 <- params[21]
+    betao3 <- params[22]
+    betayo3 <- params[23]
+    t4o <- params[24]
+    betay4 <- params[25]
+    betao4 <- params[26]
+    betayo4 <- params[27]
+    t5o <- params[28]
+    betay5 <- params[29]
+    betao5 <- params[30]
+    betayo5 <- params[31]
 
     logPriorP <- 0
-
-    logPriorP <- logPriorP + dnorm(phs, mean=0, sd=10, log=T)
+    
+    logPriorP <- logPriorP + dnorm(t0o, mean=0, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(t3o, mean=(d3 - lockdown_offset - lockdown_transition_period), sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(t4o, mean=(d4 - d3), sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(t5o, mean=(d5 - d4), sd=10, log=T)
     logPriorP <- logPriorP + dnorm(betay0 - betay1, mean=0, sd=2*gamma, log=T)
     logPriorP <- logPriorP + dnorm(betao0 - betao1, mean=0, sd=2*gamma, log=T)
     logPriorP <- logPriorP + dnorm(betayo0 - betayo1, mean=0, sd=2*gamma, log=T)
@@ -271,6 +312,9 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(betay3 - betay4, mean=0, sd=0.5*gamma, log=T)
     logPriorP <- logPriorP + dnorm(betao3 - betao4, mean=0, sd=0.5*gamma, log=T)
     logPriorP <- logPriorP + dnorm(betayo3 - betayo4, mean=0, sd=0.5*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betay4 - betay5, mean=0, sd=0.5*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao4 - betao5, mean=0, sd=0.5*gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betayo4 - betayo5, mean=0, sd=0.5*gamma, log=T)
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=4, log=T)
@@ -363,10 +407,11 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "betay2", "betao2", "betayo2",
                     "y.HR", "y.HL", "y.DL",
                     "o.HR", "o.HL", "o.DL",
-                    "phsmorts", "phs",
+                    "t0_morts", "t0o",
                     "HLsd", "DLsd",
-                    "betay3", "betao3", "betayo3",
-                    "betay4", "betao4", "betayo4")
+                    "t3o", "betay3", "betao3", "betayo3",
+                    "t4o", "betay4", "betao4", "betayo4",
+                    "t5o", "betay5", "betao5", "betayo5")
 keyparamnames <- c("betay0", "betao0", "betayo0", "betay1", "betao1", "betayo1")
 fitkeyparamnames <- keyparamnames
 
@@ -376,18 +421,20 @@ init <- c(3.6 * gamma, 3.6 * gamma, 3.6 * gamma,
           0.05, 10, 21,
           0.05, 10, 21,
           total_deaths_at_lockdown, -1, 5, 5,
-          0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          0.8 * gamma, 0.8 * gamma, 0.8 * gamma)
+          50, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
+          20, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
+          20, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 2 * gamma, 2 * gamma,
                                 1 * gamma, 1 * gamma, 1 * gamma,
-                                0.5 * gamma, 0.5 * gamma, 0.5 * gamma,
+                                0.2 * gamma, 0.2 * gamma, 0.2 * gamma,
                                 0.001, 5, 10,
                                 0.001, 5, 10,
                                 0, -30, 2, 2,
-                                0.5 * gamma, 0.5 * gamma, 0.5 * gamma,
-                                0.5 * gamma, 0.5 * gamma, 0.5 * gamma),
+                                30, 0.2 * gamma, 0.2 * gamma, 0.2 * gamma,
+                                10, 0.2 * gamma, 0.2 * gamma, 0.2 * gamma,
+                                10, 0.2 * gamma, 0.2 * gamma, 0.2 * gamma),
                         max = c(8 * gamma, 8 * gamma, 8 * gamma,
                                 5 * gamma, 5 * gamma, 5 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
@@ -395,6 +442,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 1, 25, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30, 9, 9,
-                                3 * gamma, 3 * gamma, 3 * gamma,
-                                3 * gamma, 3 * gamma, 3 * gamma),
+                                90, 3 * gamma, 3 * gamma, 3 * gamma,
+                                45, 3 * gamma, 3 * gamma, 3 * gamma,
+                                45, 3 * gamma, 3 * gamma, 3 * gamma),
                         init = init)
