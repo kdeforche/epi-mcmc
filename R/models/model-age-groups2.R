@@ -5,17 +5,19 @@ dyn.load("model-age.so")
 InvalidDataOffset <- 10000
 Initial <- 1
 
-G <- 5.2
-Tinc <- 2
+G <- 4.7
+Tinc1 <- 3
+Tinc2 <- 1
 y.died_rate <- 0.0009
 o.died_rate <- 0.03
-a <- 1/Tinc
-gamma <- 1/((G - Tinc) * 2)
+a1 <- 1/Tinc1
+a2 <- 1/Tinc2
+gamma <- 1/((G - (Tinc1 + Tinc2)) * 2)
 
 calcGammaProfile <- function(mean, sd)
 {
-    shape = mean^2 / sd^2
     scale = sd^2 / mean
+    shape = mean / scale
     
     kbegin = max(0, ceiling(mean - sd * 3))
     kend = max(kbegin + 1, floor(mean + sd * 3))
@@ -91,14 +93,16 @@ calculateModel <- function(params, period)
     state <- NULL
 
     state$y.S <- rep(y.N - Initial, padding + period)
-    state$y.E <- rep(Initial, padding + period)
+    state$y.E1 <- rep(Initial, padding + period)
+    state$y.E2 <- rep(0, padding + period)
     state$y.I <- rep(0, padding + period)
     state$y.R <- rep(0, padding + period)
     state$y.hosp <- rep(0, padding + period)
     state$y.died <- rep(0, padding + period)
 
     state$o.S <- rep(o.N, padding + period)
-    state$o.E <- rep(0, padding + period)
+    state$o.E1 <- rep(0, padding + period)
+    state$o.E2 <- rep(0, padding + period)
     state$o.I <- rep(0, padding + period)
     state$o.R <- rep(0, padding + period)
     state$o.hosp <- rep(0, padding + period)
@@ -112,7 +116,7 @@ calculateModel <- function(params, period)
     state$i <- padding + 1
     
     parms <- c(Ny = y.N, No = o.N,
-               a = a, gamma = gamma,
+               a1 = a1, a2 = a2, gamma = gamma,
                t0 = 1E10, t1 = 1E10, t2 = 1E10,
                betay0 = betay0, betao0 = betao0, betayo0 = betayo0,
                betay1 = betay1, betao1 = betao1, betayo1 = betayo1,
@@ -122,8 +126,8 @@ calculateModel <- function(params, period)
                t5 = 1E10, betay5 = betay5, betao5 = betao5, betayo5 = betayo5,
                t6 = 1E10, betay6 = betay5, betao6 = betao5, betayo6 = betayo5)
 
-    Y <- c(Sy = y.N - Initial, Ey = Initial, Iy = 0, Ry = 0,
-           So = o.N - Initial, Eo = Initial, Io = 0, Ro = 0)
+    Y <- c(Sy = y.N - Initial, E1y = Initial, E2y = 0, Iy = 0, Ry = 0,
+           So = o.N, E1o = 0, E2o = 0, Io = 0, Ro = 0)
 
     times <- (padding + 1):(padding + period)
 
@@ -132,7 +136,7 @@ calculateModel <- function(params, period)
                initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
-    state$o.S[(padding + 1):(padding + period)] = out[,6]
+    state$o.S[(padding + 1):(padding + period)] = out[,7]
 
     s2 <- convolute(state$y.S, padding + 1, padding + period, y.died_cv_profile)
     state$y.died[(padding + 1):(padding + period)] = (y.N - s2) * y.died_rate
@@ -159,7 +163,7 @@ calculateModel <- function(params, period)
         betayo6 <- betayo3
         
         parms <- c(Ny = y.N, No = o.N,
-                   a = a, gamma = gamma,
+                   a1 = a1, a2 = a2, gamma = gamma,
                    t0 = data_offset + lockdown_offset + t0o,
                    t1 = data_offset + lockdown_offset + max(t0o, 0),
                    t2 = t2,
@@ -177,17 +181,17 @@ calculateModel <- function(params, period)
     }
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
-    state$y.E[(padding + 1):(padding + period)] = out[,3]
-    state$y.I[(padding + 1):(padding + period)] = out[,4]
-    state$y.R[(padding + 1):(padding + period)] = out[,5]
-    state$o.S[(padding + 1):(padding + period)] = out[,6]
-    state$o.E[(padding + 1):(padding + period)] = out[,7]
-    state$o.I[(padding + 1):(padding + period)] = out[,8]
-    state$o.R[(padding + 1):(padding + period)] = out[,9]
-    state$Re[(padding + 1):(padding + period)] = out[,10]
-    state$Rt[(padding + 1):(padding + period)] = out[,11]
-    state$y.Re[(padding + 1):(padding + period)] = out[,12]
-    state$o.Re[(padding + 1):(padding + period)] = out[,13]
+    state$y.E[(padding + 1):(padding + period)] = out[,3] + out[,4]
+    state$y.I[(padding + 1):(padding + period)] = out[,5]
+    state$y.R[(padding + 1):(padding + period)] = out[,6]
+    state$o.S[(padding + 1):(padding + period)] = out[,7]
+    state$o.E[(padding + 1):(padding + period)] = out[,8]
+    state$o.I[(padding + 1):(padding + period)] = out[,9] + out[,10]
+    state$o.R[(padding + 1):(padding + period)] = out[,11]
+    state$Re[(padding + 1):(padding + period)] = out[,12]
+    state$Rt[(padding + 1):(padding + period)] = out[,13]
+    state$y.Re[(padding + 1):(padding + period)] = out[,14]
+    state$o.Re[(padding + 1):(padding + period)] = out[,15]
 
     s1 <- convolute(state$y.S, padding + 1, padding + period, y.hosp_cv_profile)
     state$y.hosp[(padding + 1):(padding + period)] = (y.N - s1) * yhosp_rate

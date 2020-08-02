@@ -111,8 +111,10 @@ all_plots_age <- function(date_markers) {
     dm1[(start + 1):(start + length(dmorti))] = dmorti
     p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=0.5, color="#1144CC")
 
-    if (zoom) {
+    if (zoom == 1) {
         p1 <- p1 + coord_cartesian(ylim = c(0, 50))
+    } else if (zoom == 2) {
+        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 50))
     }
 
     ## Add y curves
@@ -183,8 +185,11 @@ all_plots_age <- function(date_markers) {
     dm3[(start + 1):(start + length(dhospi))] = dhospi
     p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=0.5, color="#CC4411")
 
-    if (zoom) {
+    if (zoom == 1) {
         p3 <- p3 + coord_cartesian(ylim = c(0, 1500))
+    } else if (zoom == 2) {
+        p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+                                   ylim = c(0, 1500))
     }
 
     ## Add y/o curves
@@ -204,9 +209,13 @@ all_plots_age <- function(date_markers) {
                    function(state, params) { (state$y.E + state$y.I + state$o.E + state$o.I)/N * 100 },
                    "#A67514", c("Population group (%)", "Infected people"), date_markers, 'solid')
 
-    if (zoom) {
+    if (zoom == 1) {
         p4 <- p4 + coord_cartesian(ylim = c(0, 1))
+    } else if (zoom == 2) {
+        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+                                   ylim = c(0, 1))
     }
+
 
     ## Add y/o curves
     p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$y.E + state$y.I)/y.N * 100 }, "#A67514", "dashed")
@@ -237,8 +246,11 @@ all_plots_age <- function(date_markers) {
                    function(state, params) { state$Re }, "#33FFFF",
                    c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
 
-    if (zoom) {
+    if (zoom == 1) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
+    } else if (zoom == 2) {
+        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+                                   ylim = c(0, 2))
     } else {
         p6 <- p6 + coord_cartesian(ylim = c(0, NA))
     }
@@ -268,7 +280,7 @@ all_plots_age3 <- function(dates) {
     dm1[(start + 1):(start + length(dmorti))] = dmorti
     p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=0.5, color="#1144CC")
 
-    if (zoom) {
+    if (zoom > 0) {
         p1 <- p1 + coord_cartesian(ylim = c(0, 50))
     }
 
@@ -357,7 +369,7 @@ all_plots_age3 <- function(dates) {
     dm3[(start + 1):(start + length(dhospi))] = dhospi
     p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=0.5, color="#CC4411")
 
-    if (zoom) {
+    if (zoom > 0) {
         p3 <- p3 + coord_cartesian(ylim = c(0, 1500))
     }
 
@@ -379,7 +391,7 @@ all_plots_age3 <- function(dates) {
                    function(state, params) { (state$y.E + state$y.I + state$m.E + state$m.I + state$o.E + state$o.I)/N * 100 },
                    "#A67514", c("Population group (%)", "Infected people"), dates, 'solid')
 
-    if (zoom) {
+    if (zoom > 0) {
         p4 <- p4 + coord_cartesian(ylim = c(0, 0.5))
     }
 
@@ -422,7 +434,7 @@ all_plots_age3 <- function(dates) {
                               values=c('solid'='solid','dashed'='dashed','dotdash'='dotdash','dotted'='dotted'),
                               labels = ageGroupLabels)
 
-    if (zoom) {
+    if (zoom > 0) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
     } else {
         p6 <- p6 + coord_cartesian(ylim = c(0, NA))
@@ -498,26 +510,24 @@ plot_end_date <- as.Date("2020/10/1")
 
 dates <- data.frame(pos=c(dstartdate + lockdown_offset,
                           dstartdate + lockdown_offset + lockdown_transition_period,
+                          dstartdate + d5,
                           Sys.Date()),
-                    color=c("orange", "red", "black"))
+                    color=c("orange", "red", "orange", "darkgray"))
 
 est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 200, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
 
 print(c(est.Re[Sys.Date() - dstartdate,]))
 
-zoom <- T
+zoom <- 1
 all_plots(dates)
-zoom <- F
+zoom <- 0
+all_plots(dates)
+zoom <- 2
 all_plots(dates)
 
-plot_start_date <- as.Date("2020/2/15")
+zoom <- 0
 plot_end_date <- Sys.Date()
-
-dates <- data.frame(pos=c(dstartdate + lockdown_offset,
-                          dstartdate + lockdown_offset + lockdown_transition_period,
-                          Sys.Date()),
-                    color=c("orange", "red", "black"))
 
 all_plots(dates)
 
@@ -527,37 +537,35 @@ est.died <- data.frame(quantileData(data_sample, function(state, params) { state
 colnames(est.died) <- c("q5", "q50", "q95")
 print(est.died[plot_end_date - dstartdate,])
 
-d6s <- c(as.Date("2020/7/27"),
-         as.Date("2020/7/28"),
-         as.Date("2020/7/29"),
-         as.Date("2020/7/30"),
-         as.Date("2020/7/31"),
-         as.Date("2020/8/15"),
-         as.Date("2020/9/1"))
-
 dmortn <- dmort[length(dmort)]
 
-for (i in 1:length(d6s)) {
-    d6d <- d6s[i]
-    d6 <- as.numeric(d6d - dstartdate)
+print(est.died[plot_end_date - dstartdate,] - dmortn)
 
-    dates <- data.frame(pos=c(dstartdate + lockdown_offset,
-                              dstartdate + lockdown_offset + lockdown_transition_period,
-                              Sys.Date(), dstartdate + d6),
-                        color=c("orange", "red", "black", "red"))
+## d6s <- c(as.Date("2020/7/29"),
+##          as.Date("2020/8/15"),
+##          as.Date("2020/9/1"))
 
-    all_plots(dates)
-    est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, 300, c(0.05, 0.5, 0.95)))
-    colnames(est.died) <- c("q5", "q50", "q95")
-    print(d6d)
-    print(est.died[plot_end_date - dstartdate,] - dmortn)
-}
+## for (i in 1:length(d6s)) {
+##     d6d <- d6s[i]
+##     d6 <- as.numeric(d6d - dstartdate)
+
+##     dates <- data.frame(pos=c(dstartdate + lockdown_offset,
+##                               dstartdate + lockdown_offset + lockdown_transition_period,
+##                               Sys.Date(), dstartdate + d6),
+##                         color=c("orange", "red", "black", "red"))
+
+##     all_plots(dates)
+##     est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, 300, c(0.05, 0.5, 0.95)))
+##     colnames(est.died) <- c("q5", "q50", "q95")
+##     print(d6d)
+##     print(est.died[plot_end_date - dstartdate,] - dmortn)
+## }
 
 dev.off()
 
 ## Population group Re values
 
-plot_end_date <- as.Date("2020/9/1")
+plot_end_date <- Sys.Date()
 dateRange <- c(plot_start_date, plot_end_date)
 fair_cols <- c("#38170B","#BF1B0B", "#FFC465", "#66ADE5", "#252A52")
 

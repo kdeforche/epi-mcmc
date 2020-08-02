@@ -63,9 +63,9 @@ lockdown_transition_period <- 7
 ## how many deaths at date of lockdown
 total_deaths_at_lockdown <- 5
 
-d3 <- as.numeric(as.Date("2020/5/15") - dstartdate)
-d4 <- as.numeric(as.Date("2020/6/15") - dstartdate)
-d5 <- as.numeric(as.Date("2020/7/1") - dstartdate)
+d3 <- as.numeric(as.Date("2020/6/6") - dstartdate)
+d4 <- as.numeric(as.Date("2020/7/6") - dstartdate)
+d5 <- as.numeric(as.Date("2020/7/27") - dstartdate)
 d6 <- as.numeric(as.Date("2020/12/1") - dstartdate)
 
 d.reliable.cases <- as.numeric(as.Date("2020/6/1") - dstartdate)
