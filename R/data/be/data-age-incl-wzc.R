@@ -85,6 +85,9 @@ mortaggr$x[is.na(mortaggr$x)] = 0
 y.dmorti = mortaggr$x[mortaggr$y == T]
 o.dmorti = mortaggr$x[mortaggr$y == F]
 
+y.dmorti[is.na(y.dmorti)] = 0
+o.dmorti[is.na(o.dmorti)] = 0
+
 y.dmorti = y.dmorti + floor(yfract * na.dmorti$x)
 o.dmorti = o.dmorti + floor((1 - yfract) * na.dmorti$x)
 
