@@ -18,16 +18,21 @@ source("data.R")
 ##
 ## dcasei : ages are recorded
 
+levs <- as.character(seq(min(as.Date(be.case$DATE[!is.na(be.case$DATE)])), max(as.Date(be.case$DATE[!is.na(be.case$DATE)])), by=1))
+dates <- data.frame(date=levs)
+
 be.case$y = (be.case$AGEGROUP == "0-9" | be.case$AGEGROUP == "10-19" | be.case$AGEGROUP == "20-29" | be.case$AGEGROUP == "30-39" | be.case$AGEGROUP == "40-49" | be.case$AGEGROUP == "50-59")
 be.case.na = subset(be.case, is.na(be.case$y))
-na.dcasei = aggregate(be.case.na$CASES, by=list(date=be.case.na$DATE), FUN=sum, drop=F)
+na.dcasei.1 = aggregate(be.case.na$CASES, by=list(date=be.case.na$DATE), FUN=sum, drop=F)
+na.dcasei = merge(dates, na.dcasei.1, by.x=c("date"), by.y=c("date"), all=TRUE)
 na.dcasei$x[is.na(na.dcasei$x)] = 0
 
 ycount = sum(be.case$y == T, na.rm=TRUE)
 ocount = sum(be.case$y == F, na.rm=TRUE)
 yfract = ycount / (ycount + ocount)
 
-caseaggr = aggregate(be.case$CASES, by=list(y=be.case$y, date=be.case$DATE), FUN=sum, drop=F)
+caseaggr.1 = aggregate(be.case$CASES, by=list(y=be.case$y, date=be.case$DATE), FUN=sum, drop=F)
+caseaggr = merge(dates, caseaggr.1, by.x=c("date"), by.y=c("date"), all=TRUE)
 caseaggr$x[is.na(caseaggr$x)] = 0
 
 y.dcasei = caseaggr$x[caseaggr$y == T]
@@ -59,11 +64,13 @@ dhosp = dcase
 ## dmorti : ages are recorded
 
 levs <- as.character(seq(min(as.Date(be.mort$DATE)), max(as.Date(be.mort$DATE)), by=1))
+dates <- data.frame(date=levs)
 df.2 <- transform(be.mort, DATE=factor(DATE, sort(unique(levs))))
 be.mort <- df.2
 be.mort$y = (be.mort$AGEGROUP == "0-24" | be.mort$AGEGROUP == "25-44" | be.mort$AGEGROUP == "45-64")
 be.mort.na = subset(be.mort, is.na(be.mort$y))
-na.dmorti = aggregate(be.mort.na$DEATHS, by=list(date=be.mort.na$DATE), FUN=sum, drop=F)
+na.dmorti.1 = aggregate(be.mort.na$DEATHS, by=list(date=be.mort.na$DATE), FUN=sum, drop=FALSE)
+na.dmorti = merge(dates, na.dmorti.1, by.x=c("date"), by.y=c("date"), all=TRUE)
 na.dmorti$x[is.na(na.dmorti$x)] = 0
 
 ycount = sum(be.mort$y == T & as.character(be.mort$DATE) > "2020-03-20", na.rm=TRUE)
@@ -71,7 +78,8 @@ ocount = sum(be.mort$y == F & as.character(be.mort$DATE) > "2020-03-20", na.rm=T
 yfract = ycount / (ycount + ocount)
 yfract = yfract * 0.2 # assume that maybe in particular older people do not have their age properly
 
-mortaggr = aggregate(be.mort$DEATHS, by=list(y=be.mort$y, date=be.mort$DATE), FUN=sum, drop=F)
+mortaggr.1 = aggregate(be.mort$DEATHS, by=list(y=be.mort$y, date=be.mort$DATE), FUN=sum, drop=FALSE)
+mortaggr = merge(dates, mortaggr.1, by.x=c("date"), by.y=c("date"), all=TRUE)
 mortaggr$x[is.na(mortaggr$x)] = 0
 
 y.dmorti = mortaggr$x[mortaggr$y == T]

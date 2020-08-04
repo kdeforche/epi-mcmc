@@ -352,8 +352,6 @@ calclogl <- function(params, x) {
         dend <- dstart + length(y.dhospi) - 1
     }
 
-    ## FIXME: use higher certainty for dhospi since 1 May
-    
     y.loglH <- sum(dnbinom(y.dhospi[1:(d.reliable.cases-1)],
                            mu=pmax(0.1, state$y.hospi[dstart:(dstart + d.reliable.cases)]),
                            size=hosp_nbinom_size1, log=T)) +
