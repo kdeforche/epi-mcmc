@@ -44,8 +44,8 @@ o.dcasei = o.dcasei + floor((1 - yfract) * na.dcasei$x)
 y.dcasei <- y.dcasei[10:length(y.dcasei)]
 o.dcasei <- o.dcasei[10:length(o.dcasei)]
 
-y.dcasei <- y.dcasei[1:(length(y.dcasei) - 1)]
-o.dcasei <- o.dcasei[1:(length(o.dcasei) - 1)]
+y.dcasei <- y.dcasei[1:(length(y.dcasei) - 2)]
+o.dcasei <- o.dcasei[1:(length(o.dcasei) - 2)]
 
 y.dcase <- cumsum(y.dcasei)
 o.dcase <- cumsum(o.dcasei)
