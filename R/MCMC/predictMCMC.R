@@ -8,6 +8,29 @@ require(gridExtra)
 source("settings.R")
 
 source(data, chdir=T)
+source(fitmodel, chdir=T)
+
+sourceR <- function(file) {
+    source(paste(Rdir, file, sep=""))
+}
+
+sourceR("lib/libMCMC.R")
+sourceR("lib/libfit.R")
+
+DIC <- function(posterior1) {
+  draw = posterior1
+
+  x = draw[0:-7]
+  lik = draw$loglikelihood
+  lik.fun = function(x) { calclogl(transformParams(x)) }
+
+  D.bar <- -2*mean(lik)
+  if(is.vector(x)) theta.bar = mean(x) else theta.bar <- apply(x,2,mean)
+  D.hat <- -2*lik.fun(theta.bar)
+  pD <- D.bar - D.hat
+  pV <- var(-2*lik)/2
+  list(DIC=pD+D.bar,DIC2=pV+D.bar,IC=2*pD+D.bar,pD=pD,pV=pV,Dbar=D.bar,Dhat=D.hat)
+}
 
 trimData <- function(count) {
     y.dmorti <<- y.dmorti[1:(length(y.dmorti) - count)]
@@ -467,6 +490,8 @@ readSample <- function() {
     print(files)
    
     all <- readData(files)
+    dic = DIC(all)
+    print(dic)
 
     posterior <- all[0:-7]
 
