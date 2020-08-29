@@ -10,6 +10,7 @@
 dstartdate <- as.Date("2020/3/10")
 
 be.hosp <- read.csv(url("https://epistat.sciensano.be/Data/COVID19BE_HOSP.csv"))
+##be.hosp <- read.csv("COVID19BE_HOSP.csv")
 print(aggregate(be.hosp$NEW_IN, by=list(date=be.hosp$DATE), FUN=sum))
 dhospi <- aggregate(be.hosp$NEW_IN, by=list(date=be.hosp$DATE), FUN=sum)$x
 
@@ -22,6 +23,7 @@ dhospi <- c(3, 12, 47, 50, 50, dhospi)
 dhosp <- cumsum(dhospi)
 
 be.mort <- read.csv(url("https://epistat.sciensano.be/Data/COVID19BE_MORT.csv"))
+##be.mort <- read.csv("COVID19BE_MORT.csv")
 print(aggregate(be.mort$DEATHS, by=list(date=be.mort$DATE), FUN=sum))
 dmorti <- aggregate(be.mort$DEATHS, by=list(date=be.mort$DATE), FUN=sum)$x
 
@@ -34,6 +36,7 @@ dmort <- cumsum(dmorti)
 print(paste("last day morti: ", dstartdate + length(dmorti) - 1))
 
 be.case <- read.csv(url("https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.csv"))
+##be.case <- read.csv("COVID19BE_CASES_AGESEX.csv")
 print(aggregate(be.case$CASES, by=list(date=be.case$DATE), FUN=sum))
 dcasei <- aggregate(be.case$CASES, by=list(date=be.case$DATE), FUN=sum)$x
 
@@ -67,5 +70,6 @@ d3 <- as.numeric(as.Date("2020/6/6") - dstartdate)
 d4 <- as.numeric(as.Date("2020/7/6") - dstartdate)
 d5 <- as.numeric(as.Date("2020/7/27") - dstartdate)
 d6 <- as.numeric(as.Date("2020/12/1") - dstartdate)
+d7 <- as.numeric(as.Date("2020/9/1") - dstartdate)
 
 d.reliable.cases <- as.numeric(as.Date("2020/6/1") - dstartdate)

@@ -164,10 +164,6 @@ calculateModel <- function(params, period)
         t5 <- data_offset + d5        
         t6 <- t5 + t6o
 
-        betay6 <- betay3
-        betao6 <- betao3
-        betayo6 <- betayo3
-        
         parms <- c(Ny = y.N, No = o.N,
                    a1 = a1, a2 = a2, gamma = gamma,
                    t0 = data_offset + lockdown_offset + t0o,

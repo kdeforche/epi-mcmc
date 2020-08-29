@@ -107,6 +107,59 @@ print(paste("last day morti: ", dstartdate + length(o.dmorti) - 1))
 dmort <- y.dmort + o.dmort
 dmorti <- y.dmorti + o.dmorti
 
+##
+## time series of IFR estimates per group
+
+be.mort$week = format(as.Date(be.mort$DATE), "%Y-%V")
+weekgroup = aggregate(be.mort$DEATHS, by=list(week=be.mort$week,group=be.mort$AGEGROUP), FUN=sum, drop=F)
+weekgroup$x[is.na(weekgroup$x)] = 0
+
+g.ifr <- c(0.009604, 0.090175, 0.82025, 3.105, 6.04, 11.7) / 100
+
+calcifr.y <- function(x) {
+    x <- x + 1 ## As if a multinomial prior
+
+    y.ifr <- sum(x[1:3]) / sum(x[1:3] / g.ifr[1:3])
+    y.ifr
+}   
+
+calcifr.o <- function(x) {
+    x <- x + 1 ## As if a multinomial prior
+
+    o.ifr <- sum(x[4:6]) / sum(x[4:6] / g.ifr[4:6])
+    o.ifr
+}   
+
+calcifr <- function(x) {
+    x <- x + 1 ## As if a multinomial prior
+
+    ifr <- sum(x) / sum(x / g.ifr)
+    ifr
+}   
+
+y.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr.y, drop=F)
+o.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr.o, drop=F)
+all.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr, drop=F)
+
+weekifr <- data.frame(y.weekifr$week, y.weekifr$x, o.weekifr$x, all.weekifr$x)
+weekifr$index = seq(3,length(o.dmorti),7)
+
+m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=6)
+yf <- data.frame(index=seq(1:length(o.dmorti)))
+y.ifr <- as.numeric(unlist(predict(m.yifr, yf)$y))
+
+m.oifr <- smooth.spline(weekifr$index, weekifr$o.weekifr.x, df=6)
+o.ifr <- as.numeric(unlist(predict(m.oifr, yf)$y))
+
+m.ifr <- smooth.spline(weekifr$index, weekifr$all.weekifr.x, df=6)
+all.ifr <- as.numeric(unlist(predict(m.ifr, yf)$y))
+
+plot(y.ifr, type='l')
+points(weekifr$index, weekifr$y.weekifr.x)
+
+plot(o.ifr, type='l')
+points(weekifr$index, weekifr$o.weekifr.x)
+
 ########################
 ## Age group demography 
 ########################

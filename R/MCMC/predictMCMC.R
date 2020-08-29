@@ -236,7 +236,7 @@ all_plots_age <- function(date_markers) {
         p4 <- p4 + coord_cartesian(ylim = c(0, 1))
     } else if (zoom == 2) {
         p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
-                                   ylim = c(0, 1))
+                                   ylim = c(0, 0.25))
     }
 
 
