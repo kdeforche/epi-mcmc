@@ -69,7 +69,7 @@ graphs <- function() {
            col=c("red", "blue"),lty=1)
 
     plot(days[1:len],state$hospi[state$offset:period], type='l', col='red',
-         xlab='Date', ylab='Count',
+         xlab='Date', ylab='Count', ylim=c(0.1, 20000),
          main='New hospitalisations and deaths per day', log="y")
 
     if ("y.hospi" %in% names(state)) {

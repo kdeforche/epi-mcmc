@@ -8,8 +8,8 @@ Initial <- 1
 G <- 4.7
 Tinc1 <- 3
 Tinc2 <- 1
-y.died_rate <- 0.0009
-o.died_rate <- 0.03
+y.died_rate <- y.ifr[1]
+o.died_rate <- o.ifr[1]
 a1 <- 1/Tinc1
 a2 <- 1/Tinc2
 gamma <- 1/((G - (Tinc1 + Tinc2)) * 2)
@@ -79,9 +79,10 @@ calculateModel <- function(params, period)
     betay5 <- betay4 ## new lockdown, 27 Juli
     betao5 <- betao4
     betayo5 <- betayo4
-    betay6 <- params[28] ## end of lockdown transition 27 Juli + 5d
-    betao6 <- params[29]
-    betayo6 <- params[30]
+    t6o <- params[28]
+    betay6 <- params[29] ## end of lockdown transition 27 Juli + t6o
+    betao6 <- params[30]
+    betayo6 <- params[31]
 
     ## convolution profile to infer hospitalisation count
     y.hosp_cv_profile = hospProfile(yhosp_latency, HLsd)
@@ -100,7 +101,7 @@ calculateModel <- function(params, period)
     state$y.I <- rep(0, padding + period)
     state$y.R <- rep(0, padding + period)
     state$y.hosp <- rep(0, padding + period)
-    state$y.died <- rep(0, padding + period)
+    state$y.deadi <- rep(0, padding + period)
 
     state$o.S <- rep(o.N, padding + period)
     state$o.E1 <- rep(0, padding + period)
@@ -108,7 +109,7 @@ calculateModel <- function(params, period)
     state$o.I <- rep(0, padding + period)
     state$o.R <- rep(0, padding + period)
     state$o.hosp <- rep(0, padding + period)
-    state$o.died <- rep(0, padding + period)
+    state$o.deadi <- rep(0, padding + period)
 
     state$Re <- rep(0, padding + period)
     state$Rt <- rep(0, padding + period)
@@ -159,7 +160,7 @@ calculateModel <- function(params, period)
         t4 <- t3 + t4o
 
         t5 <- data_offset + d5        
-        t6 <- data_offset + d5 + G
+        t6 <- t5 + t6o
 
         parms <- c(Ny = y.N, No = o.N,
                    a1 = a1, a2 = a2, gamma = gamma,
@@ -194,21 +195,42 @@ calculateModel <- function(params, period)
 
     s1 <- convolute(state$y.S, padding + 1, padding + period, y.hosp_cv_profile)
     state$y.hosp[(padding + 1):(padding + period)] = (y.N - s1) * yhosp_rate
-    
-    s2 <- convolute(state$y.S, padding + 1, padding + period, y.died_cv_profile)
-    state$y.died[(padding + 1):(padding + period)] = (y.N - s2) * y.died_rate
-
-    state$y.deadi <- c(state$y.died[1], diff(state$y.died))
     state$y.hospi <- c(state$y.hosp[1], diff(state$y.hosp))
+
+    s2 <- y.N - convolute(state$y.S, padding + 1, padding + period, y.died_cv_profile)
+    s2i <- c(s2[1], diff(s2))
+    if (data_offset != InvalidDataOffset) {
+        t1 <- data_offset
+        t2 <- min(padding + period, t1 + length(y.ifr) - 1)
+        if (t1 > padding && t2 > t1) {
+            state$y.deadi[(padding + 1):t1] = s2i[1:(t1 - padding)] * y.ifr[1]
+            state$y.deadi[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * y.ifr[1:(t2 - t1 + 1)]
+            state$y.deadi[t2:(padding + period)] = s2i[(t2 - padding):period] * y.ifr[length(y.ifr)]
+        }
+    } else {
+        state$y.deadi[(padding + 1):(padding + period)] = s2i * y.died_rate
+    }
+
+    state$y.died = cumsum(state$y.deadi)
 
     s1 <- convolute(state$o.S, padding + 1, padding + period, o.hosp_cv_profile)
     state$o.hosp[(padding + 1):(padding + period)] = (o.N - s1) * ohosp_rate
-    
-    s2 <- convolute(state$o.S, padding + 1, padding + period, o.died_cv_profile)
-    state$o.died[(padding + 1):(padding + period)] = (o.N - s2) * o.died_rate
-
-    state$o.deadi <- c(state$o.died[1], diff(state$o.died))
     state$o.hospi <- c(state$o.hosp[1], diff(state$o.hosp))
+    
+    s2 <- o.N - convolute(state$o.S, padding + 1, padding + period, o.died_cv_profile)
+    s2i <- c(s2[1], diff(s2))
+    if (data_offset != InvalidDataOffset) {
+        t1 <- data_offset
+        t2 <- min(padding + period, t1 + length(o.ifr) - 1)
+        if (t1 > padding && t2 > t1) {
+            state$o.deadi[(padding + 1):t1] = s2i[1:(t1 - padding)] * o.ifr[1]
+            state$o.deadi[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * o.ifr[1:(t2 - t1 + 1)]
+            state$o.deadi[t2:(padding + period)] = s2i[(t2 - padding):period] * o.ifr[length(o.ifr)]
+        }
+    } else {
+        state$o.deadi[(padding + 1):(padding + period)] = s2i * o.died_rate
+    }
+    state$o.died = cumsum(state$o.deadi)
 
     state$padding <- padding
     state$offset <- data_offset
@@ -245,9 +267,9 @@ invTransformParams <- function(posterior)
     posterior$o.Rt4 = posterior$betao4 / gamma
     posterior$yo.Rt4 = posterior$betayo4 / gamma
 
-    posterior$y.Rt5 = posterior$betay5 / gamma
-    posterior$o.Rt5 = posterior$betao5 / gamma
-    posterior$yo.Rt5 = posterior$betayo5 / gamma
+    posterior$y.Rt6 = posterior$betay6 / gamma
+    posterior$o.Rt6 = posterior$betao6 / gamma
+    posterior$yo.Rt6 = posterior$betayo6 / gamma
 
     posterior
 }
@@ -292,15 +314,20 @@ calclogp <- function(params) {
     betay4 <- params[25]
     betao4 <- params[26]
     betayo4 <- params[27]
-    betay5 <- params[28]
-    betao5 <- params[29]
-    betayo5 <- params[30]
+    betay5 <- betay4 ## new lockdown, 27 Juli
+    betao5 <- betao4
+    betayo5 <- betayo4
+    t6o <- params[28]
+    betay6 <- params[29] ## end of lockdown transition 27 Juli + t6o
+    betao6 <- params[30]
+    betayo6 <- params[31]
 
     logPriorP <- 0
     
     logPriorP <- logPriorP + dnorm(t0o, mean=0, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o, mean=d3, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o, mean=d4, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(t6o, mean=G, sd=3, log=T)
     logPriorP <- logPriorP + dnorm(betay0 - betay1, mean=0, sd=2*gamma, log=T)
     logPriorP <- logPriorP + dnorm(betao0 - betao1, mean=0, sd=2*gamma, log=T)
     logPriorP <- logPriorP + dnorm(betayo0 - betayo1, mean=0, sd=2*gamma, log=T)
@@ -318,9 +345,9 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=4, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=4, log=T)
 
-    logPriorP <- logPriorP + dnorm(betay5, mean=0.6, sd=0.2, log=T)
-    logPriorP <- logPriorP + dnorm(betao5, mean=0.22, sd=0.2, log=T)
-    logPriorP <- logPriorP + dnorm(betayo5, mean=0.26, sd=0.2, log=T)
+    logPriorP <- logPriorP + dnorm(betay6, mean=0.6, sd=0.2, log=T)
+    logPriorP <- logPriorP + dnorm(betao6, mean=0.22, sd=0.2, log=T)
+    logPriorP <- logPriorP + dnorm(betayo6, mean=0.26, sd=0.2, log=T)
 
     logPriorP
 }
@@ -381,11 +408,11 @@ calclogl <- function(params, x) {
     }
 
     y.loglD <- sum(dnbinom(y.dmorti,
-                           mu=pmax(0.01, state$y.deadi[dstart:dend]),
+                           mu=pmax(0.001, state$y.deadi[dstart:dend]),
                            size=mort_nbinom_size, log=T))
 
     o.loglD <- sum(dnbinom(o.dmorti,
-                           mu=pmax(0.01, state$o.deadi[dstart:dend]),
+                           mu=pmax(0.001, state$o.deadi[dstart:dend]),
                            size=mort_nbinom_size, log=T))
 
     it <<- it + 1
@@ -411,7 +438,7 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "HLsd", "DLsd",
                     "t3o", "betay3", "betao3", "betayo3",
                     "t4o", "betay4", "betao4", "betayo4",
-                    "betay5", "betao5", "betayo5")
+                    "t6o", "betay6", "betao6", "betayo6")
 keyparamnames <- c("betay0", "betao0", "betayo0", "betay1", "betao1", "betayo1")
 fitkeyparamnames <- keyparamnames
 
@@ -423,20 +450,20 @@ init <- c(3.6 * gamma, 3.6 * gamma, 3.6 * gamma,
           total_deaths_at_lockdown, -1, 5, 5,
           d3 - lockdown_offset - lockdown_transition_period, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
           d4 - d3, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          0.8 * gamma, 0.8 * gamma, 0.8 * gamma)
+          G, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma)
 
 print(init)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 2 * gamma, 2 * gamma,
                                 1 * gamma, 1 * gamma, 1 * gamma,
-                                0.2 * gamma, 0.2 * gamma, 0.2 * gamma,
+                                0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
                                 0.001, 5, 10,
                                 0.001, 5, 10,
                                 0, -30, 2, 2,
-                                60, 0.2 * gamma, 0.2 * gamma, 0.2 * gamma,
-                                10, 0.2 * gamma, 0.2 * gamma, 0.2 * gamma,
-                                0.2 * gamma, 0.2 * gamma, 0.2 * gamma),
+                                60, 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
+                                10, 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
+                                3, 0.05 * gamma, 0.01 * gamma, 0.01 * gamma),
                         max = c(8 * gamma, 8 * gamma, 8 * gamma,
                                 5 * gamma, 5 * gamma, 5 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
@@ -446,5 +473,5 @@ df_params <- data.frame(name = fit.paramnames,
                                 30, 9, 9,
                                 90, 3 * gamma, 3 * gamma, 3 * gamma,
                                 50, 3 * gamma, 3 * gamma, 3 * gamma,
-                                1.5 * gamma, 1.5 * gamma, 1.5 * gamma),
+                                12, 1.5 * gamma, 1.5 * gamma, 1.5 * gamma),
                         init = init)

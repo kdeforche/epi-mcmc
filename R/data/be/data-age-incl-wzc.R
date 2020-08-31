@@ -91,8 +91,8 @@ o.dmorti[is.na(o.dmorti)] = 0
 y.dmorti = y.dmorti + floor(yfract * na.dmorti$x)
 o.dmorti = o.dmorti + floor((1 - yfract) * na.dmorti$x)
 
-##y.dmorti <- y.dmorti[1:(length(y.dmorti)]
-##o.dmorti <- o.dmorti[1:(length(o.dmorti)]
+y.dmorti <- y.dmorti[1:(length(y.dmorti) - 2)]
+o.dmorti <- o.dmorti[1:(length(o.dmorti) - 2)]
 
 y.dmort <- cumsum(y.dmorti)
 o.dmort <- cumsum(o.dmorti)
@@ -114,24 +114,27 @@ be.mort$week = format(as.Date(be.mort$DATE), "%Y-%V")
 weekgroup = aggregate(be.mort$DEATHS, by=list(week=be.mort$week,group=be.mort$AGEGROUP), FUN=sum, drop=F)
 weekgroup$x[is.na(weekgroup$x)] = 0
 
-g.ifr <- c(0.009604, 0.090175, 0.82025, 3.105, 6.04, 11.7) / 100
+##g.ifr <- c(0.009604, 0.090175, 0.82025, 3.105, 6.04, 11.7) / 100
+## Based on "Belgian Covid-19 Mortaility ...", Geert Molenbergs et. al; Table 6
+g.ifr <- c(0.0005, 0.017, 0.21, 2.2, 4.29, 11.8) / 100
+##g.ifr <- c(0.001, 0.017, 0.21, 2.2, 4.29, 11.8) / 100
 
 calcifr.y <- function(x) {
-    x <- x + 1 ## As if a multinomial prior
+    x <- x + 0.1 ## As if a multinomial prior
 
     y.ifr <- sum(x[1:3]) / sum(x[1:3] / g.ifr[1:3])
     y.ifr
 }   
 
 calcifr.o <- function(x) {
-    x <- x + 1 ## As if a multinomial prior
+    x <- x + 0.1 ## As if a multinomial prior
 
     o.ifr <- sum(x[4:6]) / sum(x[4:6] / g.ifr[4:6])
     o.ifr
 }   
 
 calcifr <- function(x) {
-    x <- x + 1 ## As if a multinomial prior
+    x <- x + 0.1 ## As if a multinomial prior
 
     ifr <- sum(x) / sum(x / g.ifr)
     ifr
@@ -154,11 +157,30 @@ o.ifr <- as.numeric(unlist(predict(m.oifr, yf)$y))
 m.ifr <- smooth.spline(weekifr$index, weekifr$all.weekifr.x, df=6)
 all.ifr <- as.numeric(unlist(predict(m.ifr, yf)$y))
 
-plot(y.ifr, type='l')
-points(weekifr$index, weekifr$y.weekifr.x)
+## ifr.reduction <- 0.3
+## ifr.reduction.offset <- as.numeric(as.Date("2020/6/1") - dstartdate)
+## slope = seq(1, 1 - ifr.reduction, -ifr.reduction / ifr.reduction.offset)
 
-plot(o.ifr, type='l')
-points(weekifr$index, weekifr$o.weekifr.x)
+## y.ifr[1:length(slope)] = y.ifr[1:length(slope)] * slope
+## y.ifr[(length(slope) + 1):length(y.ifr)] = y.ifr[(length(slope) + 1):length(y.ifr)] * (1 - ifr.reduction)
+
+pdf("ifr.pdf", width=10, height=5)
+par(mfrow=c(1,2))
+x <-seq(dstartdate, dstartdate+length(y.ifr)-1, by=1)
+plot(x, y.ifr * 100, type='l', main="Time profile of Belgian IFR for (<65y)",
+        xlab="Date", ylab="Infection Fatality Rate (%)", ylim=c(0, 0.1))
+points(dstartdate + weekifr$index, weekifr$y.weekifr.x * 100)
+
+## o.ifr[1:length(slope)] = o.ifr[1:length(slope)] * slope
+## o.ifr[(length(slope) + 1):length(o.ifr)] = o.ifr[(length(slope) + 1):length(o.ifr)] * (1 - ifr.reduction)
+
+plot(x, o.ifr * 100, type='l', main="Time profile of Belgian IFR (>65y)",
+     xlab="Date", ylab="Infection Fatality Rate (%)", ylim=c(0, 7))
+points(dstartdate + weekifr$index, weekifr$o.weekifr.x * 100)
+dev.off()
+
+plot(all.ifr, type='l')
+points(weekifr$index, weekifr$all.weekifr.x)
 
 ########################
 ## Age group demography 

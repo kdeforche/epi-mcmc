@@ -399,11 +399,11 @@ calclogl <- function(params, x) {
     }
 
     y.loglD <- sum(dnbinom(y.dmorti,
-                           mu=pmax(0.1, state$y.deadi[dstart:dend]),
+                           mu=pmax(0.01, state$y.deadi[dstart:dend]),
                            size=mort_nbinom_size, log=T))
 
     o.loglD <- sum(dnbinom(o.dmorti,
-                           mu=pmax(0.1, state$o.deadi[dstart:dend]),
+                           mu=pmax(0.01, state$o.deadi[dstart:dend]),
                            size=mort_nbinom_size, log=T))
 
     it <<- it + 1
