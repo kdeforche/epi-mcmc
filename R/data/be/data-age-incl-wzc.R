@@ -182,6 +182,20 @@ dev.off()
 plot(all.ifr, type='l')
 points(weekifr$index, weekifr$all.weekifr.x)
 
+#####
+## Estimated number of total infected per age group from IFR:
+#####
+
+g.N <- c(3228894, 2956684, 3080528, 1147009, 690685, 327606)
+g.aggr <- aggregate(be.mort$DEATHS, by=list(group=be.mort$AGEGROUP), FUN=sum, drop=F)
+g.deaths <- g.aggr$x
+g.infected <- g.deaths / g.ifr
+g.pct.infected <- g.infected / g.N * 100
+
+barplot(g.pct.infected ~ g.aggr$group)
+sum(g.infected[1:3]) / sum(g.N[1:3])
+sum(g.infected[4:6]) / sum(g.N[4:6])
+
 ########################
 ## Age group demography 
 ########################
