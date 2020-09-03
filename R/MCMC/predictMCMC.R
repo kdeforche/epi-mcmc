@@ -531,13 +531,14 @@ pdf("current-state-2.pdf", width=12, height=16)
 d6 <- as.numeric(as.Date("2020/12/1") - dstartdate)
 
 plot_start_date <- as.Date("2020/2/15")
-plot_end_date <- as.Date("2020/10/1")
+plot_end_date <- as.Date("2021/1/1")
 
 dates <- data.frame(pos=c(dstartdate + lockdown_offset,
                           dstartdate + lockdown_offset + lockdown_transition_period,
                           dstartdate + d5,
+                          dstartdate + d7,
                           Sys.Date()),
-                    color=c("orange", "red", "orange", "darkgray"))
+                    color=c("orange", "red", "orange", "yellow", "darkgray"))
 
 est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 200, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
@@ -556,14 +557,13 @@ plot_end_date <- Sys.Date()
 
 all_plots(dates)
 
-plot_end_date <- as.Date("2020/11/1")
-
 est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, 300, c(0.05, 0.5, 0.95)))
 colnames(est.died) <- c("q5", "q50", "q95")
 print(est.died[plot_end_date - dstartdate,])
 
 dmortn <- dmort[length(dmort)]
 
+print(paste("Deaths at date, ", plot_end_date))
 print(est.died[plot_end_date - dstartdate,] - dmortn)
 
 ## d6s <- c(as.Date("2020/7/29"),

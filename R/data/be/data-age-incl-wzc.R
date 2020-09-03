@@ -145,7 +145,7 @@ o.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr.o, 
 all.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr, drop=F)
 
 weekifr <- data.frame(y.weekifr$week, y.weekifr$x, o.weekifr$x, all.weekifr$x)
-weekifr$index = seq(3,length(o.dmorti),7)
+weekifr$index = (seq(3,length(o.dmorti) + 7,7))[1:(length(y.weekifr$week))]
 
 m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=6)
 yf <- data.frame(index=seq(1:length(o.dmorti)))
@@ -189,12 +189,13 @@ points(weekifr$index, weekifr$all.weekifr.x)
 g.N <- c(3228894, 2956684, 3080528, 1147009, 690685, 327606)
 g.aggr <- aggregate(be.mort$DEATHS, by=list(group=be.mort$AGEGROUP), FUN=sum, drop=F)
 g.deaths <- g.aggr$x
+print(g.deaths)
 g.infected <- g.deaths / g.ifr
 g.pct.infected <- g.infected / g.N * 100
 
 barplot(g.pct.infected ~ g.aggr$group)
-sum(g.infected[1:3]) / sum(g.N[1:3])
-sum(g.infected[4:6]) / sum(g.N[4:6])
+print(sum(g.infected[1:3]) / sum(g.N[1:3]))
+print(sum(g.infected[4:6]) / sum(g.N[4:6]))
 
 ########################
 ## Age group demography 
