@@ -621,3 +621,35 @@ p7 <- p7 + theme(legend.position = c(0.5, 0.9))
 pdf("Re-groups.pdf", width=6, height=5)
 p7
 dev.off()
+
+y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+
+o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+
+peaki = 10
+print(dstartdate + peaki)
+print("Infected at peak 1 young/old:")
+print(y.est.infected[10,])
+print(o.est.infected[10,])
+nowi = as.numeric(Sys.Date() - dstartdate)
+print("Infected today young/old:")
+print(y.est.infected[nowi,])
+print(o.est.infected[nowi,])
+
+est.dhospi <- data.frame(quantileData(data_sample, function(state, params) { state$y.hospi + state$o.hospi }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+
+est.S <- data.frame(quantileData(data_sample, function(state, params) { state$y.S + state$o.S }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+
+infected = -diff(est.S$X2)
+
+r <- dhospi / infected[1:length(dhospi)] * 100
+
+ds <- dstartdate + (1:length(dhospi) - 1)
+model <- smooth.spline(1:length(dhospi), r, df=10)
+p <- as.numeric(unlist(predict(model, yf)$y))
+
+pdf("testing.pdf", width=6, height=4)
+plot(ds, r, type='l', xlab='Datum', ylab='Gevonden infecties (%)', main="Geïnfecteerden met positieve test (%)")
+lines(ds, p[1:length(ds)], type='l', col='blue')
+abline(v = as.Date("2020/3/17"), col='red')
+dev.off()

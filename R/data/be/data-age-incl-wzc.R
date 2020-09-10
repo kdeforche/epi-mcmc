@@ -97,7 +97,7 @@ o.dmorti <- o.dmorti[1:(length(o.dmorti) - 2)]
 y.dmort <- cumsum(y.dmorti)
 o.dmort <- cumsum(o.dmorti)
 
-par(nrow=3)
+par(mfrow=c(1,3))
 barplot(y.dmorti)
 barplot(o.dmorti)
 barplot(y.dmorti + o.dmorti)
@@ -117,10 +117,9 @@ weekgroup$x[is.na(weekgroup$x)] = 0
 ##g.ifr <- c(0.009604, 0.090175, 0.82025, 3.105, 6.04, 11.7) / 100
 ## Based on "Belgian Covid-19 Mortaility ...", Geert Molenbergs et. al; Table 6
 g.ifr <- c(0.0005, 0.017, 0.21, 2.2, 4.29, 11.8) / 100
-##g.ifr <- c(0.001, 0.017, 0.21, 2.2, 4.29, 11.8) / 100
 
 calcifr.y <- function(x) {
-    x <- x + 0.1 ## As if a multinomial prior
+    x <- x + 0.1 ## As if a multinomial prior, would be better if we do some windowing
 
     y.ifr <- sum(x[1:3]) / sum(x[1:3] / g.ifr[1:3])
     y.ifr
@@ -164,23 +163,27 @@ all.ifr <- as.numeric(unlist(predict(m.ifr, yf)$y))
 ## y.ifr[1:length(slope)] = y.ifr[1:length(slope)] * slope
 ## y.ifr[(length(slope) + 1):length(y.ifr)] = y.ifr[(length(slope) + 1):length(y.ifr)] * (1 - ifr.reduction)
 
-pdf("ifr.pdf", width=10, height=5)
-par(mfrow=c(1,2))
+pdf("ifr.pdf", width=15, height=5)
+par(mfrow=c(1,3))
 x <-seq(dstartdate, dstartdate+length(y.ifr)-1, by=1)
-plot(x, y.ifr * 100, type='l', main="Time profile of Belgian IFR for (<65y)",
+plot(x, y.ifr * 100, type='l', main="Time profile of COVID-19 IFR Belgium (<65y)",
         xlab="Date", ylab="Infection Fatality Rate (%)", ylim=c(0, 0.1))
 points(dstartdate + weekifr$index, weekifr$y.weekifr.x * 100)
 
 ## o.ifr[1:length(slope)] = o.ifr[1:length(slope)] * slope
 ## o.ifr[(length(slope) + 1):length(o.ifr)] = o.ifr[(length(slope) + 1):length(o.ifr)] * (1 - ifr.reduction)
 
-plot(x, o.ifr * 100, type='l', main="Time profile of Belgian IFR (>65y)",
+plot(x, o.ifr * 100, type='l', main="Time profile of COVID-19 IFR Belgium (>65y)",
      xlab="Date", ylab="Infection Fatality Rate (%)", ylim=c(0, 7))
 points(dstartdate + weekifr$index, weekifr$o.weekifr.x * 100)
-dev.off()
 
-plot(all.ifr, type='l')
-points(weekifr$index, weekifr$all.weekifr.x)
+plot(x, all.ifr * 100, type='l', main="Time profile of COVID-19 IFR Belgium (log scale)",
+     xlab="Date", ylab="Infection Fatality Rate (%)", ylim=c(0.02, 2), log="y")
+points(dstartdate + weekifr$index, weekifr$all.weekifr.x * 100)
+
+print(paste(c("Current IFR (%): ", all.ifr[length(all.ifr)-1] * 100)))
+
+dev.off()
 
 #####
 ## Estimated number of total infected per age group from IFR:
