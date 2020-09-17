@@ -13,8 +13,6 @@
 ## r -> inf : poisson
 ## r -> 1 : var ~ mu^2
 ##
-hosp_nbinom_size = 30
-mort_nbinom_size = 90
 
 ####################
 ## Fit library functions
@@ -43,40 +41,41 @@ graphs <- function() {
    
     par(mfrow=c(1,2))
 
-    days <- seq(dstartdate, dstartdate + length(dhosp) + 30, 1)
+    days <- seq(dstartdate, dstartdate + length(dcase) + 30, 1)
 
-    period <- length(state$hospi)
+    period <- length(state$casei)
     len <- period - state$offset + 1
 
     if (state$offset < 1 | len < 2) {
-        plot(days[1:5], state$hospi[1:5], type='l', col='red',
+        plot(days[1:5], state$casei[1:5], type='l', col='red',
              xlab='Date', ylab='Count',
-             main='Cumulative hospitalisations')
-        plot(days[1:5], state$hospi[1:5], type='l', col='red',
+             main='Cumulative cases')
+        plot(days[1:5], state$casei[1:5], type='l', col='red',
              xlab='Date', ylab='Count',
-             main='New hospitalisations and deaths per day')
+             main='New cases and deaths per day')
         return (0)
     }
 
-    plot(days[1:len], state$hosp[state$offset:(state$offset + len - 1)], type='l', col='red',
+    plot(days[1:len], state$case[state$offset:(state$offset + len - 1)], type='l', col='red',
          xlab='Date', ylab='Cumulative count',
-         main='Cumulative hospitalisations and deaths',
+         main='Cumulative cases and deaths',
          log="y")
     lines(days[1:len],state$died[state$offset:(state$offset + len - 1)], type='l', col='blue')
-    points(days[1:length(dhospi)],dhosp,col='red')
+    points(days[1:length(dcasei)],dcase,col='red')
     points(days[1:length(dmort)],dmort,col='blue')
-    legend("topleft", inset=0.02, legend=c("Hospitalisations", "Deaths"),
+    legend("topleft", inset=0.02, legend=c("Cases", "Deaths"),
            col=c("red", "blue"),lty=1)
 
-    plot(days[1:len],state$hospi[state$offset:period], type='l', col='red',
+    plot(days[1:len],state$casei[state$offset:period], type='l', col='red',
          xlab='Date', ylab='Count', ylim=c(0.1, 20000),
-         main='New hospitalisations and deaths per day', log="y")
+         main='New cases, hosps, and deaths per day', log="y")
 
-    if ("y.hospi" %in% names(state)) {
-        lines(days[1:len],state$y.hospi[state$offset:period], type='l', lty=2, col='red')
-        lines(days[1:len],state$o.hospi[state$offset:period], type='l', lty=3, col='red')
+    if ("y.casei" %in% names(state)) {
+        lines(days[1:len],state$y.casei[state$offset:period], type='l', lty=2, col='red')
+        lines(days[1:len],state$o.casei[state$offset:period], type='l', lty=3, col='red')
         lines(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='blue')
         lines(days[1:len],state$o.deadi[state$offset:period], type='l', lty=3, col='blue')
+        lines(days[1:len],(state$y.hospi + state$o.hospi)[state$offset:period], type='l', col='orange')
     } else {
         lines(days[1:len],state$deadi[state$offset:period], type='l', col='blue')
     }
@@ -84,15 +83,16 @@ graphs <- function() {
     if (exists("y.dmorti")) {
         points(days[1:length(dmorti)],y.dmorti,col=c("blue"))
         points(days[1:length(dmorti)],o.dmorti,col=c("blue"))
-        points(days[1:length(dhospi)],y.dhospi,col=c("red"))
-        points(days[1:length(dhospi)],o.dhospi,col=c("red"))
+        points(days[1:length(dcasei)],y.dcasei,col=c("red"))
+        points(days[1:length(dcasei)],o.dcasei,col=c("red"))
+        points(days[1:length(dhospi)],dhospi,col=c("orange"))
     } else {
         points(days[1:length(dmorti)],dmorti,col=c("blue"))
-        points(days[1:length(dhospi)],dhospi,col=c("red"))
+        points(days[1:length(dcasei)],dcasei,col=c("red"))
     }
 
-    legend("topleft", inset=0.02, legend=c("Hospitalisations", "Deaths"),
-	   col=c("red", "blue"),lty=1)
+    legend("topleft", inset=0.02, legend=c("Cases", "Hosp", "Deaths"),
+	   col=c("red", "orange", "blue"),lty=1)
 
     if ("R" %in% names(state)) {
         print(paste("% immune: ", state$R[period]/N))

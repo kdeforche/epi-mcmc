@@ -36,30 +36,30 @@ takeAndPad <- function(data, offset, l)
 }
 
 ##
-## Draws a single model curve for incidence of hospitalisations and/or deaths
+## Draws a single model curve for incidence of cases and/or deaths
 ## 
 graph_daily <- function(state, first, color, last) {
     days <- seq(dstartdate, as.Date("2020/5/1"), 1)
 
-    period <- length(state$hospi)
+    period <- length(state$casei)
     len <- period - state$offset + 1
 
     if (len < 2) {
         return(0)
     }
     
-    hosp_color = color
+    case_color = color
     mort_color = NULL
     if (is.null(color)) {
-        hosp_color = alpha("red", 0.1)
+        case_color = alpha("red", 0.1)
         mort_color = alpha("blue", 0.1)
     }
 
     if (first) {
-        plot(days[1:len],state$hospi[state$offset:period], type='l', col=hosp_color,
+        plot(days[1:len],state$casei[state$offset:period], type='l', col=case_color,
 	     xlab='Date', ylab='Count', ylim=c(0, 800))
     } else {
-        lines(days[1:len],state$hospi[state$offset:period], type='l', col=hosp_color)
+        lines(days[1:len],state$casei[state$offset:period], type='l', col=case_color)
         ## lines(days[1:len],(state$E[state$offset:period] + state$I[state$offset:period])/N,
         ##       type='l', col=alpha("gray", 0.5))
     }
@@ -72,7 +72,7 @@ graph_daily <- function(state, first, color, last) {
         }
     }
     if (last) {
-        lines(days[1:length(dhospi)],dhospi,col=c("black"),type='o')
+        lines(days[1:length(dcasei)],dcasei,col=c("black"),type='o')
     }
 }
 
@@ -82,7 +82,7 @@ graph_daily <- function(state, first, color, last) {
 graph_cum <- function(state, first, color, last) {
     days <- seq(dstartdate, as.Date("2020/8/1"), 1)
 
-    period <- length(state$hospi)
+    period <- length(state$casei)
     len <- period - state$offset + 1
 
     if (len < 2) {
@@ -121,8 +121,8 @@ predict_daily_plot <- function(sample, overlay, color) {
     }
 
     if (!overlay) {
-        title(paste(c(HospLabel, 'and deaths per day')))
-        legend("topleft", inset=0.02, legend=c(HospLabel, "Deaths"),
+        title(paste(c('Cases and deaths per day')))
+        legend("topleft", inset=0.02, legend=c('Cases', "Deaths"),
                col=c("red", "blue"),lty=1)
     }
 }
