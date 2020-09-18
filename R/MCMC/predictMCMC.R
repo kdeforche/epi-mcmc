@@ -235,10 +235,10 @@ all_plots_age <- function(date_markers) {
                               labels = ageGroupLabels)
 
     if (zoom == 1) {
-        p3 <- p3 + coord_cartesian(ylim = c(0, 1500))
+        p3 <- p3 + coord_cartesian(ylim = c(0, 2500))
     } else if (zoom == 2) {
         p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
-                                   ylim = c(0, 1500))
+                                   ylim = c(0, 2500))
     }
 
 
@@ -260,7 +260,7 @@ all_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p3b <- p3b + coord_cartesian(ylim = c(0, 300))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 100))
+        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 200))
     }
 
     ## Add y/o curves

@@ -34,7 +34,7 @@ chains <- 1
 ## })
 
 for (chain in 1:4) {
-  r_mcmc_out <- run_mcmc(data = dhospi,
+  r_mcmc_out <- run_mcmc(data = y.dmorti,
                        df_params = df_params,
                        loglike = calcloglMCMC,
                        logprior = calclogp,
