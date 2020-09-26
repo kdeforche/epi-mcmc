@@ -213,7 +213,7 @@ calculateModel <- function(params, period)
     s2i <- c(s2[1], diff(s2))
     if (data_offset != InvalidDataOffset) {
         ## IFR is based on death, IHR is shifted in time (DL - CL) earlier
-        t1 <- data_offset + round(ydied_latency + ycase_latency)
+        t1 <- data_offset + round(-ydied_latency + ycase_latency)
         t2 <- min(padding + period, t1 + length(y.ifr) - 1)
         if (t1 > padding && t2 > t1) {
             state$y.casei[(padding + 1):t1] = s2i[1:(t1 - padding)] * pmin(1, ycase_rate * y.ifr[1])
@@ -230,15 +230,15 @@ calculateModel <- function(params, period)
     s2i <- c(s2[1], diff(s2))
     if (data_offset != InvalidDataOffset) {
         ## IFR is based on death, IHR is shifted in time (DL - HL) earlier
-        t1 <- data_offset + round(ydied_latency + yhosp_latency)
+        t1 <- data_offset + round(-ydied_latency + yhosp_latency)
         t2 <- min(padding + period, t1 + length(y.ifr) - 1)
         if (t1 > padding && t2 > t1) {
-            state$y.hospi[(padding + 1):t1] = s2i[1:(t1 - padding)] * yhosp_rate * y.ifr[1]
-            state$y.hospi[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * yhosp_rate * y.ifr[1:(t2 - t1 + 1)]
-            state$y.hospi[t2:(padding + period)] = s2i[(t2 - padding):period] * yhosp_rate * y.ifr[length(y.ifr)]
+            state$y.hospi[(padding + 1):t1] = s2i[1:(t1 - padding)] * yhosp_rate * y.hr[1]
+            state$y.hospi[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * yhosp_rate * y.hr[1:(t2 - t1 + 1)]
+            state$y.hospi[t2:(padding + period)] = s2i[(t2 - padding):period] * yhosp_rate * y.hr[length(y.hr)]
         }
     } else {
-        state$y.hospi[(padding + 1):(padding + period)] = s2i * yhosp_rate * y.died_rate
+        state$y.hospi[(padding + 1):(padding + period)] = s2i * yhosp_rate * y.hr[1]
     }
 
     ## y.dead
@@ -261,7 +261,7 @@ calculateModel <- function(params, period)
     s2 <- o.N - convolute(state$o.S, padding + 1, padding + period, o.case_cv_profile)
     s2i <- c(s2[1], diff(s2))
     if (data_offset != InvalidDataOffset) {
-        t1 <- data_offset + round(ydied_latency + ocase_latency)
+        t1 <- data_offset + round(-ydied_latency + ocase_latency)
         t2 <- min(padding + period, t1 + length(o.ifr) - 1)
         if (t1 > padding && t2 > t1) {
             state$o.casei[(padding + 1):t1] = s2i[1:(t1 - padding)] * pmin(1, ocase_rate * o.ifr[1])
@@ -277,15 +277,15 @@ calculateModel <- function(params, period)
     s2 <- o.N - convolute(state$o.S, padding + 1, padding + period, o.hosp_cv_profile)
     s2i <- c(s2[1], diff(s2))
     if (data_offset != InvalidDataOffset) {
-        t1 <- data_offset + round(ydied_latency + ohosp_latency)
+        t1 <- data_offset + round(-ydied_latency + ohosp_latency)
         t2 <- min(padding + period, t1 + length(o.ifr) - 1)
         if (t1 > padding && t2 > t1) {
-            state$o.hospi[(padding + 1):t1] = s2i[1:(t1 - padding)] * ohosp_rate * o.ifr[1]
-            state$o.hospi[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * ohosp_rate * o.ifr[1:(t2 - t1 + 1)]
-            state$o.hospi[t2:(padding + period)] = s2i[(t2 - padding):period] * ohosp_rate * o.ifr[length(o.ifr)]
+            state$o.hospi[(padding + 1):t1] = s2i[1:(t1 - padding)] * ohosp_rate * o.hr[1]
+            state$o.hospi[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * ohosp_rate * o.hr[1:(t2 - t1 + 1)]
+            state$o.hospi[t2:(padding + period)] = s2i[(t2 - padding):period] * ohosp_rate * o.hr[length(o.hr)]
         }
     } else {
-        state$o.hospi[(padding + 1):(padding + period)] = s2i * ohosp_rate * o.died_rate
+        state$o.hospi[(padding + 1):(padding + period)] = s2i * ohosp_rate * o.hr[1]
     }
 
     ## o.dead
@@ -546,14 +546,14 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t4o", "betay4", "betao4", "betayo4",
                     "t6o", "betay6", "betao6", "betayo6",
                     "fy7", "fo7", "fyo7")
-keyparamnames <- c("betay6", "betao6", "betayo6", "fy7", "fo7", "fo7")
+keyparamnames <- c("betay6", "betao6", "betayo6", "fy7", "fo7", "fyo7")
 fitkeyparamnames <- keyparamnames
 
 init <- c(3.6 * gamma, 3.6 * gamma, 3.6 * gamma,
           2.0 * gamma, 2.0 * gamma, 2.0 * gamma,
           0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          100, 10, 10, 10, 21,
-          20, 10, 10, 10, 21,
+          100, 10, 1, 10, 21,
+          20, 10, 1, 10, 21,
           total_deaths_at_lockdown, -1, 5, 5, 5,
           d3 - lockdown_offset - lockdown_transition_period,
           d4 - d3, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
@@ -566,22 +566,22 @@ df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 2 * gamma, 2 * gamma,
                                 1 * gamma, 1 * gamma, 1 * gamma,
                                 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
-                                3, 3, 1, 3, 10,
-                                3, 3, 1, 3, 10,
+                                3, 3, 0.5, 3, 10,
+                                3, 3, 0.5, 3, 10,
                                 0, -30, 2, 2, 2,
                                 60,
                                 10, 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
                                 3, 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
-                                1, 0.5, 0.5),
+                                1, 1, 1),
                         max = c(8 * gamma, 8 * gamma, 8 * gamma,
                                 5 * gamma, 5 * gamma, 5 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
-                                5000, 25, 50, 25, 50,
-                                100, 25, 50, 25, 50,
+                                5000, 25, 2, 25, 50,
+                                100, 25, 2, 25, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30, 9, 9, 9,
                                 90,
                                 50, 3 * gamma, 3 * gamma, 3 * gamma,
                                 12, 1.5 * gamma, 1.5 * gamma, 1.5 * gamma,
-                                2, 1.5, 1.5),
+                                2, 6, 6),
                         init = init)

@@ -276,8 +276,8 @@ calclogp <- function(params) {
     logPriorP <- 0
     
     logPriorP <- logPriorP + dnorm(t0o, mean=0, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o, mean=d3, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o, mean=d4, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o, mean=d3, sd=30, log=T)
+    logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o, mean=d4, sd=30, log=T)
     logPriorP <- logPriorP + dnorm(betay0 - betay1, mean=0, sd=2*gamma, log=T)
     logPriorP <- logPriorP + dnorm(betao0 - betao1, mean=0, sd=2*gamma, log=T)
     logPriorP <- logPriorP + dnorm(betayo0 - betayo1, mean=0, sd=2*gamma, log=T)
@@ -368,8 +368,8 @@ df_params <- data.frame(name = fit.paramnames,
                                 10,
                                 0, -30,
                                 2,
-                                60, 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
-                                10, 0.05 * gamma, 0.01 * gamma, 0.01 * gamma),
+                                50, 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
+                                60, 0.05 * gamma, 0.01 * gamma, 0.01 * gamma),
                         max = c(8 * gamma, 8 * gamma, 8 * gamma,
                                 5 * gamma, 5 * gamma, 5 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
@@ -378,8 +378,8 @@ df_params <- data.frame(name = fit.paramnames,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30,
                                 9,
-                                90, 3 * gamma, 3 * gamma, 3 * gamma,
-                                50, 3 * gamma, 3 * gamma, 3 * gamma),
+                                100, 3 * gamma, 3 * gamma, 3 * gamma,
+                                120, 3 * gamma, 3 * gamma, 3 * gamma),
                         init = init)
 
 print(df_params)

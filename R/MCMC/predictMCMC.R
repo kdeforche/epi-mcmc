@@ -235,15 +235,144 @@ all_plots_age <- function(date_markers) {
                               labels = ageGroupLabels)
 
     if (zoom == 1) {
-        p3 <- p3 + coord_cartesian(ylim = c(0, 2500))
+        p3 <- p3 + coord_cartesian(ylim = c(0, 4000))
     } else if (zoom == 2) {
         p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
-                                   ylim = c(0, 2500))
+                                   ylim = c(0, 4000))
     }
 
 
     # p3 <- p3 + scale_y_continuous(limits=c(0, 2500))
 
+    ## Plot 3b : daily hospitalisations
+
+    p3b <- makePlot(data_sample, dateRange,
+                    function(state, params) { state$y.hospi + state$o.hospi }, "#581845",
+                    c("Count", "Hospitalisations"), date_markers, 'solid')
+
+    start <- as.numeric(dstartdate - dateRange[1])
+   
+    dm3b <- numeric(length(p3b$data$x))
+    dm3b[1:length(p3b$data$x)] = NA
+    dm3b[(start + 1):(start + length(dhospi))] = dhospi
+    p3b <- p3b + geom_line(aes(y = dm3b), size=0.1) + geom_point(aes(y = dm3b),  size=0.25, color="#581845")
+
+    if (zoom == 1) {
+        p3b <- p3b + coord_cartesian(ylim = c(0, 300))
+    } else if (zoom == 2) {
+        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 200))
+    }
+
+    ## Add y/o curves
+    p3b <- addExtraPlot(p3b, data_sample, dateRange, function(state, params) { state$y.hospi }, "#581845", "dashed")
+    p3b <- addExtraPlot(p3b, data_sample, dateRange, function(state, params) { state$o.hospi }, "#581845", "dotted")
+
+    p3b <- p3b + scale_colour_manual(values = c("#581845"), guide=FALSE) +
+        scale_linetype_manual(name = 'Age group',
+                              values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
+                              labels = ageGroupLabels)
+    
+    ## Plot 4 : infected people
+    
+    p4 <- makePlot(data_sample, dateRange,
+                   function(state, params) { (state$y.E + state$y.I + state$o.E + state$o.I)/N * 100 },
+                   "#A67514", c("Population group (%)", "Infected people"), date_markers, 'solid')
+
+    if (zoom == 1) {
+        p4 <- p4 + coord_cartesian(ylim = c(0, 3))
+    } else if (zoom == 2) {
+        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+                                   ylim = c(0, 3))
+    }
+
+
+    ## Add y/o curves
+    p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$y.E + state$y.I)/y.N * 100 }, "#A67514", "dashed")
+    p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$o.E + state$o.I)/o.N * 100 }, "#A67514", "dotted")
+
+    p4 <- p4 + scale_colour_manual(values = c("#A67514"), guide=FALSE) +
+        scale_linetype_manual(name = 'Age group',
+                              values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
+                              labels = ageGroupLabels)
+    
+    ## Plot 5 : recovered people
+
+    p5 <- makePlot(data_sample, dateRange,
+                   function(state, params) { (state$y.R + state$o.R)/N * 100 }, "#33CC66",
+                   c("Population group (%)", "Recovered from disease"), date_markers, 'solid')
+    p5 <- p5 + theme(legend.position = c(0.2, 0.85))
+
+    ## Add y/o curves
+    p5 <- addExtraPlot(p5, data_sample, dateRange, function(state, params) { state$y.R/y.N * 100 }, "#33CC66", "dashed")
+    p5 <- addExtraPlot(p5, data_sample, dateRange, function(state, params) { state$o.R/o.N * 100 }, "#33CC66", "dotted")
+
+    p5 <- p5 + scale_colour_manual(values = c("#33CC66"), guide=FALSE) +
+        scale_linetype_manual(name = 'Age group',
+                              values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
+                              labels = ageGroupLabels)
+
+    p6 <- makePlot(data_sample, dateRange,
+                   function(state, params) { state$Re }, "#33FFFF",
+                   c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
+
+    if (zoom == 1) {
+        p6 <- p6 + coord_cartesian(ylim = c(0, 2))
+    } else if (zoom == 2) {
+        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+                                   ylim = c(0, 2))
+    } else {
+        p6 <- p6 + coord_cartesian(ylim = c(0, NA))
+    }
+
+    p6 <- p6 +  geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
+
+    
+    ##grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
+    grid.arrange(p1, p3b, p3, p4, p6, p5, nrow=2)
+}
+
+death_hosp_plots_age <- function(date_markers) {
+    dateRange <- c(plot_start_date, plot_end_date)
+
+    ageGroupLabels = c('< 65y','>= 65y','All (50%, 90% cri)')
+
+    ## Plot 1 : daily deaths
+
+    p1 <- makePlot(data_sample, dateRange,
+                   function(state, params) { state$y.deadi + state$o.deadi }, "#3366FF",
+                   c("Count", "Deaths"), date_markers, 'solid')
+
+    start <- as.numeric(dstartdate - dateRange[1])
+
+    if (zoom == 1) {
+        p1 <- p1 + coord_cartesian(ylim = c(0, 50))
+    } else if (zoom == 2) {
+        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 50))
+    }
+
+    ## Add y curves
+    p1 <- addExtraPlot(p1, data_sample, dateRange, function(state, params) { state$y.deadi }, "#3366FF", "dashed")
+
+    dm1y <- numeric(length(p1$data$x))
+    dm1y[1:length(p1$data$x)] = NA
+    dm1y[(start + 1):(start + length(y.dmorti))] = y.dmorti
+    
+    p1 <- p1 + geom_line(aes(y = dm1y), linetype="dashed", size=0.1) + geom_point(aes(y = dm1y), size=0.25, color="#1144CC")
+
+    ## Add o curves
+    p1 <- addExtraPlot(p1, data_sample, dateRange, function(state, params) { state$o.deadi }, "#3366FF", "dotted")
+
+    dm1o <- numeric(length(p1$data$x))
+    dm1o[1:length(p1$data$x)] = NA
+    dm1o[(start + 1):(start + length(o.dmorti))] = o.dmorti
+
+    p1 <- p1 + geom_line(aes(y = dm1o), linetype="dotted", size=0.1) + geom_point(aes(y = dm1o),  size=0.25, color="#1144CC")
+
+    p1 <- p1 + scale_colour_manual(values = c("#3366FF"), guide=FALSE) +
+        scale_linetype_manual(name = 'Age group',
+                              values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
+                              labels = ageGroupLabels)
+    
     ## Plot 3b : daily hospitalisations
 
     p3b <- makePlot(data_sample, dateRange,
@@ -327,8 +456,7 @@ all_plots_age <- function(date_markers) {
     p6 <- p6 +  geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
 
     
-    ##grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
-    grid.arrange(p1, p3b, p3, p4, p6, p5, nrow=2)
+    grid.arrange(p1, p3b, p4, p6, p5, nrow=2)
 }
 
 all_plots_age3 <- function(dates) {
@@ -567,26 +695,32 @@ source("settings.R")
 quantilePlotSampleSize <- 500
 data_sample <- readSample()
 
-
 ## Configure this depending on the model
 all_plots <- all_plots_age
+##all_plots <- death_hosp_plots_age
 
 pdf("current-state-2.pdf", width=20, height=10)
 
 ## No d6
 d6 <- as.numeric(as.Date("2020/12/1") - dstartdate)
 
-plot_start_date <- as.Date("2020/2/15")
+plot_start_date <- as.Date("2020/2/13")
 plot_end_date <- as.Date("2021/1/1")
 
-dates <- data.frame(pos=c(dstartdate + lockdown_offset,
-                          dstartdate + lockdown_offset + lockdown_transition_period,
-                          dstartdate + d5,
-                          dstartdate + d7,
-                          Sys.Date()),
-                    color=c("orange", "red", "orange", "yellow", "darkgray"))
+date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
+                                 dstartdate + lockdown_offset + lockdown_transition_period,
+                                 Sys.Date()),
+                           color=c("orange", "red", "darkgray"))
 
-est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 200, c(0.05, 0.5, 0.95)))
+## date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
+##                                  dstartdate + lockdown_offset + lockdown_transition_period,
+##                                  dstartdate + d5,
+##                                  dstartdate + d7,
+##                                  Sys.Date()),
+##                            color=c("orange", "red", "orange", "yellow", "darkgray"))
+dates <- date_markers
+
+est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 250, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
 
 print(c(est.Re[Sys.Date() - dstartdate,]))
@@ -605,7 +739,7 @@ all_plots(dates)
 
 plot_end_date <- as.Date("2021/1/1")
 
-est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, 300, c(0.05, 0.5, 0.95)))
+est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, 400, c(0.05, 0.5, 0.95)))
 colnames(est.died) <- c("q5", "q50", "q95")
 print(est.died[plot_end_date - dstartdate,])
 
@@ -670,9 +804,9 @@ pdf("Re-groups.pdf", width=6, height=5)
 p7
 dev.off()
 
-y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 250, c(0.05, 0.5, 0.95)))
 
-o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 250, c(0.05, 0.5, 0.95)))
 
 peaki = 10
 print(dstartdate + peaki)
@@ -684,9 +818,9 @@ print("Infected today young/old:")
 print(y.est.infected[nowi,])
 print(o.est.infected[nowi,])
 
-est.dcasei <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.dcasei <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + 250, c(0.05, 0.5, 0.95)))
 
-est.S <- data.frame(quantileData(data_sample, function(state, params) { state$y.S + state$o.S }, 0, lockdown_offset + 200, c(0.05, 0.5, 0.95)))
+est.S <- data.frame(quantileData(data_sample, function(state, params) { state$y.S + state$o.S }, 0, lockdown_offset + 250, c(0.05, 0.5, 0.95)))
 
 infected = -diff(est.S$X2)
 
@@ -697,7 +831,7 @@ model <- smooth.spline(1:length(dcasei), r, df=10)
 p <- as.numeric(unlist(predict(model, yf)$y))
 
 pdf("testing.pdf", width=6, height=4)
-plot(ds, r, type='l', xlab='Datum', ylab='Gevonden infecties (%)', main="Geïnfecteerden met positieve test (%)")
+plot(ds, r, type='l', xlab='Date', ylab='Diagnosed infections (%)', main="Diagnosed infections using PCR")
 lines(ds, p[1:length(ds)], type='l', col='blue')
 abline(v = as.Date("2020/3/17"), col='red')
 dev.off()

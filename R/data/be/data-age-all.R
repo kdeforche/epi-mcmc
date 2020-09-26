@@ -121,7 +121,13 @@ g.ifr <- c(0.0005, 0.017, 0.21, 2.2, 4.29, 11.8) / 100
 calcifr.y <- function(x) {
     x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
 
+    if (i > (as.Date("2020-08-01") - dstartdate)) {
+        x <- x + 3 * ifr_epsilon
+    }
+    i <<- i + 7
+    
     y.ifr <- sum(x[1:3]) / sum(x[1:3] / g.ifr[1:3])
+
     y.ifr
 }   
 
@@ -135,12 +141,19 @@ calcifr.o <- function(x) {
 calcifr <- function(x) {
     x <- x + ifr_epsilon  ## As if a multinomial prior
 
+    if (i > (as.Date("2020-08-01") - dstartdate)) {
+        x[1:3] <- x[1:3] + 3 * ifr_epsilon
+    }
+    i <<- i + 7
+
     ifr <- sum(x) / sum(x / g.ifr)
     ifr
 }   
 
+i <<- 1
 y.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr.y, drop=F)
 o.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr.o, drop=F)
+i <<- 1
 all.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr, drop=F)
 
 weekifr <- data.frame(y.weekifr$week, y.weekifr$x, o.weekifr$x, all.weekifr$x)
@@ -184,6 +197,114 @@ points(dstartdate + weekifr$index, weekifr$all.weekifr.x * 100)
 print(paste(c("Current IFR (%): ", all.ifr[length(all.ifr)-1] * 100)))
 
 dev.off()
+
+### HR
+### Statistics for Belgium  up to June 14
+### https://covid-19.sciensano.be/sites/default/files/Covid19/COVID-19_THEMATIC%20REPORT_COVID-19%20HOSPITALISED%20PATIENTS_NL.pdf
+###
+hosppct.10 <- c(1.2, 0.5, 2.1, 4.1, 8.0, 15.0, 17.0, 20.7, 24.1, 7.3)
+hosppct.6 <- c(1.2 + 0.5 + 2.1/2, 2.1/2 + 4.1 + 8/2, 8/2 + 15 + 17/2, 17/2 + 20.7/2, 20.7/2 + 24.1/2, 24.1/2 + 7.3) * 15139 / 100
+
+mortaggr.2 = aggregate(be.mort$DEATHS, by=list(group=be.mort$AGEGROUP, date=be.mort$DATE), FUN=sum, drop=FALSE)
+mortaggr.2$x[is.na(mortaggr.2$x)] = 0
+mortaggr.3 <- subset(mortaggr.2, as.Date(date) < as.Date("2020-06-14"))
+
+mort.june14 <- aggregate(mortaggr.3$x, by=list(group=mortaggr.3$group), FUN=sum, drop=FALSE)
+
+g.hr <- hosppct.6 / (mort.june14$x / g.ifr)
+g.hr / g.ifr
+
+require(ggplot2)
+require(reshape2)
+
+rates <- data.frame(group = levels(be.mort$AGEGROUP), hr = g.hr * 100, ifr = g.ifr * 100)
+rates.1 <- melt(rates, id.vars = c("group"), value.name="value")
+rates.1$variable = as.character(rates.1$variable)
+rates.1$variable[rates.1$variable=="hr"] = "Hospitalization rate (HR)"
+rates.1$variable[rates.1$variable=="ifr"] = "Infection fatality rate (IFR)"
+pdf("hrifr.pdf", width=6, height=3)
+ggplot(data=rates.1, aes(x=group, y=value, fill=variable)) + geom_bar(stat="identity", position=position_dodge()) + scale_fill_discrete(name = "") + xlab("Age group") + ylab("Rate (%)")
+dev.off()
+
+calchr.y <- function(x) {
+    x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
+
+    if (i > (as.Date("2020-08-01") - dstartdate)) {
+        x <- x + 3 * ifr_epsilon
+    }
+    i <<- i + 7
+
+    inf <- x[1:3] / g.ifr[1:3]
+    hosp <- g.hr[1:3] * inf
+    
+    y.hr <- sum(hosp) / sum(inf)
+
+    y.hr
+}   
+
+calchr.o <- function(x) {
+    x <- x + ifr_epsilon ## As if a multinomial prior
+
+    inf <- x[4:6] / g.ifr[4:6]
+    hosp <- g.hr[4:6] * inf
+
+    o.hr <- sum(hosp) / sum(inf)
+    o.hr
+}   
+
+calchr <- function(x) {
+    x <- x + ifr_epsilon  ## As if a multinomial prior
+
+    if (i > (as.Date("2020-08-01") - dstartdate)) {
+        x[1:3] <- x[1:3] + 3 * ifr_epsilon
+    }
+    i <<- i + 7
+    
+    inf <- x / g.ifr
+    hosp <- g.hr * inf
+
+    hr <- sum(hosp) / sum(inf)
+    hr
+}   
+
+i <<- 1
+y.weekhr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calchr.y, drop=F)
+o.weekhr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calchr.o, drop=F)
+i <<- 1
+all.weekhr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calchr, drop=F)
+
+weekhr <- data.frame(y.weekhr$week, y.weekhr$x, o.weekhr$x, all.weekhr$x)
+weekhr$index = (seq(3,length(o.dmorti) + 7,7))[1:(length(y.weekhr$week))]
+
+m.yhr <- smooth.spline(weekhr$index, weekhr$y.weekhr.x, df=5)
+yf <- data.frame(index=seq(1:length(o.dmorti)))
+y.hr <- as.numeric(unlist(predict(m.yhr, yf)$y))
+
+m.ohr <- smooth.spline(weekhr$index, weekhr$o.weekhr.x, df=3)
+o.hr <- as.numeric(unlist(predict(m.ohr, yf)$y))
+
+m.hr <- smooth.spline(weekhr$index, weekhr$all.weekhr.x, df=4)
+all.hr <- as.numeric(unlist(predict(m.hr, yf)$y))
+
+pdf("hr.pdf", width=15, height=5)
+par(mfrow=c(1,3))
+x <-seq(dstartdate, dstartdate+length(y.hr)-1, by=1)
+plot(x, y.hr * 100, type='l', main="Time profile of COVID-19 HR Belgium (<65y)",
+        xlab="Date", ylab="Hospitalization Rate (%)", ylim=c(0, 1))
+points(dstartdate + weekhr$index, weekhr$y.weekhr.x * 100)
+
+plot(x, o.hr * 100, type='l', main="Time profile of COVID-19 HR Belgium (>65y)",
+     xlab="Date", ylab="Hospitalization Rate (%)", ylim=c(0, 10))
+points(dstartdate + weekhr$index, weekhr$o.weekhr.x * 100)
+
+plot(x, all.hr * 100, type='l', main="Time profile of COVID-19 HR Belgium (log scale)",
+     xlab="Date", ylab="Hospitalization Rate (%)", log="y", ylim=c(0.1, 10))
+points(dstartdate + weekhr$index, weekhr$all.weekhr.x * 100)
+
+print(paste(c("Current HR (%): ", all.hr[length(all.hr)-1] * 100)))
+
+dev.off()
+
 
 #####
 ## Estimated number of total infected per age group from IFR:

@@ -104,42 +104,46 @@ graphs <- function() {
     print(paste("offset: ", state$offset - state$padding))
 }
 	
-## graphs <- function() {
-##     ## only if a device is open already
-##     if (.Device == "null device") {
-##         return(0)
-##     }
+graphs <- function() {
+    ## only if a device is open already
+    if (.Device == "null device") {
+        return(0)
+    }
    
-##     par(mfrow=c(1,2))
+    par(mfrow=c(1,2))
 
-##     days <- seq(dstartdate, dstartdate + length(dmort) + 30, 1)
+    days <- seq(dstartdate, dstartdate + length(dmort) + 30, 1)
 
-##     period <- length(state$y.deadi)
-##     len <- period - state$offset + 1
+    period <- length(state$y.deadi)
+    len <- period - state$offset + 1
 
-##     if (state$offset < 1 | len < 2) {
-##         plot(days[1:5], state$y.deadi[1:5], type='l', col='red',
-##              xlab='Date', ylab='Count',
-##              main='Cumulative deaths')
-##         plot(days[1:5], state$y.deadi[1:5], type='l', col='red',
-##              xlab='Date', ylab='Count',
-##              main='New cases and deaths per day')
-##         return (0)
-##     }
+    if (state$offset < 1 | len < 2) {
+        plot(days[1:5], state$y.deadi[1:5], type='l', col='red',
+             xlab='Date', ylab='Count',
+             main='Cumulative deaths')
+        plot(days[1:5], state$y.deadi[1:5], type='l', col='red',
+             xlab='Date', ylab='Count',
+             main='New cases and deaths per day')
+        return (0)
+    }
 
-##     plot(days[1:len], state$died[state$offset:(state$offset + len - 1)], type='l', col='blue',
-##          xlab='Date', ylab='Cumulative count',
-##          main='Cumulative cases and deaths',
-##          log="y")
-##     points(days[1:length(dmort)],dmort,col='blue')
+    plot(days[1:len], state$died[state$offset:(state$offset + len - 1)], type='l', col='blue',
+         xlab='Date', ylab='Cumulative count',
+         main='Cumulative cases and deaths',
+         ylim=c(10, 1E6),
+         log="y")
+    points(days[1:length(dmort)],dmort,col='blue')
 
-##     plot(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='blue',
-##          xlab='Date', ylab='Count', ylim=c(0.1, 20000),
-##          main='New deaths per day', log="y")
+    plot(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='blue',
+         xlab='Date', ylab='Count', ylim=c(0.1, 20000),
+         main='New deaths per day', log="y")
 
-##      lines(days[1:len],state$o.deadi[state$offset:period], type='l', lty=3, col='blue')
+    lines(days[1:len],state$o.deadi[state$offset:period], type='l', lty=3, col='blue')
+    lines(days[1:len],(state$y.hospi + state$o.hospi)[state$offset:period], type='l', col='orange')
+    lines(days[1:len],(state$y.hospi)[state$offset:period], type='l', lty=2, col='orange')
+    lines(days[1:len],(state$o.hospi)[state$offset:period], type='l', lty=3, col='orange')
 
-##     points(days[1:length(dmorti)],y.dmorti,col=c("blue"))
-##     points(days[1:length(dmorti)],o.dmorti,col=c("blue"))
-## }
-	
+    points(days[1:length(dmorti)],y.dmorti,col=c("blue"))
+    points(days[1:length(dmorti)],o.dmorti,col=c("blue"))
+    points(days[1:length(dhospi)],dhospi,col=c("orange"))
+}
