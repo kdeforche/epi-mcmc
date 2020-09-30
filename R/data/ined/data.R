@@ -1,6 +1,6 @@
 print(c("Country:", country3))
 
-ined <- read.csv("covid_pooled_01_09.csv")
+ined <- read.csv("covid_pooled_22_09.csv")
 
 country.data <- subset(ined, country_code==country3)
 

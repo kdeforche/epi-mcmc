@@ -74,3 +74,4 @@ d7 <- as.numeric(as.Date("2020/9/1") - dstartdate)
 d8 <- as.numeric(as.Date("2020/10/1") - dstartdate)
 
 d.reliable.cases <- as.numeric(as.Date("2020/8/1") - dstartdate)
+d.reliable.hosp <- as.numeric(as.Date("2020/6/1") - dstartdate)

@@ -121,13 +121,12 @@ g.ifr <- c(0.0005, 0.017, 0.21, 2.2, 4.29, 11.8) / 100
 calcifr.y <- function(x) {
     x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
 
-    if (i > (as.Date("2020-08-01") - dstartdate)) {
-        x <- x + 3 * ifr_epsilon
-    }
+    if (i > (as.Date("2020-08-15") - dstartdate)) {
+        x <- x + 2 * ifr_epsilon
+     }
     i <<- i + 7
     
     y.ifr <- sum(x[1:3]) / sum(x[1:3] / g.ifr[1:3])
-
     y.ifr
 }   
 
@@ -141,8 +140,8 @@ calcifr.o <- function(x) {
 calcifr <- function(x) {
     x <- x + ifr_epsilon  ## As if a multinomial prior
 
-    if (i > (as.Date("2020-08-01") - dstartdate)) {
-        x[1:3] <- x[1:3] + 3 * ifr_epsilon
+    if (i > (as.Date("2020-08-15") - dstartdate)) {
+        x[1:3] <- x[1:3] + 2 * ifr_epsilon
     }
     i <<- i + 7
 
@@ -166,15 +165,8 @@ y.ifr <- as.numeric(unlist(predict(m.yifr, yf)$y))
 m.oifr <- smooth.spline(weekifr$index, weekifr$o.weekifr.x, df=3)
 o.ifr <- as.numeric(unlist(predict(m.oifr, yf)$y))
 
-m.ifr <- smooth.spline(weekifr$index, weekifr$all.weekifr.x, df=5)
+m.ifr <- smooth.spline(weekifr$index, weekifr$all.weekifr.x, df=6)
 all.ifr <- as.numeric(unlist(predict(m.ifr, yf)$y))
-
-## ifr.reduction <- 0.3
-## ifr.reduction.offset <- as.numeric(as.Date("2020/6/1") - dstartdate)
-## slope = seq(1, 1 - ifr.reduction, -ifr.reduction / ifr.reduction.offset)
-
-## y.ifr[1:length(slope)] = y.ifr[1:length(slope)] * slope
-## y.ifr[(length(slope) + 1):length(y.ifr)] = y.ifr[(length(slope) + 1):length(y.ifr)] * (1 - ifr.reduction)
 
 pdf("ifr.pdf", width=15, height=5)
 par(mfrow=c(1,3))
@@ -182,9 +174,6 @@ x <-seq(dstartdate, dstartdate+length(y.ifr)-1, by=1)
 plot(x, y.ifr * 100, type='l', main="Time profile of COVID-19 IFR Belgium (<65y)",
         xlab="Date", ylab="Infection Fatality Rate (%)", ylim=c(0, 0.1))
 points(dstartdate + weekifr$index, weekifr$y.weekifr.x * 100)
-
-## o.ifr[1:length(slope)] = o.ifr[1:length(slope)] * slope
-## o.ifr[(length(slope) + 1):length(o.ifr)] = o.ifr[(length(slope) + 1):length(o.ifr)] * (1 - ifr.reduction)
 
 plot(x, o.ifr * 100, type='l', main="Time profile of COVID-19 IFR Belgium (>65y)",
      xlab="Date", ylab="Infection Fatality Rate (%)", ylim=c(0, 7))
@@ -229,8 +218,8 @@ dev.off()
 calchr.y <- function(x) {
     x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
 
-    if (i > (as.Date("2020-08-01") - dstartdate)) {
-        x <- x + 3 * ifr_epsilon
+    if (i > (as.Date("2020-08-15") - dstartdate)) {
+         x <- x + 2 * ifr_epsilon
     }
     i <<- i + 7
 
@@ -255,8 +244,8 @@ calchr.o <- function(x) {
 calchr <- function(x) {
     x <- x + ifr_epsilon  ## As if a multinomial prior
 
-    if (i > (as.Date("2020-08-01") - dstartdate)) {
-        x[1:3] <- x[1:3] + 3 * ifr_epsilon
+    if (i > (as.Date("2020-08-15") - dstartdate)) {
+         x[1:3] <- x[1:3] + 2 * ifr_epsilon
     }
     i <<- i + 7
     
@@ -327,3 +316,23 @@ print(sum(g.infected[4:6]) / sum(g.N[4:6]))
 
 y.N <- 8.55E6
 o.N <- N - y.N
+
+###################
+##
+###################
+
+glogis <- function(t, A, K, C, Q, B, M, v) {
+    A + (K - A)/((C + Q * exp(-B * (t - M)))^(1/v))
+}
+
+vs <- 1:length(y.ifr)
+
+g <- glogis(vs, 0, 1, 1, 0.5, 0.1, 170, 0.5)
+##g <- glogis(vs, 0, 1, 1, 0.5, 0.05, 140, 0.5)
+
+plot(x, y.ifr, type='l', ylim=c(0, 1E-3))
+points(x, y.ifr * (1 - 0.5 * g))
+
+##g1 <- glogis(vs, 0, 1, 1, 0.5, 0.05, 70, 0.5)
+##plot(x, o.hr, type='l', ylim=c(0, 0.3))
+## o.hr <- o.hr * (1 + 3 * g1)

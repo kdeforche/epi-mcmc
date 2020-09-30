@@ -17,6 +17,85 @@ sourceR <- function(file) {
 sourceR("lib/libMCMC.R")
 sourceR("lib/libfit.R")
 
+###
+## IFR and age profile
+###
+
+## Levin et. al. Assessing the Age Specificity of Infection Fatality Rates for COVID-19: Systematic Review, Meta-Analysis, and Public Policy Implications
+ifr.from.age <- function(age) {
+    exp(-7.53 + 0.119 * age)
+}
+
+age.from.ifr <- function(ifr) {
+    (log(ifr) + 7.53) / 0.119
+}
+
+ifr.from.agepop <- function(age.mean, age.sd) {
+    a <- rnorm(1000000, mean=age.mean, sd=age.sd)
+    pos.a <- a[a > 0]
+    mean(ifr.from.age(a))
+}
+
+ifragepops <- function() {
+    ifrs <- c()
+    ages <- seq(10, 50, 1)
+    for (a in ages) {
+        ifrs <- c(ifrs, ifr.from.agepop(a, a/2))
+    }
+    data.frame(age=ages, ifr=ifrs)
+}
+
+ifragepop <- ifragepops()
+ageifrm <- lm(ifragepop$age ~ log(ifragepop$ifr))
+
+agepop.from.ifr <- function(ifr) {
+    a <- ageifrm$coefficients[1]
+    b <- ageifrm$coefficients[2]
+
+    a + b * log(ifr)
+}
+
+est.ifr.1 <- function(state, params) {
+    y.i = -diff(state$y.S)
+    y.l <- round(params[14] + rnorm(1, 0, 2))
+    o.i = -diff(state$o.S)
+    o.l <- round(params[19] + rnorm(1, 0, 2)) 
+
+    (c(state$y.deadi[(y.l+1):length(y.i)], rep(0, y.l)) + c(state$o.deadi[(o.l+1):length(o.i)], rep(0, o.l))) / (y.i + o.i) * 100
+}
+
+est.ifr <- function(state, params) {
+    fyifr = params[37]
+    
+    y.i = -diff(state$y.S)
+    L = length(y.i)
+    gyifr <- y.ifr * (1 + fyifr * g)
+    t1 <- state$offset
+    t2 <- min(L, t1 + length(gyifr) - 1)
+    ydead <- rep(0, L)
+    ydead[1:t1] = y.i[1:t1] * gyifr[1]
+    ydead[t1:t2] = y.i[t1:t2] * gyifr[1:(t2 - t1 + 1)]
+    ydead[t2:L] = y.i[t2:L] * gyifr[length(gyifr)]
+
+    o.i = -diff(state$o.S)
+    L = length(o.i)
+    goifr <- o.ifr
+    t1 <- state$offset
+    t2 <- min(L, t1 + length(goifr) - 1)
+    odead <- rep(0, L)
+    odead[1:t1] = o.i[1:t1] * goifr[1]
+    odead[t1:t2] = o.i[t1:t2] * goifr[1:(t2 - t1 + 1)]
+    odead[t2:L] = o.i[t2:L] * goifr[length(goifr)]
+
+    (ydead + odead) / (y.i + o.i) * 100
+}
+
+est.age <- function(state, params) {
+    ifr <- est.ifr(state, params)
+    age <- agepop.from.ifr(ifr)
+    age
+}
+
 DIC <- function(posterior1) {
   draw = posterior1
 
@@ -326,9 +405,26 @@ all_plots_age <- function(date_markers) {
 
     p6 <- p6 +  geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
 
+    pifr <- makePlot(data_sample, dateRange, est.ifr,
+                     "#333333", c("IFR (%)", "Infection fatality rate of infected population"), dates, 'solid')
+    pifr <- pifr + theme(legend.position = "none")
+
+    page <- makePlot(data_sample, dateRange, est.age,
+                     "#66CC66", c("Mean age", "Mean age of infected population"), dates, 'solid')
+    page <- page + theme(legend.position = "none")
+
+    if (zoom == 2) {
+        pifr <- pifr + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+                                       ylim = c(0, 0.5))
+        page <- page + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+                                       ylim = c(0, 50))
+    } else {
+        pifr <- pifr + coord_cartesian(ylim = c(0, 1.5))
+        page <- page + coord_cartesian(ylim = c(0, 50))
+    }
     
     ##grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
-    grid.arrange(p1, p3b, p3, p4, p6, p5, nrow=2)
+    grid.arrange(p1, p3b, p3, p4, p6, p5, pifr, page, nrow=2)
 }
 
 death_hosp_plots_age <- function(date_markers) {
@@ -680,7 +776,7 @@ readSample <- function() {
 
     selection <- 1:dim(posterior)[1]
     scount <- length(selection)
-    draws <- sample(floor(scount/8):scount, quantilePlotSampleSize)
+    draws <- sample(1:scount, min(scount, quantilePlotSampleSize))
     data_sample <- posterior[selection[draws],]
 
     data_sample
@@ -699,7 +795,7 @@ data_sample <- readSample()
 all_plots <- all_plots_age
 ##all_plots <- death_hosp_plots_age
 
-pdf("current-state-2.pdf", width=20, height=10)
+pdf("current-state-2.pdf", width=25, height=10)
 
 ## No d6
 d6 <- as.numeric(as.Date("2020/12/1") - dstartdate)
