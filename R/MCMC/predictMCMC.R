@@ -795,8 +795,6 @@ data_sample <- readSample()
 all_plots <- all_plots_age
 ##all_plots <- death_hosp_plots_age
 
-pdf("current-state-2.pdf", width=25, height=10)
-
 ## No d6
 d6 <- as.numeric(as.Date("2020/12/1") - dstartdate)
 
@@ -820,6 +818,8 @@ est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$R
 colnames(est.Re) <- c("q5", "q50", "q95")
 
 print(c(est.Re[Sys.Date() - dstartdate,]))
+
+pdf("current-state-2.pdf", width=25, height=10)
 
 zoom <- 1
 all_plots(dates)
@@ -914,20 +914,36 @@ print("Infected today young/old:")
 print(y.est.infected[nowi,])
 print(o.est.infected[nowi,])
 
-est.dcasei <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + 250, c(0.05, 0.5, 0.95)))
+est.tr <- function(state, params) {
+    ycase_latency <- ocase_latency <- 12
+    y.i = -diff(state$y.S)
+    o.i = -diff(state$o.S)
 
-est.S <- data.frame(quantileData(data_sample, function(state, params) { state$y.S + state$o.S }, 0, lockdown_offset + 250, c(0.05, 0.5, 0.95)))
+    t1 <- state$offset
+    L <- length(y.dcasei)
 
-infected = -diff(est.S$X2)
+    result <- rep(NA, length(y.i))
 
-r <- dcasei / infected[1:length(dcasei)] * 100
+    d1 <- (y.dcasei + o.dcasei) /
+        (y.i[(t1 - ycase_latency):(t1 + L - ycase_latency - 1)] +
+         o.i[(t1 - ocase_latency):(t1 + L - ocase_latency - 1)])
 
-ds <- dstartdate + (1:length(dcasei) - 1)
-model <- smooth.spline(1:length(dcasei), r, df=10)
-p <- as.numeric(unlist(predict(model, yf)$y))
+    d <- data.frame(value=d1)
+    d$index = seq(1:length(d1))
+    md <- smooth.spline(d$index, d$value, df=10)
+    ddf <- data.frame(index=seq(1:length(d1)))
+    d2 <- as.numeric(unlist(predict(md, ddf)$y))
+
+    result[t1:(t1+L-1)] = d2
+    result * 100
+}
+
+dateRange <- c(plot_start_date, Sys.Date())
 
 pdf("testing.pdf", width=6, height=4)
-plot(ds, r, type='l', xlab='Date', ylab='Diagnosed infections (%)', main="Diagnosed infections using PCR")
-lines(ds, p[1:length(ds)], type='l', col='blue')
-abline(v = as.Date("2020/3/17"), col='red')
+ptr <- makePlot(data_sample, dateRange, est.tr,
+                "violet", c("Diagnosed infections (%)", "Evolution of diagnosed infections"), dates, 'solid')
+ptr <- ptr + theme(legend.position = "none")
+ptr <- ptr + coord_cartesian(ylim = c(0, NA))
+ptr
 dev.off()
