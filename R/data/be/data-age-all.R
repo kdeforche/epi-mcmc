@@ -95,10 +95,15 @@ barplot(y.dmorti)
 barplot(o.dmorti)
 barplot(y.dmorti + o.dmorti)
 
+o.wdmorti <- rep(1, length(o.dmorti))
+o.wdmorti[154:163] = 0.1
+
 print(paste("last day morti: ", dstartdate + length(o.dmorti) - 1))
 
 dmort <- y.dmort + o.dmort
 dmorti <- y.dmorti + o.dmorti
+
+
 
 ##
 ## time series of IFR estimates per group

@@ -1,6 +1,6 @@
 library("deSolve")
-system("R CMD SHLIB model-agef.cpp")
-dyn.load("model-agef.so")
+system("R CMD SHLIB model-agej.cpp")
+dyn.load("model-agej.so")
 
 InvalidDataOffset <- 10000
 Initial <- 1
@@ -91,6 +91,10 @@ calculateModel <- function(params, period)
     fyifr <- params[34]
     fyhr <- params[35]
 
+    betay8 <- betay2
+    betao8 <- betao7
+    betayo8 <- betayo7
+
     ycase_latency <- ocase_latency <- 12
     t6o <- G
     CLsd <- 5
@@ -143,7 +147,8 @@ calculateModel <- function(params, period)
                t4 = 1E10, betay4 = betay4, betao4 = betao4, betayo4 = betayo4,
                t5 = 1E10, betay5 = betay5, betao5 = betao5, betayo5 = betayo5,
                t6 = 1E10, betay6 = betay6, betao6 = betao6, betayo6 = betayo6,
-               t7 = 1E10, betay7 = betay7, betao7 = betao7, betayo7 = betayo7)
+               t7 = 1E10, betay7 = betay7, betao7 = betao7, betayo7 = betayo7,
+               t8 = 1E10, betay8 = betay8, betao8 = betao8, betayo8 = betayo8)
 
     Y <- c(Sy = y.N - Initial, E1y = Initial, E2y = 0, Iy = 0, Ry = 0,
            So = o.N, E1o = 0, E2o = 0, Io = 0, Ro = 0)
@@ -151,7 +156,7 @@ calculateModel <- function(params, period)
     times <- (padding + 1):(padding + period)
 
     out <- ode(Y, times, func = "derivs", parms = parms,
-               dllname = "model-agef",
+               dllname = "model-agej",
                initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
@@ -178,6 +183,7 @@ calculateModel <- function(params, period)
         t5 <- data_offset + d5        
         t6 <- t5 + t6o
         t7 <- data_offset + d7 + t7o
+        t8 <- data_offset + d8
 
         parms <- c(Ny = y.N, No = o.N,
                    a1 = a1, a2 = a2, gamma = gamma,
@@ -191,10 +197,11 @@ calculateModel <- function(params, period)
                    t4 = t4, betay4 = betay4, betao4 = betao4, betayo4 = betayo4,
                    t5 = t5, betay5 = betay5, betao5 = betao5, betayo5 = betayo5,
                    t6 = t6, betay6 = betay6, betao6 = betao6, betayo6 = betayo6,
-                   t7 = t7, betay7 = betay7, betao7 = betao7, betayo7 = betayo7)
+                   t7 = t7, betay7 = betay7, betao7 = betao7, betayo7 = betayo7,
+                   t8 = t8, betay8 = betay8, betao8 = betao8, betayo8 = betayo8)
 
         out <- ode(Y, times, func = "derivs", parms = parms,
-                   dllname = "model-agef",
+                   dllname = "model-agej",
                    initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
     }
 

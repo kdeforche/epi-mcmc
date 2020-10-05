@@ -942,7 +942,7 @@ dateRange <- c(plot_start_date, Sys.Date())
 
 pdf("testing.pdf", width=6, height=4)
 ptr <- makePlot(data_sample, dateRange, est.tr,
-                "violet", c("Diagnosed infections (%)", "Evolution of diagnosed infections"), dates, 'solid')
+                "violet", c("Diagnosed infections (%)", "Evolution of proportion of infections diagnosed using PCR"), dates, 'solid')
 ptr <- ptr + theme(legend.position = "none")
 ptr <- ptr + coord_cartesian(ylim = c(0, NA))
 ptr
