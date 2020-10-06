@@ -71,7 +71,7 @@ d4 <- as.numeric(as.Date("2020/7/6") - dstartdate)
 d5 <- as.numeric(as.Date("2020/7/27") - dstartdate)
 d6 <- as.numeric(as.Date("2020/12/1") - dstartdate)
 d7 <- as.numeric(as.Date("2020/9/1") - dstartdate)
-d8 <- as.numeric(as.Date("2020/10/5") - dstartdate)
+d8 <- as.numeric(as.Date("2020/10/9") - dstartdate)
 
 d.reliable.cases <- as.numeric(as.Date("2020/8/1") - dstartdate)
 d.reliable.hosp <- as.numeric(as.Date("2020/6/1") - dstartdate)

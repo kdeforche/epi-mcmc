@@ -90,10 +90,9 @@ calculateModel <- function(params, period)
     betayo7 <- params[33]
     fyifr <- params[34]
     fyhr <- params[35]
-
-    betay8 <- betay2
-    betao8 <- betao7
-    betayo8 <- betayo7
+    betay8 <- params[36] * betay7
+    betao8 <- params[37] * betao7
+    betayo8 <- params[38] * betayo7
 
     ycase_latency <- ocase_latency <- 12
     t6o <- G
@@ -414,6 +413,9 @@ calclogp <- function(params) {
     betayo7 <- params[33]
     fyifr <- params[34]
     fyhr <- params[35]
+    fy8 <- params[36]
+    fo8 <- params[37]
+    fyo8 <- params[38]
 
     logPriorP <- 0
     
@@ -422,34 +424,39 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o, mean=d4, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(t7o, mean=0, sd=5, log=T)
 
-    GS <- 1
-    lGS <- 6
+    SD <- log(2) ## SD = +/- 100%
+    lSD <- log(1.5) ## SD = +/- 50%
     
-    logPriorP <- logPriorP + dgamma(betay0/betay1, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betao0/betao1, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo0/betayo1, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betay1/betay2, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betao1/betao2, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo1/betayo2, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betay3/betay4, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betao2/betao4, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo2/betayo4, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betay5/betay6, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betao5/betao6, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo5/betayo6, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betay6/betay7, shape=lGS, rate=lGS, log=T)
-    logPriorP <- logPriorP + dgamma(betao6/betao7, shape=lGS, rate=lGS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo6/betayo7, shape=lGS, rate=lGS, log=T)
+    logPriorP <- logPriorP + dlnorm(betay0/betay1, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao0/betao1, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo0/betayo1, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay1/betay2, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao1/betao2, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo1/betayo2, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay3/betay4, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao2/betao4, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo2/betayo4, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay5/betay6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao5/betao6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo5/betayo6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay6/betay7, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao6/betao7, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo6/betayo7, 0, lSD, log=T)
+
+    logPriorP <- logPriorP + dlnorm(fy8, log(0.9), log(1.05), log=T)
+    logPriorP <- logPriorP + dlnorm(fo8, log(0.9), log(1.05), log=T)
+    logPriorP <- logPriorP + dlnorm(fyo8, log(0.9), log(1.05), log=T)
+
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=2, log=T)
 
-    logPriorP <- logPriorP + dgamma(fyifr, shape=10, rate=10, log=T)
-    logPriorP <- logPriorP + dgamma(fyhr, shape=10, rate=10, log=T)
+    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.3), log=T) # +/- 30%
+    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.3), log=T)
 
-    logPriorP <- logPriorP + dgamma(yhosp_rate, shape=10, rate=10, log=T)
-    logPriorP <- logPriorP + dgamma(ohosp_rate, shape=1, rate=1, log=T)
+    logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(ohosp_rate, 0, SD, log=T)
     
     logPriorP
 }
@@ -517,14 +524,14 @@ calclogl <- function(params, x) {
                                  [(dstart + d.reliable.hosp + 1):dend]),
                          size=hosp_nbinom_size2, log=T))
 
-    ## hosp
-    ##  y.hosp should be ~ 1/3 of hosps
-    ## loglH <- loglH + sum(dnbinom(floor(state$y.hospi),
-    ##                              mu=pmax(0.01, 0.3 * (state$y.hospi + state$o.hospi)),
-    ##                              size=0.001, log=T))
-    loglH <- loglH + sum(dnorm(state$y.hospi / (pmax(0.01, state$y.hospi + state$o.hospi)),
-                               mean=0.3, sd=0.3, log=T))
-        
+    ## between June 22st and September 14th, ratio y/o should be 56.7/43.3 +/- 5%
+    ytotal = sum(state$y.hospi[(dstart + d.hosp.o1):(dstart + d.hosp.o2)])
+    ototal = sum(state$o.hospi[(dstart + d.hosp.o1):(dstart + d.hosp.o2)])
+    loglHRatio <- dlnorm(ytotal/(ytotal + ototal), log(56.7/100), log(1.05), log=T)
+    ##print(c(loglH, ytotal, ototal, loglHRatio))
+    
+    loglH <- loglH + loglHRatio
+    
     ## deaths
     dstart <- state$offset
     dend <- state$offset + length(y.dmorti) - 1
@@ -574,7 +581,8 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t4o", "betay4", "betao4", "betayo4",
                     "betay6", "betao6", "betayo6",
                     "t7o", "betay7", "betao7", "betayo7",
-                    "fyfr", "fyhr")
+                    "fyfr", "fyhr",
+                    "fy8", "fo8", "fyo8")
 keyparamnames <- c("betay6", "betao6", "betayo6", "betay7", "betao7", "betayo7")
 fitkeyparamnames <- keyparamnames
 
@@ -587,7 +595,8 @@ init <- c(3.6 * gamma, 3.6 * gamma, 3.6 * gamma,
           d3 - lockdown_offset - lockdown_transition_period,
           d4 - d3, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
           0.8 * gamma, 0.8 * gamma, 0.1 * gamma,
-          0, 0.8 * gamma, 0.8 * gamma, 0.1 * gamma, 1, 1)
+          0, 0.8 * gamma, 0.8 * gamma, 0.1 * gamma, 1, 1,
+          0.9, 0.9, 0.9)
 
 print(init)
 
@@ -601,7 +610,8 @@ df_params <- data.frame(name = fit.paramnames,
                                 60,
                                 10, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                -15, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma, 0.1, 0.1),
+                                -15, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma, 0.1, 0.1,
+                                0.6, 0.6, 0.6),
                         max = c(8 * gamma, 8 * gamma, 8 * gamma,
                                 5 * gamma, 5 * gamma, 5 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
@@ -612,5 +622,6 @@ df_params <- data.frame(name = fit.paramnames,
                                 90,
                                 50, 3 * gamma, 3 * gamma, 3 * gamma,
                                 1.5 * gamma, 1.5 * gamma, 0.5 * gamma,
-                                15, 3 * gamma, 3 * gamma, 0.5 * gamma, 3, 3),
+                                15, 3 * gamma, 3 * gamma, 0.5 * gamma, 3, 3,
+                                1.1, 1.1, 1.1),
                         init = init)
