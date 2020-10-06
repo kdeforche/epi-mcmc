@@ -218,6 +218,7 @@ all_plots_age <- function(date_markers) {
         p1 <- p1 + coord_cartesian(ylim = c(0, 50))
     } else if (zoom == 2) {
         p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 50))
+        p1 <- p1 + theme(legend.position = c(0.2, 0.85))
     }
 
     ## Add y curves
@@ -318,6 +319,7 @@ all_plots_age <- function(date_markers) {
     } else if (zoom == 2) {
         p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
                                    ylim = c(0, 4000))
+        p3 <- p3 + theme(legend.position = c(0.2, 0.85))
     }
 
 
@@ -340,6 +342,7 @@ all_plots_age <- function(date_markers) {
         p3b <- p3b + coord_cartesian(ylim = c(0, 300))
     } else if (zoom == 2) {
         p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 200))
+        p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     }
 
     ## Add y/o curves
@@ -356,6 +359,8 @@ all_plots_age <- function(date_markers) {
     p4 <- makePlot(data_sample, dateRange,
                    function(state, params) { (state$y.E + state$y.I + state$o.E + state$o.I)/N * 100 },
                    "#A67514", c("Population group (%)", "Infected people"), date_markers, 'solid')
+
+    p4 <- p4 + theme(legend.position = c(0.2, 0.85))
 
     if (zoom == 1) {
         p4 <- p4 + coord_cartesian(ylim = c(0, 3))

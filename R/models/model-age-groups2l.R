@@ -415,35 +415,35 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o, mean=d4, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(t7o, mean=0, sd=5, log=T)
 
-    GS <- 1
-    lGS <- 6
+    SD <- log(2) ## SD = +/- 100%
+    lSD <- log(1.5) ## SD = +/- 50%
     
-    logPriorP <- logPriorP + dgamma(betay0/betay1, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betao0/betao1, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo0/betayo1, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betay1/betay2, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betao1/betao2, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo1/betayo2, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betay3/betay4, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betao2/betao4, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo2/betayo4, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betay5/betay6, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betao5/betao6, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo5/betayo6, shape=GS, rate=GS, log=T)
-    logPriorP <- logPriorP + dgamma(betay6/betay7, shape=lGS, rate=lGS, log=T)
-    logPriorP <- logPriorP + dgamma(betao6/betao7, shape=lGS, rate=lGS, log=T)
-    logPriorP <- logPriorP + dgamma(betayo6/betayo7, shape=lGS, rate=lGS, log=T)
+    logPriorP <- logPriorP + dlnorm(betay0/betay1, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao0/betao1, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo0/betayo1, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay1/betay2, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao1/betao2, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo1/betayo2, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay3/betay4, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao2/betao4, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo2/betayo4, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay5/betay6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao5/betao6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo5/betayo6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay6/betay7, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao6/betao7, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo6/betayo7, 0, lSD, log=T)
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=2, log=T)
 
-    logPriorP <- logPriorP + dgamma(fyifr, shape=10, rate=10, log=T)
-    logPriorP <- logPriorP + dgamma(fyhr, shape=10, rate=10, log=T)
+    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.3), log=T) # +/- 30%
+    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.3), log=T)
 
-    logPriorP <- logPriorP + dgamma(yhosp_rate, shape=10, rate=10, log=T)
-    logPriorP <- logPriorP + dgamma(ohosp_rate, shape=1, rate=1, log=T)
-    
+    logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(ohosp_rate, 0, SD, log=T)
+
     logPriorP
 }
 
@@ -510,13 +510,13 @@ calclogl <- function(params, x) {
                                  [(dstart + d.reliable.hosp + 1):dend]),
                          size=hosp_nbinom_size2, log=T))
 
-    ## hosp
-    ##  y.hosp should be ~ 1/3 of hosps
-    ## loglH <- loglH + sum(dnbinom(floor(state$y.hospi),
-    ##                              mu=pmax(0.01, 0.3 * (state$y.hospi + state$o.hospi)),
-    ##                              size=0.001, log=T))
-    loglH <- loglH + sum(dnorm(state$y.hospi / (pmax(0.01, state$y.hospi + state$o.hospi)),
-                               mean=0.3, sd=0.3, log=T))
+    ## between June 22st and September 14th, ratio y/o should be 56.7/43.3 +/- 5%
+    ytotal = sum(state$y.hospi[(dstart + d.hosp.o1):(dstart + d.hosp.o2)])
+    ototal = sum(state$o.hospi[(dstart + d.hosp.o1):(dstart + d.hosp.o2)])
+    loglHRatio <- dlnorm(ytotal/(ytotal + ototal), log(56.7/100), log(1.05), log=T)
+    ##print(c(loglH, ytotal, ototal, loglHRatio))
+    
+    loglH <- loglH + loglHRatio
         
     ## deaths
     dstart <- state$offset
@@ -548,7 +548,7 @@ calclogl <- function(params, x) {
     
     if (it %% 1000 == 0) {
         print(params)
-	print(c(it, result))
+	print(c(it, result, ytotal/(ytotal + ototal), loglHRatio))
         state <<- calcNominalState(state)
 	graphs()
     }
