@@ -318,7 +318,7 @@ all_plots_age <- function(date_markers) {
         p3 <- p3 + coord_cartesian(ylim = c(0, 4000))
     } else if (zoom == 2) {
         p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
-                                   ylim = c(0, 4000))
+                                   ylim = c(0, 8000))
         p3 <- p3 + theme(legend.position = c(0.2, 0.85))
     }
 
@@ -822,7 +822,7 @@ dates <- date_markers
 est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 250, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
 
-print(c(est.Re[Sys.Date() - dstartdate,]))
+print(c(est.Re[Sys.Date() - dstartdate + 1,]))
 
 pdf("current-state-2.pdf", width=25, height=10)
 
