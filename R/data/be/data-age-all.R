@@ -163,7 +163,7 @@ all.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr, 
 weekifr <- data.frame(y.weekifr$week, y.weekifr$x, o.weekifr$x, all.weekifr$x)
 weekifr$index = (seq(3,length(o.dmorti) + 7,7))[1:(length(y.weekifr$week))]
 
-m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=5)
+m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=7)
 yf <- data.frame(index=seq(1:length(o.dmorti)))
 y.ifr <- as.numeric(unlist(predict(m.yifr, yf)$y))
 
@@ -179,6 +179,7 @@ x <-seq(dstartdate, dstartdate+length(y.ifr)-1, by=1)
 plot(x, y.ifr * 100, type='l', main="Time profile of COVID-19 IFR Belgium (<65y)",
         xlab="Date", ylab="Infection Fatality Rate (%)", ylim=c(0, 0.1))
 points(dstartdate + weekifr$index, weekifr$y.weekifr.x * 100)
+lines(x, y.ifr * 100, type='l', col=2)
 
 plot(x, o.ifr * 100, type='l', main="Time profile of COVID-19 IFR Belgium (>65y)",
      xlab="Date", ylab="Infection Fatality Rate (%)", ylim=c(0, 7))
