@@ -441,8 +441,8 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betao7/betao8, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo7/betayo8, 0, lSD, log=T)
 
-    logPriorP <- logPriorP + dnorm(betao7, mean=0.5 * gamma, sd=0.2, log=T)
-    logPriorP <- logPriorP + dnorm(betao8, mean=0.5 * gamma, sd=0.2, log=T)
+    logPriorP <- logPriorP + dnorm(betao7, mean=0.5 * gamma, sd=0.2 * gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao8, mean=0.5 * gamma, sd=0.2 * gamma, log=T)
     
     logPriorP <- logPriorP + dlnorm(fy8, log(0.9), log(1.05), log=T)
     logPriorP <- logPriorP + dlnorm(fo8, log(0.9), log(1.05), log=T)
@@ -453,8 +453,8 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=2, log=T)
 
-    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.3), log=T) # +/- 30%
-    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.3), log=T)
+    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.5), log=T) # +/- 50%
+    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.5), log=T)
 
     logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(ohosp_rate, 0, SD, log=T)
@@ -563,7 +563,7 @@ calclogl <- function(params, x) {
     
     if (it %% 1000 == 0) {
         print(params)
-	print(c(it, result))
+	print(c(it, y.loglC, o.loglC, loglH, y.loglD, o.loglD, result))
         state <<- calcNominalState(state)
 	graphs()
     }
@@ -590,17 +590,17 @@ keyparamnames <- c("betay6", "betao6", "betayo6",
                    "fy8", "fo8", "fyo8")
 fitkeyparamnames <- keyparamnames
 
-init <- c(3.6 * gamma, 3.6 * gamma, 3.6 * gamma,
-          2.0 * gamma, 2.0 * gamma, 2.0 * gamma,
-          0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          100, 1, 10, 21,
-          20, 3, 10, 21,
-          total_deaths_at_lockdown, -1, 5, 5, 1, 1,
+init <- c(2.7, 1.7, 1.7,
+          2.3, 0.8, 0.8,
+          0.6, 0.4, 0.1,
+          2000, 1, 15, 15,
+          50, 2.5, 14, 21,
+          16, -10, 5, 5, 0.7, 0.8,
           d3 - lockdown_offset - lockdown_transition_period,
-          d4 - d3, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-                   0.8 * gamma, 0.8 * gamma, 0.1 * gamma,
-          d6 - d5, 0.8 * gamma, 0.8 * gamma, 0.1 * gamma,
-          d7 - d6, 0.8 * gamma, 0.8 * gamma, 0.1 * gamma,
+          d4 - d3, 1, 0.2, 0.05,
+                   0.7, 0.2, 0.01,
+          d6 - d5, 1.1, 0.4, 0.03,
+          d7 - d6, 1.1, 0.4, 0.03,
           0.9, 0.9, 0.9)
 
 df_params <- data.frame(name = fit.paramnames,

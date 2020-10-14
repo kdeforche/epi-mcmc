@@ -455,8 +455,8 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=2, log=T)
 
-    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.3), log=T) # +/- 30%
-    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.3), log=T)
+    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.5), log=T) # +/- 50%
+    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.5), log=T)
 
     logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(ohosp_rate, 0, SD, log=T)
@@ -589,25 +589,25 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
 keyparamnames <- c("betay6", "betao6", "betayo6", "betay7", "betao7", "betayo7")
 fitkeyparamnames <- keyparamnames
 
-init <- c(3.6 * gamma, 3.6 * gamma, 3.6 * gamma,
-          2.0 * gamma, 2.0 * gamma, 2.0 * gamma,
-          0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          100, 1, 10, 21,
-          20, 3, 10, 21,
-          total_deaths_at_lockdown, -1, 5, 5,
+init <- c(3, 1.7, 2,
+          2.3, 0.8, 0.8,
+          0.6, 0.4, 0.1,
+          2200, 1, 11, 16,
+          60, 2.5, 18, 20,
+          total_deaths_at_lockdown, -10, 5, 5,
           d3 - lockdown_offset - lockdown_transition_period,
-          d4 - d3, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          0.8 * gamma, 0.8 * gamma, 0.1 * gamma,
-          0, 0.8 * gamma, 0.8 * gamma, 0.1 * gamma, 1, 1,
+          d4 - d3, 1, 0.2, 0.05,
+          0.8, 0.2, 0.01,
+          0, 1.1, 0.4, 0.03, 1, 1,
           0.9, 0.9, 0.9)
 
 print(init)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(2 * gamma, 2 * gamma, 2 * gamma,
-                                1 * gamma, 1 * gamma, 1 * gamma,
+                        min = c(1 * gamma, 1 * gamma, 1 * gamma,
+                                0.5 * gamma, 0.5 * gamma, 0.5 * gamma,
                                 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
-                                3, 0.5, 3, 10,
+                                500, 0.5, 3, 10,
                                 3, 0.5, 3, 10,
                                 0, -30, 2, 2,
                                 60,

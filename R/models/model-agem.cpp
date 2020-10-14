@@ -76,7 +76,7 @@ static double interpolate(double t,
   else if (t > t7)
     return vt7;
   else if (t > t6)
-    return vt6 + (t - t6) / (t7 - t6) * (vt7 - vt6);
+    return vt6;
   else if (t > t5)
     return vt5;
   else if (t > t4)

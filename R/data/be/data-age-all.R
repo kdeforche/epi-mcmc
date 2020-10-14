@@ -127,8 +127,8 @@ calcifr.y <- function(x) {
     x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
 
     if (i > (as.Date("2020-08-15") - dstartdate)) {
-        x <- x + 2 * ifr_epsilon
-     }
+        x <- x + 1 * ifr_epsilon
+    }
     i <<- i + 7
     
     y.ifr <- sum(x[1:3]) / sum(x[1:3] / g.ifr[1:3])
@@ -146,7 +146,7 @@ calcifr <- function(x) {
     x <- x + ifr_epsilon  ## As if a multinomial prior
 
     if (i > (as.Date("2020-08-15") - dstartdate)) {
-        x[1:3] <- x[1:3] + 2 * ifr_epsilon
+        x[1:3] <- x[1:3] + 1 * ifr_epsilon
     }
     i <<- i + 7
 
@@ -163,7 +163,7 @@ all.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr, 
 weekifr <- data.frame(y.weekifr$week, y.weekifr$x, o.weekifr$x, all.weekifr$x)
 weekifr$index = (seq(3,length(o.dmorti) + 7,7))[1:(length(y.weekifr$week))]
 
-m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=7)
+m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=5)
 yf <- data.frame(index=seq(1:length(o.dmorti)))
 y.ifr <- as.numeric(unlist(predict(m.yifr, yf)$y))
 
@@ -225,7 +225,7 @@ calchr.y <- function(x) {
     x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
 
     if (i > (as.Date("2020-08-15") - dstartdate)) {
-         x <- x + 2 * ifr_epsilon
+         x <- x + 1 * ifr_epsilon
     }
     i <<- i + 7
 
@@ -251,7 +251,7 @@ calchr <- function(x) {
     x <- x + ifr_epsilon  ## As if a multinomial prior
 
     if (i > (as.Date("2020-08-15") - dstartdate)) {
-         x[1:3] <- x[1:3] + 2 * ifr_epsilon
+         x[1:3] <- x[1:3] + 1 * ifr_epsilon
     }
     i <<- i + 7
     
