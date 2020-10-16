@@ -69,8 +69,8 @@ total_deaths_at_lockdown <- 5
 d3 <- as.numeric(as.Date("2020/6/6") - dstartdate)
 d4 <- as.numeric(as.Date("2020/7/6") - dstartdate)
 d5 <- as.numeric(as.Date("2020/7/27") - dstartdate)
-d6 <- as.numeric(as.Date("2020/8/15") - dstartdate)
-d7 <- as.numeric(as.Date("2020/9/15") - dstartdate)
+d6 <- as.numeric(as.Date("2020/8/17") - dstartdate)
+d7 <- as.numeric(as.Date("2020/9/21") - dstartdate)
 d8 <- as.numeric(as.Date("2020/10/9") - dstartdate)
 
 d.reliable.cases <- as.numeric(as.Date("2020/8/1") - dstartdate)

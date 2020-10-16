@@ -571,16 +571,16 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
 keyparamnames <- c("betay6", "betao6", "betayo6", "betay7", "betao7", "betayo7")
 fitkeyparamnames <- keyparamnames
 
-init <- c(3.6 * gamma, 3.6 * gamma, 3.6 * gamma,
-          2.0 * gamma, 2.0 * gamma, 2.0 * gamma,
-          0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          100, 1, 10, 21,
-          20, 3, 10, 21,
-          total_deaths_at_lockdown, -1, 5, 5,
+init <- c(2.7, 1.7, 1.7,
+          2.3, 0.8, 0.8,
+          0.6, 0.4, 0.1,
+          2000, 1, 15, 21,
+          50, 2.5, 14, 21,
+          16, -10, 5, 5,
           d3 - lockdown_offset - lockdown_transition_period,
-          d4 - d3, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          0.8 * gamma, 0.8 * gamma, 0.1 * gamma,
-          0, 0.8 * gamma, 0.8 * gamma, 0.1 * gamma, 1, 1)
+          d4 - d3, 1, 0.2, 0.05,
+                   0.7, 0.2, 0.01,
+          -10, 1.1, 0.4, 0.03, 0.5, 1)
 
 print(init)
 

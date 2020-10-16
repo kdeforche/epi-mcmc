@@ -1,6 +1,6 @@
 library("deSolve")
-system("R CMD SHLIB model-agej.cpp")
-dyn.load("model-agej.so")
+system("R CMD SHLIB model-agem.cpp")
+dyn.load("model-agem.so")
 
 InvalidDataOffset <- 10000
 Initial <- 1
@@ -70,32 +70,32 @@ calculateModel <- function(params, period)
     t0o <- params[19]
     HLsd <- params[20]
     DLsd <- params[21]
-    t3o <- params[22] ## start of increase, 6 June
+    fyifr <- params[22]
+    fyhr <- params[23]
+    t3o <- params[24] ## start of increase, ~ 6 June
     betay3 <- betay2
-    t4o <- params[23] ## end of increase, 6 Juli
-    betay4 <- params[24]
-    betao4 <- params[25]
-    betayo4 <- params[26]
+    t4o <- params[25] ## end of increase, ~ 6 July
+    betay4 <- params[26]
+    betao4 <- params[27]
+    betayo4 <- params[28]
     betao3 <- betao4
     betayo3 <- betayo4
-    betay5 <- betay4 ## new lockdown, 27 Juli
-    betao5 <- betao4
-    betayo5 <- betayo4
-    betay6 <- params[27] ## end of lockdown transition 27 Juli + t6o
-    betao6 <- params[28]
-    betayo6 <- params[29]
-    t7o <- params[30]
-    betay7 <- params[31]
-    betao7 <- params[32]
-    betayo7 <- params[33]
-    fyifr <- params[34]
-    fyhr <- params[35]
-    betay8 <- params[36] * betay7
-    betao8 <- params[37] * betao7
-    betayo8 <- params[38] * betayo7
+    betay5 <- params[29] ## new lockdown, 27 July
+    betao5 <- params[30]
+    betayo5 <- params[31]
+    t6o <- params[32] ## exiting lockdown ~ mid August
+    betay6 <- params[33]
+    betao6 <- params[34]
+    betayo6 <- params[35]
+    t7o <- params[36]  ## sept 15 ?
+    betay7 <- params[37]
+    betao7 <- params[38]
+    betayo7 <- params[39]
+    betay8 <- params[40] * betay7
+    betao8 <- params[41] * betao7
+    betayo8 <- params[42] * betayo7
 
     ycase_latency <- ocase_latency <- 12
-    t6o <- G
     CLsd <- 5
     
     ## convolution profiles
@@ -135,7 +135,7 @@ calculateModel <- function(params, period)
     state$o.Re <- rep(0, padding + period)
 
     state$i <- padding + 1
-
+    
     parms <- c(Ny = y.N, No = o.N,
                a1 = a1, a2 = a2, gamma = gamma,
                t0 = 1E10, t1 = 1E10, t2 = 1E10,
@@ -155,7 +155,7 @@ calculateModel <- function(params, period)
     times <- (padding + 1):(padding + period)
 
     out <- ode(Y, times, func = "derivs", parms = parms,
-               dllname = "model-agej",
+               dllname = "model-agem",
                initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
@@ -178,10 +178,9 @@ calculateModel <- function(params, period)
         t2 <- data_offset + lockdown_offset + lockdown_transition_period
         t3 <- t2 + t3o
         t4 <- t3 + t4o
-
-        t5 <- data_offset + d5        
+        t5 <- data_offset + d5
         t6 <- t5 + t6o
-        t7 <- data_offset + d7 - 14 + t7o
+        t7 <- t6 + t7o
         t8 <- data_offset + d8
 
         parms <- c(Ny = y.N, No = o.N,
@@ -200,7 +199,7 @@ calculateModel <- function(params, period)
                    t8 = t8, betay8 = betay8, betao8 = betao8, betayo8 = betayo8)
 
         out <- ode(Y, times, func = "derivs", parms = parms,
-                   dllname = "model-agej",
+                   dllname = "model-agem",
                    initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
     }
 
@@ -347,14 +346,6 @@ invTransformParams <- function(posterior)
     posterior$o.Rt4 = posterior$betao4 / gamma
     posterior$yo.Rt4 = posterior$betayo4 / gamma
 
-    posterior$y.Rt6 = posterior$betay6 / gamma
-    posterior$o.Rt6 = posterior$betao6 / gamma
-    posterior$yo.Rt6 = posterior$betayo6 / gamma
-
-    posterior$y.Rt7 = posterior$betay7 / gamma
-    posterior$o.Rt7 = posterior$betao7 / gamma
-    posterior$yo.Rt7 = posterior$betayo7 / gamma
-
     posterior
 }
 
@@ -393,36 +384,43 @@ calclogp <- function(params) {
     t0o <- params[19]
     HLsd <- params[20]
     DLsd <- params[21]
-    t3o <- params[22] ## start of increase, 6 June
+    fyifr <- params[22]
+    fyhr <- params[23]
+    t3o <- params[24] ## start of increase, ~ 6 June
     betay3 <- betay2
-    t4o <- params[23] ## end of increase, 6 Juli
-    betay4 <- params[24]
-    betao4 <- params[25]
-    betayo4 <- params[26]
+    t4o <- params[25] ## end of increase, ~ 6 July
+    betay4 <- params[26]
+    betao4 <- params[27]
+    betayo4 <- params[28]
     betao3 <- betao4
     betayo3 <- betayo4
-    betay5 <- betay4 ## new lockdown, 27 Juli
-    betao5 <- betao4
-    betayo5 <- betayo4
-    betay6 <- params[27] ## end of lockdown transition 27 Juli + t6o
-    betao6 <- params[28]
-    betayo6 <- params[29]
-    t7o <- params[30]
-    betay7 <- params[31]
-    betao7 <- params[32]
-    betayo7 <- params[33]
-    fyifr <- params[34]
-    fyhr <- params[35]
-    fy8 <- params[36]
-    fo8 <- params[37]
-    fyo8 <- params[38]
+    betay5 <- params[29] ## new lockdown, 27 July
+    betao5 <- params[30]
+    betayo5 <- params[31]
+    t6o <- params[32] ## exiting lockdown ~ mid August
+    betay6 <- params[33]
+    betao6 <- params[34]
+    betayo6 <- params[35]
+    t7o <- params[36]  ## sept 15 ?
+    betay7 <- params[37]
+    betao7 <- params[38]
+    betayo7 <- params[39]
+    fy8 <- params[40]
+    fo8 <- params[41]
+    fyo8 <- params[42]
+    betay8 <- fy8 * betay7
+    betao8 <- fo8 * betao7
+    betayo8 <- fyo8 * betayo7
 
     logPriorP <- 0
     
     logPriorP <- logPriorP + dnorm(t0o, mean=0, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o, mean=d3, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o, mean=d4, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(t7o, mean=0, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o,
+                                   mean=d3, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o,
+                                   mean=d4, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(d5 + t6o, mean=d6, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=10, log=T)
 
     SD <- log(2) ## SD = +/- 100%
     lSD <- log(1.5) ## SD = +/- 50%
@@ -436,15 +434,15 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betay3/betay4, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao2/betao4, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo2/betayo4, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betay5/betay6, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao5/betao6, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo5/betayo6, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betay6/betay7, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao6/betao7, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo6/betayo7, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay6/betay7, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao6/betao7, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo6/betayo7, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay7/betay8, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao7/betao8, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo7/betayo8, 0, SD, log=T)
 
-    logPriorP <- logPriorP + dnorm(betao7, mean=0.5 * gamma, sd=0.2 * gamma, log=T)
-    logPriorP <- logPriorP + dnorm(fo8 * betao7, mean=0.5 * gamma, sd=0.2 * gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao7, mean=0.5 * gamma, sd=0.3 * gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao8, mean=0.5 * gamma, sd=0.3 * gamma, log=T)
     
     logPriorP <- logPriorP + dlnorm(fy8, log(0.9), log(1.05), log=T)
     logPriorP <- logPriorP + dlnorm(fo8, log(0.9), log(1.05), log=T)
@@ -455,8 +453,8 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=2, log=T)
 
-    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.1), log=T) # +/- 10%
-    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.1), log=T)
+    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.5), log=T) # +/- 50%
+    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.5), log=T)
 
     logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(ohosp_rate, 0, SD, log=T)
@@ -533,8 +531,6 @@ calclogl <- function(params, x) {
     loglHRatio <- dlnorm(ytotal/(ytotal + ototal), log(56.7/100), log(1.05), log=T)
     ##print(c(loglH, ytotal, ototal, loglHRatio))
     
-    loglH <- loglH + loglHRatio
-    
     ## deaths
     dstart <- state$offset
     dend <- state$offset + length(y.dmorti) - 1
@@ -561,11 +557,11 @@ calclogl <- function(params, x) {
 
     it <<- it + 1
 
-    result <- y.loglC + o.loglC + loglH + y.loglD + o.loglD
+    result <- y.loglC + o.loglC + loglH + loglHRatio + y.loglD + o.loglD
     
     if (it %% 1000 == 0) {
         print(params)
-	print(c(it, result))
+	print(c(it, y.loglC, o.loglC, loglH, loglHRatio, y.loglD, o.loglD, result))
         state <<- calcNominalState(state)
 	graphs()
     }
@@ -580,28 +576,30 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "o.CR", "o.HR", "o.HL", "o.DL",
                     "t0_morts", "t0o",
                     "HLsd", "DLsd",
+                    "fyifr", "fyhr",
                     "t3o",
                     "t4o", "betay4", "betao4", "betayo4",
-                    "betay6", "betao6", "betayo6",
+                    "betay5", "betao5", "betayo5",
+                    "t6o", "betay6", "betao6", "betayo6",
                     "t7o", "betay7", "betao7", "betayo7",
-                    "fyifr", "fyhr",
                     "fy8", "fo8", "fyo8")
-keyparamnames <- c("betay6", "betao6", "betayo6", "betay7", "betao7", "betayo7")
+keyparamnames <- c("betay6", "betao6", "betayo6",
+                   "betay7", "betao7", "betayo7",
+                   "fy8", "fo8", "fyo8")
 fitkeyparamnames <- keyparamnames
 
-init <- c(3.6 * gamma, 3.6 * gamma, 3.6 * gamma,
-          2.0 * gamma, 2.0 * gamma, 2.0 * gamma,
-          0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          100, 1, 10, 21,
-          20, 3, 10, 21,
-          total_deaths_at_lockdown, -1, 5, 5,
+init <- c(2.7, 1.7, 1.7,
+          2.3, 0.8, 0.8,
+          0.6, 0.4, 0.1,
+          2000, 1, 15, 15,
+          50, 2.5, 14, 21,
+          16, -10, 5, 5, 0.7, 0.8,
           d3 - lockdown_offset - lockdown_transition_period,
-          d4 - d3, 0.8 * gamma, 0.8 * gamma, 0.8 * gamma,
-          0.8 * gamma, 0.8 * gamma, 0.1 * gamma,
-          0, 0.8 * gamma, 0.8 * gamma, 0.1 * gamma, 1, 1,
+          d4 - d3, 1, 0.2, 0.05,
+                   0.7, 0.2, 0.01,
+          d6 - d5, 1.1, 0.4, 0.03,
+          d7 - d6, 1.1, 0.4, 0.03,
           0.9, 0.9, 0.9)
-
-print(init)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 2 * gamma, 2 * gamma,
@@ -609,11 +607,12 @@ df_params <- data.frame(name = fit.paramnames,
                                 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
                                 3, 0.5, 3, 10,
                                 3, 0.5, 3, 10,
-                                0, -30, 2, 2,
+                                0, -30, 2, 2, 0.1, 0.1,
                                 60,
                                 10, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                -15, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma, 0.5, 0.5,
+                                    0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                10, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                10, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 0.6, 0.6, 0.6),
                         max = c(8 * gamma, 8 * gamma, 8 * gamma,
                                 5 * gamma, 5 * gamma, 5 * gamma,
@@ -621,10 +620,14 @@ df_params <- data.frame(name = fit.paramnames,
                                 5000, 1.5, 25, 50,
                                 100, 6, 25, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
-                                30, 9, 9,
+                                30, 9, 9, 3, 3,
                                 90,
                                 50, 3 * gamma, 3 * gamma, 3 * gamma,
-                                1.5 * gamma, 1.5 * gamma, 0.5 * gamma,
-                                15, 3 * gamma, 3 * gamma, 0.5 * gamma, 2, 2,
+                                    1.5 * gamma, 1.5 * gamma, 0.5 * gamma,
+                                50, 3 * gamma, 3 * gamma, 0.5 * gamma,
+                                50, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                 1.1, 1.1, 1.1),
                         init = init)
+
+print(df_params)
+

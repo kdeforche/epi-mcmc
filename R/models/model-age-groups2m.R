@@ -419,11 +419,11 @@ calclogp <- function(params) {
                                    mean=d3, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o,
                                    mean=d4, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(d5 + t6o, mean=d6, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(d5 + t6o, mean=d6, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=3, log=T)
 
-    SD <- log(2) ## SD = +/- 100%
-    lSD <- log(1.5) ## SD = +/- 50%
+    SD <- log(2) ## SD = */ 2
+    lSD <- log(1.5) ## SD = */ 1.5
     
     logPriorP <- logPriorP + dlnorm(betay0/betay1, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao0/betao1, 0, SD, log=T)
@@ -434,12 +434,12 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betay3/betay4, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao2/betao4, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo2/betayo4, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay5/betay6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao5/betao6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo5/betayo6, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betay6/betay7, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betao6/betao7, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo6/betayo7, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betay7/betay8, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao7/betao8, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo7/betayo8, 0, lSD, log=T)
 
     logPriorP <- logPriorP + dnorm(betao7, mean=0.5 * gamma, sd=0.2 * gamma, log=T)
     logPriorP <- logPriorP + dnorm(betao8, mean=0.5 * gamma, sd=0.2 * gamma, log=T)
@@ -450,11 +450,13 @@ calclogp <- function(params) {
 
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(yhosp_latency, mean=14, sd=0.5, log=T)
+    logPriorP <- logPriorP + dnorm(ohosp_latency, mean=14, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(ydied_latency, mean=16, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=2, log=T)
 
-    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.5), log=T) # +/- 50%
-    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.5), log=T)
+    logPriorP <- logPriorP + dlnorm(fyifr, log(0.3), log(2), log=T) # */ 2
+    logPriorP <- logPriorP + dlnorm(fyhr, log(0.3), log(2), log=T)
 
     logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(ohosp_rate, 0, SD, log=T)
@@ -463,6 +465,8 @@ calclogp <- function(params) {
 }
 
 calclogl <- function(params, x) {
+    it <<- it + 1
+
     state <<- calculateModel(params, FitTotalPeriod)
 
     if (state$offset == InvalidDataOffset)
@@ -523,15 +527,22 @@ calclogl <- function(params, x) {
              sum(dnbinom(dhospi[d.reliable.hosp:length(dhosp)],
                          mu=pmax(0.1, (state$y.hospi + state$o.hospi)
                                  [(dstart + d.reliable.hosp + 1):dend]),
-                         size=hosp_nbinom_size2, log=T))
+                         size=hosp_nbinom_size2, log=T)) +
+             sum(dnbinom(dhospi[(length(dhosp) - 7):length(dhosp)],
+                         mu=pmax(0.1, (state$y.hospi + state$o.hospi)[(dend - 7):dend]),
+                         size=hosp_nbinom_size2 * 3, log=T))
 
+    if (it %% 1000 == 0) {
+        a <- dhospi[length(dhosp)]
+        b <- (state$y.hospi + state$o.hospi)[dend]
+        print(c(a, b, dnbinom(a, mu=b, size=hosp_nbinom_size2 * 3, log=T)))
+    }
+    
     ## between June 22st and September 14th, ratio y/o should be 56.7/43.3 +/- 5%
     ytotal = sum(state$y.hospi[(dstart + d.hosp.o1):(dstart + d.hosp.o2)])
     ototal = sum(state$o.hospi[(dstart + d.hosp.o1):(dstart + d.hosp.o2)])
     loglHRatio <- dlnorm(ytotal/(ytotal + ototal), log(56.7/100), log(1.05), log=T)
     ##print(c(loglH, ytotal, ototal, loglHRatio))
-    
-    loglH <- loglH + loglHRatio
     
     ## deaths
     dstart <- state$offset
@@ -557,13 +568,11 @@ calclogl <- function(params, x) {
                            mu=pmax(0.001, state$o.deadi[dstart:dend]),
                            size=o.wdmorti * mort_nbinom_size, log=T))
 
-    it <<- it + 1
-
-    result <- y.loglC + o.loglC + loglH + y.loglD + o.loglD
+    result <- y.loglC + o.loglC + loglH + loglHRatio + y.loglD + o.loglD
     
     if (it %% 1000 == 0) {
         print(params)
-	print(c(it, y.loglC, o.loglC, loglH, y.loglD, o.loglD, result))
+	print(c(it, y.loglC, o.loglC, loglH, loglHRatio, y.loglD, o.loglD, result))
         state <<- calcNominalState(state)
 	graphs()
     }
@@ -600,7 +609,7 @@ init <- c(2.7, 1.7, 1.7,
           d4 - d3, 1, 0.2, 0.05,
                    0.7, 0.2, 0.01,
           d6 - d5, 1.1, 0.4, 0.03,
-          d7 - d6, 1.1, 0.4, 0.03,
+          d7 - d6, 1.4, 0.4, 0.03,
           0.9, 0.9, 0.9)
 
 df_params <- data.frame(name = fit.paramnames,

@@ -123,11 +123,14 @@ weekgroup$x[is.na(weekgroup$x)] = 0
 ## Based on "Belgian Covid-19 Mortaility ...", Geert Molenbergs et. al; Table 6
 g.ifr <- c(0.0005, 0.017, 0.21, 2.2, 4.29, 11.8) / 100
 
+ifrf = 0
+ifrd = as.Date("2020-09-15")
+
 calcifr.y <- function(x) {
     x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
 
-    if (i > (as.Date("2020-08-15") - dstartdate)) {
-        x <- x + 1 * ifr_epsilon
+    if (i > (ifrd - dstartdate)) {
+        x <- x + ifrf * ifr_epsilon
     }
     i <<- i + 7
     
@@ -145,8 +148,8 @@ calcifr.o <- function(x) {
 calcifr <- function(x) {
     x <- x + ifr_epsilon  ## As if a multinomial prior
 
-    if (i > (as.Date("2020-08-15") - dstartdate)) {
-        x[1:3] <- x[1:3] + 1 * ifr_epsilon
+    if (i > (ifrd - dstartdate)) {
+        x[1:3] <- x[1:3] + ifrf * ifr_epsilon
     }
     i <<- i + 7
 
@@ -224,8 +227,8 @@ dev.off()
 calchr.y <- function(x) {
     x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
 
-    if (i > (as.Date("2020-08-15") - dstartdate)) {
-         x <- x + 1 * ifr_epsilon
+    if (i > (ifrd - dstartdate)) {
+         x <- x + ifrf * ifr_epsilon
     }
     i <<- i + 7
 
@@ -250,8 +253,8 @@ calchr.o <- function(x) {
 calchr <- function(x) {
     x <- x + ifr_epsilon  ## As if a multinomial prior
 
-    if (i > (as.Date("2020-08-15") - dstartdate)) {
-         x[1:3] <- x[1:3] + 1 * ifr_epsilon
+    if (i > (ifrd - dstartdate)) {
+         x[1:3] <- x[1:3] + ifrf * ifr_epsilon
     }
     i <<- i + 7
     
@@ -333,7 +336,7 @@ glogis <- function(t, A, K, C, Q, B, M, v) {
 
 vs <- 1:length(y.ifr)
 
-g <- glogis(vs, 0, 1, 1, 0.5, 0.1, 170, 0.5)
+g <- glogis(vs, 0, 1, 1, 0.5, 0.1, 200, 0.5)
 ##g <- glogis(vs, 0, 1, 1, 0.5, 0.05, 140, 0.5)
 
 plot(x, y.ifr, type='l', ylim=c(0, 1E-3))
