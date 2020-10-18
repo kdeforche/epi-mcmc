@@ -214,11 +214,12 @@ all_plots_age <- function(date_markers) {
     ## dm1[(start + 1):(start + length(dmorti))] = dmorti
     ## p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=0.5, color="#1144CC")
 
+    p1 <- p1 + theme(legend.position = c(0.2, 0.85))
+
     if (zoom == 1) {
         p1 <- p1 + coord_cartesian(ylim = c(0, 100))
     } else if (zoom == 2) {
-        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 100))
-        p1 <- p1 + theme(legend.position = c(0.2, 0.85))
+        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 100))
     }
 
     ## Add y curves
@@ -314,12 +315,13 @@ all_plots_age <- function(date_markers) {
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
 
+    p3 <- p3 + theme(legend.position = c(0.2, 0.85))
+
     if (zoom == 1) {
         p3 <- p3 + coord_cartesian(ylim = c(0, 12000))
     } else if (zoom == 2) {
-        p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+        p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
                                    ylim = c(0, 12000))
-        p3 <- p3 + theme(legend.position = c(0.2, 0.85))
     }
 
 
@@ -338,11 +340,12 @@ all_plots_age <- function(date_markers) {
     dm3b[(start + 1):(start + length(dhospi))] = dhospi
     p3b <- p3b + geom_line(aes(y = dm3b), size=0.1) + geom_point(aes(y = dm3b),  size=0.25, color="#581845")
 
+    p3b <- p3b + theme(legend.position = c(0.2, 0.85))
+
     if (zoom == 1) {
         p3b <- p3b + coord_cartesian(ylim = c(0, 500))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 500))
-        p3b <- p3b + theme(legend.position = c(0.2, 0.85))
+        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 500))
     }
 
     ## Add y/o curves
@@ -365,7 +368,7 @@ all_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p4 <- p4 + coord_cartesian(ylim = c(0, 10))
     } else if (zoom == 2) {
-        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
                                    ylim = c(0, 10))
     }
 
@@ -402,7 +405,7 @@ all_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
     } else if (zoom == 2) {
-        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
                                    ylim = c(0, 2))
     } else {
         p6 <- p6 + coord_cartesian(ylim = c(0, NA))
@@ -419,9 +422,9 @@ all_plots_age <- function(date_markers) {
     page <- page + theme(legend.position = "none")
 
     if (zoom == 2) {
-        pifr <- pifr + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+        pifr <- pifr + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
                                        ylim = c(0, 0.5))
-        page <- page + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+        page <- page + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
                                        ylim = c(0, 50))
     } else {
         pifr <- pifr + coord_cartesian(ylim = c(0, 1.5))
@@ -448,7 +451,7 @@ death_hosp_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p1 <- p1 + coord_cartesian(ylim = c(0, 50))
     } else if (zoom == 2) {
-        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 50))
+        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 50))
     }
 
     ## Add y curves
@@ -490,7 +493,7 @@ death_hosp_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p3b <- p3b + coord_cartesian(ylim = c(0, 300))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date), ylim = c(0, 200))
+        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 200))
     }
 
     ## Add y/o curves
@@ -511,7 +514,7 @@ death_hosp_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p4 <- p4 + coord_cartesian(ylim = c(0, 2))
     } else if (zoom == 2) {
-        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
                                    ylim = c(0, 2))
     }
 
@@ -548,7 +551,7 @@ death_hosp_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
     } else if (zoom == 2) {
-        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/6/1"), plot_end_date),
+        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
                                    ylim = c(0, 2))
     } else {
         p6 <- p6 + coord_cartesian(ylim = c(0, NA))
@@ -898,7 +901,7 @@ p7 <- addExtraPlotQ(p7, data_sample, dateRange,
 p7 <- p7 + coord_cartesian(ylim = c(0, 2.5))
 p7 <- p7 + scale_linetype_manual(name = "Age group",
                                  values = c("dotted", "dashed"),
-                                 labels = c("> 60", "< 60"))
+                                 labels = c("> 65", "< 65"))
 p7 <- p7 + theme(legend.position = c(0.5, 0.9))
 
 pdf("Re-groups.pdf", width=6, height=5)
@@ -920,18 +923,24 @@ print(y.est.infected[nowi,])
 print(o.est.infected[nowi,])
 
 est.tr <- function(state, params) {
-    ycase_latency <- ocase_latency <- 12
     y.i = -diff(state$y.S)
     o.i = -diff(state$o.S)
 
+    case_cv_profile = caseProfile(12, 5)
+    padding = -case_cv_profile$kbegin + 1
+
+    y.d = y.i
+    y.d[(padding + 1):length(y.i)] = convolute(y.i, padding + 1, length(y.i), case_cv_profile)
+
+    o.d = o.i
+    o.d[(padding + 1):length(o.i)] = convolute(o.i, padding + 1, length(o.i), case_cv_profile)
+    
     t1 <- state$offset
     L <- length(y.dcasei)
 
-    result <- rep(NA, length(y.i))
+    result <- rep(NA, length(y.d))
 
-    d1 <- (y.dcasei + o.dcasei) /
-        (y.i[(t1 - ycase_latency):(t1 + L - ycase_latency - 1)] +
-         o.i[(t1 - ocase_latency):(t1 + L - ocase_latency - 1)])
+    d1 <- (y.dcasei + o.dcasei) / (y.d[t1:(t1 + L - 1)] + o.d[t1:(t1 + L - 1)])
 
     d <- data.frame(value=d1)
     d$index = seq(1:length(d1))

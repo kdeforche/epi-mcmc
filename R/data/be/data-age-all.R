@@ -123,17 +123,9 @@ weekgroup$x[is.na(weekgroup$x)] = 0
 ## Based on "Belgian Covid-19 Mortaility ...", Geert Molenbergs et. al; Table 6
 g.ifr <- c(0.0005, 0.017, 0.21, 2.2, 4.29, 11.8) / 100
 
-ifrf = 0
-ifrd = as.Date("2020-09-15")
-
 calcifr.y <- function(x) {
     x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
 
-    if (i > (ifrd - dstartdate)) {
-        x <- x + ifrf * ifr_epsilon
-    }
-    i <<- i + 7
-    
     y.ifr <- sum(x[1:3]) / sum(x[1:3] / g.ifr[1:3])
     y.ifr
 }   
@@ -148,19 +140,12 @@ calcifr.o <- function(x) {
 calcifr <- function(x) {
     x <- x + ifr_epsilon  ## As if a multinomial prior
 
-    if (i > (ifrd - dstartdate)) {
-        x[1:3] <- x[1:3] + ifrf * ifr_epsilon
-    }
-    i <<- i + 7
-
     ifr <- sum(x) / sum(x / g.ifr)
     ifr
 }   
 
-i <<- 1
 y.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr.y, drop=F)
 o.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr.o, drop=F)
-i <<- 1
 all.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr, drop=F)
 
 weekifr <- data.frame(y.weekifr$week, y.weekifr$x, o.weekifr$x, all.weekifr$x)
@@ -227,11 +212,6 @@ dev.off()
 calchr.y <- function(x) {
     x <- x + ifr_epsilon ## As if a multinomial prior, would be better if we do some windowing
 
-    if (i > (ifrd - dstartdate)) {
-         x <- x + ifrf * ifr_epsilon
-    }
-    i <<- i + 7
-
     inf <- x[1:3] / g.ifr[1:3]
     hosp <- g.hr[1:3] * inf
     
@@ -253,11 +233,6 @@ calchr.o <- function(x) {
 calchr <- function(x) {
     x <- x + ifr_epsilon  ## As if a multinomial prior
 
-    if (i > (ifrd - dstartdate)) {
-         x[1:3] <- x[1:3] + ifrf * ifr_epsilon
-    }
-    i <<- i + 7
-    
     inf <- x / g.ifr
     hosp <- g.hr * inf
 
@@ -265,10 +240,8 @@ calchr <- function(x) {
     hr
 }   
 
-i <<- 1
 y.weekhr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calchr.y, drop=F)
 o.weekhr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calchr.o, drop=F)
-i <<- 1
 all.weekhr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calchr, drop=F)
 
 weekhr <- data.frame(y.weekhr$week, y.weekhr$x, o.weekhr$x, all.weekhr$x)
@@ -337,11 +310,6 @@ glogis <- function(t, A, K, C, Q, B, M, v) {
 vs <- 1:length(y.ifr)
 
 g <- glogis(vs, 0, 1, 1, 0.5, 0.1, 200, 0.5)
-##g <- glogis(vs, 0, 1, 1, 0.5, 0.05, 140, 0.5)
 
 plot(x, y.ifr, type='l', ylim=c(0, 1E-3))
 points(x, y.ifr * (1 - 0.5 * g))
-
-##g1 <- glogis(vs, 0, 1, 1, 0.5, 0.05, 70, 0.5)
-##plot(x, o.hr, type='l', ylim=c(0, 0.3))
-## o.hr <- o.hr * (1 + 3 * g1)

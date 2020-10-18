@@ -1,6 +1,6 @@
 library("deSolve")
-system("R CMD SHLIB model-agem.cpp")
-dyn.load("model-agem.so")
+system("R CMD SHLIB model-agen.cpp")
+dyn.load("model-agen.so")
 
 InvalidDataOffset <- 10000
 Initial <- 1
@@ -91,9 +91,12 @@ calculateModel <- function(params, period)
     betay7 <- params[37]
     betao7 <- params[38]
     betayo7 <- params[39]
-    betay8 <- params[40] * betay7
-    betao8 <- params[41] * betao7
-    betayo8 <- params[42] * betayo7
+    betay8 <- betay7
+    betao8 <- betao7
+    betayo8 <- betayo7
+    betay9 <- params[40] * betay8
+    betao9 <- params[41] * betao8
+    betayo9 <- params[42] * betayo8
 
     ycase_latency <- ocase_latency <- 12
     CLsd <- 5
@@ -147,7 +150,8 @@ calculateModel <- function(params, period)
                t5 = 1E10, betay5 = betay5, betao5 = betao5, betayo5 = betayo5,
                t6 = 1E10, betay6 = betay6, betao6 = betao6, betayo6 = betayo6,
                t7 = 1E10, betay7 = betay7, betao7 = betao7, betayo7 = betayo7,
-               t8 = 1E10, betay8 = betay8, betao8 = betao8, betayo8 = betayo8)
+               t8 = 1E10, betay8 = betay8, betao8 = betao8, betayo8 = betayo8,
+               t9 = 1E10, betay9 = betay9, betao9 = betao9, betayo9 = betayo9)
 
     Y <- c(Sy = y.N - Initial, E1y = Initial, E2y = 0, Iy = 0, Ry = 0,
            So = o.N, E1o = 0, E2o = 0, Io = 0, Ro = 0)
@@ -155,7 +159,7 @@ calculateModel <- function(params, period)
     times <- (padding + 1):(padding + period)
 
     out <- ode(Y, times, func = "derivs", parms = parms,
-               dllname = "model-agem",
+               dllname = "model-agen",
                initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
@@ -182,6 +186,7 @@ calculateModel <- function(params, period)
         t6 <- t5 + t6o
         t7 <- t6 + t7o
         t8 <- data_offset + d8
+        t9 <- t8 + 7
 
         parms <- c(Ny = y.N, No = o.N,
                    a1 = a1, a2 = a2, gamma = gamma,
@@ -196,10 +201,11 @@ calculateModel <- function(params, period)
                    t5 = t5, betay5 = betay5, betao5 = betao5, betayo5 = betayo5,
                    t6 = t6, betay6 = betay6, betao6 = betao6, betayo6 = betayo6,
                    t7 = t7, betay7 = betay7, betao7 = betao7, betayo7 = betayo7,
-                   t8 = t8, betay8 = betay8, betao8 = betao8, betayo8 = betayo8)
+                   t8 = t8, betay8 = betay8, betao8 = betao8, betayo8 = betayo8,
+                   t9 = t9, betay9 = betay9, betao9 = betao9, betayo9 = betayo9)
 
         out <- ode(Y, times, func = "derivs", parms = parms,
-                   dllname = "model-agem",
+                   dllname = "model-agen",
                    initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
     }
 
@@ -216,8 +222,8 @@ calculateModel <- function(params, period)
     state$y.Re[(padding + 1):(padding + period)] = out[,14]
     state$o.Re[(padding + 1):(padding + period)] = out[,15]
 
-    gyifr <- y.ifr * fyifr
-    gyhr <- y.hr * fyhr
+    gyifr <- y.ifr * (1 + (fyifr - 1) * g)
+    gyhr <- y.hr * (1 + (fyhr - 1) * g)
     
     ## y.case
     s2 <- y.N - convolute(state$y.S, padding + 1, padding + period, y.case_cv_profile)
@@ -405,12 +411,12 @@ calclogp <- function(params) {
     betay7 <- params[37]
     betao7 <- params[38]
     betayo7 <- params[39]
-    fy8 <- params[40]
-    fo8 <- params[41]
-    fyo8 <- params[42]
-    betay8 <- fy8 * betay7
-    betao8 <- fo8 * betao7
-    betayo8 <- fyo8 * betayo7
+    betay8 <- betay7
+    betao8 <- betao7
+    betayo8 <- betayo7
+    fy9 <- params[40]
+    fo9 <- params[41]
+    fyo9 <- params[42]
 
     logPriorP <- 0
     
@@ -419,12 +425,12 @@ calclogp <- function(params) {
                                    mean=d3, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o,
                                    mean=d4, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(d5 + t6o, mean=d6, sd=10, log=T)
-    logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=10, log=T)
+    logPriorP <- logPriorP + dnorm(d5 + t6o, mean=d6, sd=5, log=T)
+    logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=4, log=T)
 
-    SD <- log(2) ## SD = +/- 100%
-    lSD <- log(1.5) ## SD = +/- 50%
-    
+    SD <- log(2) ## SD = */ 2
+    lSD <- log(1.5) ## SD = */ 1.5
+
     logPriorP <- logPriorP + dlnorm(betay0/betay1, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao0/betao1, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo0/betayo1, 0, SD, log=T)
@@ -434,27 +440,29 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betay3/betay4, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao2/betao4, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo2/betayo4, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betay6/betay7, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao6/betao7, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo6/betayo7, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betay7/betay8, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao7/betao8, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo7/betayo8, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay5/betay6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao5/betao6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo5/betayo6, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay6/betay7, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao6/betao7, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo6/betayo7, 0, lSD, log=T)
 
-    logPriorP <- logPriorP + dnorm(betao7, mean=0.5 * gamma, sd=0.3 * gamma, log=T)
-    logPriorP <- logPriorP + dnorm(betao8, mean=0.5 * gamma, sd=0.3 * gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao7, mean=0.5 * gamma, sd=0.2 * gamma, log=T)
+    logPriorP <- logPriorP + dnorm(betao8 * fo9, mean=0.5 * gamma, sd=0.2 * gamma, log=T)
     
-    logPriorP <- logPriorP + dlnorm(fy8, log(0.9), log(1.05), log=T)
-    logPriorP <- logPriorP + dlnorm(fo8, log(0.9), log(1.05), log=T)
-    logPriorP <- logPriorP + dlnorm(fyo8, log(0.9), log(1.05), log=T)
+    logPriorP <- logPriorP + dlnorm(fy9, log(0.85), log(1.07), log=T)
+    logPriorP <- logPriorP + dlnorm(fo9, log(0.85), log(1.07), log=T)
+    logPriorP <- logPriorP + dlnorm(fyo9, log(0.85), log(1.07), log=T)
 
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(yhosp_latency, mean=14, sd=0.5, log=T)
+    logPriorP <- logPriorP + dnorm(ohosp_latency, mean=14, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(ydied_latency, mean=16, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=2, log=T)
 
-    logPriorP <- logPriorP + dlnorm(fyifr, 0, log(1.5), log=T) # +/- 50%
-    logPriorP <- logPriorP + dlnorm(fyhr, 0, log(1.5), log=T)
+    logPriorP <- logPriorP + dlnorm(fyifr, log(0.3), log(2), log=T) # */ 2
+    logPriorP <- logPriorP + dlnorm(fyhr, log(0.3), log(2), log=T)
 
     logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(ohosp_rate, 0, SD, log=T)
@@ -463,6 +471,8 @@ calclogp <- function(params) {
 }
 
 calclogl <- function(params, x) {
+    it <<- it + 1
+
     state <<- calculateModel(params, FitTotalPeriod)
 
     if (state$offset == InvalidDataOffset)
@@ -523,8 +533,17 @@ calclogl <- function(params, x) {
              sum(dnbinom(dhospi[d.reliable.hosp:length(dhosp)],
                          mu=pmax(0.1, (state$y.hospi + state$o.hospi)
                                  [(dstart + d.reliable.hosp + 1):dend]),
-                         size=hosp_nbinom_size2, log=T))
+                         size=hosp_nbinom_size2, log=T)) +
+             sum(dnbinom(dhospi[(length(dhosp) - 7):length(dhosp)],
+                         mu=pmax(0.1, (state$y.hospi + state$o.hospi)[(dend - 7):dend]),
+                         size=hosp_nbinom_size2 * 3, log=T))
 
+    if (it %% 1000 == 0) {
+        a <- dhospi[length(dhosp)]
+        b <- (state$y.hospi + state$o.hospi)[dend]
+        print(c(a, b, dnbinom(a, mu=b, size=hosp_nbinom_size2 * 3, log=T)))
+    }
+    
     ## between June 22st and September 14th, ratio y/o should be 56.7/43.3 +/- 5%
     ytotal = sum(state$y.hospi[(dstart + d.hosp.o1):(dstart + d.hosp.o2)])
     ototal = sum(state$o.hospi[(dstart + d.hosp.o1):(dstart + d.hosp.o2)])
@@ -555,8 +574,6 @@ calclogl <- function(params, x) {
                            mu=pmax(0.001, state$o.deadi[dstart:dend]),
                            size=o.wdmorti * mort_nbinom_size, log=T))
 
-    it <<- it + 1
-
     result <- y.loglC + o.loglC + loglH + loglHRatio + y.loglD + o.loglD
     
     if (it %% 1000 == 0) {
@@ -582,10 +599,10 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "betay5", "betao5", "betayo5",
                     "t6o", "betay6", "betao6", "betayo6",
                     "t7o", "betay7", "betao7", "betayo7",
-                    "fy8", "fo8", "fyo8")
+                    "fy9", "fo9", "fyo9")
 keyparamnames <- c("betay6", "betao6", "betayo6",
                    "betay7", "betao7", "betayo7",
-                   "fy8", "fo8", "fyo8")
+                   "fy9", "fo9", "fyo9")
 fitkeyparamnames <- keyparamnames
 
 init <- c(2.7, 1.7, 1.7,
@@ -593,13 +610,13 @@ init <- c(2.7, 1.7, 1.7,
           0.6, 0.4, 0.1,
           2000, 1, 15, 15,
           50, 2.5, 14, 21,
-          16, -10, 5, 5, 0.7, 0.8,
+          16, -10, 5, 5, 0.15, 0.5,
           d3 - lockdown_offset - lockdown_transition_period,
           d4 - d3, 1, 0.2, 0.05,
                    0.7, 0.2, 0.01,
           d6 - d5, 1.1, 0.4, 0.03,
-          d7 - d6, 1.1, 0.4, 0.03,
-          0.9, 0.9, 0.9)
+          d7 - d6, 1.4, 0.4, 0.08,
+          0.85, 0.85, 0.85)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 2 * gamma, 2 * gamma,
@@ -607,7 +624,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
                                 3, 0.5, 3, 10,
                                 3, 0.5, 3, 10,
-                                0, -30, 2, 2, 0.1, 0.1,
+                                0, -30, 2, 2, 0.05, 0.05,
                                 60,
                                 10, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
                                     0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
@@ -620,7 +637,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 5000, 1.5, 25, 50,
                                 100, 6, 25, 50,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
-                                30, 9, 9, 3, 3,
+                                30, 9, 9, 1.5, 1.5,
                                 90,
                                 50, 3 * gamma, 3 * gamma, 3 * gamma,
                                     1.5 * gamma, 1.5 * gamma, 0.5 * gamma,
