@@ -825,7 +825,7 @@ dates <- date_markers
 est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 250, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
 
-print(c(est.Re[Sys.Date() - dstartdate + 1,]))
+print(c(est.Re[Sys.Date() - dstartdate,]))
 
 pdf("current-state-2.pdf", width=25, height=10)
 

@@ -456,8 +456,8 @@ calclogp <- function(params) {
 
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(yhosp_latency, mean=14, sd=0.5, log=T)
-    logPriorP <- logPriorP + dnorm(ohosp_latency, mean=14, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(yhosp_latency, mean=10, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(ohosp_latency, mean=10, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=16, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=2, log=T)
 
@@ -501,14 +501,14 @@ calclogl <- function(params, x) {
                            size=case_nbinom_size1, log=T)) +
                sum(dnbinom(y.dcasei[d.reliable.cases:length(y.dcasei)],
                            mu=pmax(0.1, state$y.casei[(dstart + d.reliable.cases + 1):dend]),
-                           size=case_nbinom_size2, log=T))
+                           size=case_nbinom_sizey2, log=T))
 
     o.loglC <- sum(dnbinom(o.dcasei[1:(d.reliable.cases-1)],
                            mu=pmax(0.1, state$o.casei[dstart:(dstart + d.reliable.cases)]),
                            size=case_nbinom_size1, log=T)) +
                sum(dnbinom(o.dcasei[d.reliable.cases:length(o.dcasei)],
                            mu=pmax(0.1, state$o.casei[(dstart + d.reliable.cases + 1):dend]),
-                           size=case_nbinom_size2, log=T))
+                           size=case_nbinom_sizeo2, log=T))
 
     ## hosp
     dstart <- state$offset
@@ -608,8 +608,8 @@ fitkeyparamnames <- keyparamnames
 init <- c(2.7, 1.7, 1.7,
           2.3, 0.8, 0.8,
           0.6, 0.4, 0.1,
-          2000, 1, 15, 15,
-          50, 2.5, 14, 21,
+          2000, 1, 10, 15,
+          50, 2.5, 10, 21,
           16, -10, 5, 5, 0.15, 0.5,
           d3 - lockdown_offset - lockdown_transition_period,
           d4 - d3, 1, 0.2, 0.05,
@@ -622,8 +622,8 @@ df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 2 * gamma, 2 * gamma,
                                 1 * gamma, 1 * gamma, 1 * gamma,
                                 0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
-                                3, 0.5, 3, 10,
-                                3, 0.5, 3, 10,
+                                3, 0.5, 6, 10,
+                                3, 0.5, 6, 10,
                                 0, -30, 2, 2, 0.05, 0.05,
                                 60,
                                 10, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
@@ -634,8 +634,8 @@ df_params <- data.frame(name = fit.paramnames,
                         max = c(8 * gamma, 8 * gamma, 8 * gamma,
                                 5 * gamma, 5 * gamma, 5 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
-                                5000, 1.5, 25, 50,
-                                100, 6, 25, 50,
+                                5000, 1.5, 15, 25,
+                                100, 6, 15, 25,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 30, 9, 9, 1.5, 1.5,
                                 90,
