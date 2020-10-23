@@ -9,6 +9,10 @@
 
 source("data.R")
 
+glogis <- function(t, A, K, C, Q, B, M, v) {
+    A + (K - A)/((C + Q * exp(-B * (t - M)))^(1/v))
+}
+
 ######
 ##
 ## Separate young and old deaths
@@ -161,6 +165,16 @@ o.ifr <- as.numeric(unlist(predict(m.oifr, yf)$y))
 m.ifr <- smooth.spline(weekifr$index, weekifr$all.weekifr.x, df=6)
 all.ifr <- as.numeric(unlist(predict(m.ifr, yf)$y))
 
+## Apply treatment improvements
+##  Estimated : 50% reduction in IFR since june
+trimp <- glogis(1:length(y.ifr), 1, 1 - ifr_red, 1, 0.5, 0.1,
+                as.numeric(as.Date("2020-06-01") - dstartdate),
+                0.5)
+
+y.ifr <- y.ifr * trimp
+o.ifr <- o.ifr * trimp
+all.ifr <- all.ifr * trimp
+
 pdf("ifr.pdf", width=15, height=5)
 par(mfrow=c(1,3))
 x <-seq(dstartdate, dstartdate+length(y.ifr)-1, by=1)
@@ -302,10 +316,6 @@ o.N <- N - y.N
 ###################
 ##
 ###################
-
-glogis <- function(t, A, K, C, Q, B, M, v) {
-    A + (K - A)/((C + Q * exp(-B * (t - M)))^(1/v))
-}
 
 vs <- 1:length(y.ifr)
 

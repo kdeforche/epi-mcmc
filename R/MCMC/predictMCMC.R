@@ -318,10 +318,10 @@ all_plots_age <- function(date_markers) {
     p3 <- p3 + theme(legend.position = c(0.2, 0.85))
 
     if (zoom == 1) {
-        p3 <- p3 + coord_cartesian(ylim = c(0, 12000))
+        p3 <- p3 + coord_cartesian(ylim = c(0, 15000))
     } else if (zoom == 2) {
         p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
-                                   ylim = c(0, 12000))
+                                   ylim = c(0, 15000))
     }
 
 
@@ -343,9 +343,9 @@ all_plots_age <- function(date_markers) {
     p3b <- p3b + theme(legend.position = c(0.2, 0.85))
 
     if (zoom == 1) {
-        p3b <- p3b + coord_cartesian(ylim = c(0, 500))
+        p3b <- p3b + coord_cartesian(ylim = c(0, 750))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 500))
+        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 750))
     }
 
     ## Add y/o curves
@@ -825,21 +825,20 @@ dates <- date_markers
 est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 250, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
 
-print(c(est.Re[Sys.Date() - dstartdate,]))
+print(c(est.Re[Sys.Date() - dstartdate + 1,]))
 
 pdf("current-state-2.pdf", width=25, height=10)
 
-zoom <- 1
-all_plots(dates)
+## zoom <- 1
+## all_plots(dates)
 zoom <- 0
 all_plots(dates)
 zoom <- 2
 all_plots(dates)
 
-zoom <- 0
-plot_end_date <- Sys.Date()
-
-all_plots(dates)
+## zoom <- 0
+## plot_end_date <- Sys.Date()
+## all_plots(dates)
 
 plot_end_date <- as.Date("2021/1/1")
 
