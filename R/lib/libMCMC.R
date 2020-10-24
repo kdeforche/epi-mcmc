@@ -266,7 +266,7 @@ makePlot2 <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
     result
 }
 
-addExtraPlotQ <- function(plot, sample, dateRange, fun, colour, lty)
+addExtraPlotQ <- function(plot, sample, dateRange, fun, colour2, lty)
 {
     period <- as.numeric(dateRange[2] - dateRange[1])
     startoffset <- as.numeric(dstartdate - dateRange[1])
@@ -275,9 +275,9 @@ addExtraPlotQ <- function(plot, sample, dateRange, fun, colour, lty)
     colnames(qd) <- c("q5", "q25", "q50", "q75", "q95")
     
     result <- plot +
-        geom_ribbon(aes(ymin = qd$q5, ymax=qd$q95, fill=brightness(colour, 1.5)), alpha=0.1) +
-        geom_ribbon(aes(ymin = qd$q25, ymax=qd$q75, fill=brightness(colour, 3)), alpha=0.1) +
-        geom_line(aes(y = qd$q50, linetype = lty), colour=colour, size = 0.5)
+        geom_ribbon(aes(ymin = qd$q5, ymax=qd$q95, fill=brightness(colour2, 1.5)), alpha=0.1) +
+        geom_ribbon(aes(ymin = qd$q25, ymax=qd$q75, fill=brightness(colour2, 3)), alpha=0.1) +
+        geom_line(aes(y = qd$q50, linetype = lty), colour=colour2, size = 0.5)
 
     result
 }
@@ -293,7 +293,7 @@ addExtraPlotQ2 <- function(plot, sample, dateRange, fun, colour, lty)
     result <- plot +
         geom_ribbon(aes(ymin = qd$cq5, ymax=qd$cq95, fill="grey70"), alpha=0.4) +
         geom_ribbon(aes(ymin = qd$cq25, ymax=qd$cq75, fill="grey60"), alpha=0.4) +
-        geom_line(aes(y = qd$cq50), linetype = lty, colour=colour, size = 0.5)
+        geom_line(aes(y = qd$cq50, linetype = lty), colour=colour, size = 0.5)
 
     result
 }

@@ -13,9 +13,13 @@ be.hosp <- read.csv(url("https://epistat.sciensano.be/Data/COVID19BE_HOSP.csv"))
 ##be.hosp <- read.csv("COVID19BE_HOSP.csv")
 print(aggregate(be.hosp$NEW_IN, by=list(date=be.hosp$DATE), FUN=sum))
 dhospi <- aggregate(be.hosp$NEW_IN, by=list(date=be.hosp$DATE), FUN=sum)$x
+dbeds <- aggregate(be.hosp$TOTAL_IN, by=list(date=be.hosp$DATE), FUN=sum)$x
+dicu <- aggregate(be.hosp$TOTAL_IN_ICU, by=list(date=be.hosp$DATE), FUN=sum)$x
 
 ## older data estimated from charts in older reports, missing in file
 dhospi <- c(3, 12, 47, 50, 50, dhospi)
+dbeds <- c(rep(NA, 5), dbeds)
+dicu <- c(rep(NA, 5), dicu)
 
 ## remove latest data point, seems to be an incomplete day
 ## dhospi <- dhospi[1:(length(dhospi) - 1)]

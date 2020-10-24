@@ -96,6 +96,40 @@ est.age <- function(state, params) {
     age
 }
 
+calcLogNormCumProfile <- function(mean, sd)
+{
+    kbegin = 0
+    kend = 60
+
+    result = NULL
+    result$kbegin = -kend
+    result$kend = -kbegin
+    result$values = numeric(result$kend - result$kbegin)
+    i = 1
+    for (k in kbegin:kend) {
+        result$values[i] = plnorm(k-1, mean=log(mean), sd=log(sd))
+        i = i + 1
+    }
+
+    result$values = 1 - result$values
+
+    result
+}
+
+inhospprof <- calcLogNormCumProfile(8.21, 2.44)
+delta <- 2
+
+est.beds <- function(state, params) {
+    s <- convolute(1.09 * (state$y.hospi + state$o.hospi), state$offset, length(state$y.hospi), inhospprof)
+    c(rep(0, state$offset - delta), s, rep(NA, delta))
+}
+
+est.icubeds <- function(state, params) {
+    beds <- est.beds(state, params)
+    icu <- c(rep(0, 5), beds[1:(length(beds) - 5)] / 3.9)
+    icu
+}
+
 DIC <- function(posterior1) {
   draw = posterior1
 
@@ -421,18 +455,73 @@ all_plots_age <- function(date_markers) {
                      "#66CC66", c("Mean age", "Mean age of infected population"), dates, 'solid')
     page <- page + theme(legend.position = "none")
 
+
+    fair_cols <- c("#38170B","#BF1B0B", "#FFC465", "#237DB5", "#752A22")
+
+    colbeds <- fair_cols[4]
+    colicu <- fair_cols[5]
+
+    lbeds <- "Hospital beds"
+    licu <- "ICU beds"
+    
+    pbeds <- makePlot(data_sample, dateRange, est.beds, colbeds,
+                      c("Count", "Hospital/ICU bed occupation"), dates, NULL)
+
+    pbeds <- addExtraPlotQ2(pbeds, data_sample, dateRange, est.icubeds, colicu, NULL)
+
+    pdbeds <- numeric(length(pbeds$data$x))
+    pdbeds[1:length(pbeds$data$x)] = NA
+    pdbeds[(start + 1):(start + length(dbeds))] = dbeds
+    pbeds <- pbeds + geom_line(aes(y = pdbeds, colour=colbeds), size=0.1) +
+        geom_point(aes(y = pdbeds, colour=colbeds), size=0.5)
+
+    pdicu <- numeric(length(pbeds$data$x))
+    pdicu[1:length(pbeds$data$x)] = NA
+    pdicu[(start + 1):(start + length(dicu))] = dicu
+    pbeds <- pbeds + geom_line(aes(y = pdicu, colour=colicu), size=0.1) +
+        geom_point(aes(y = pdicu, colour=colicu), size=0.5)
+
+    pbeds <- pbeds + scale_colour_identity(guide = "legend",
+                                           labels = c(lbeds, licu)) +
+        theme(legend.position = c(0.2, 0.85)) +
+        theme(legend.title = element_blank())
+
+    ## pbeds <- pbeds + geom_hline(yintercept=1500, linetype="dashed", color=colbeds, size=0.5) +
+    ##    geom_text(aes(as.Date("2020/09/01"), 1500, label = "Phase 0", vjust = -1))
+    ## pbeds <- pbeds + geom_hline(yintercept=2500, linetype="dashed", color=colbeds, size=0.5) +
+    ##     geom_text(aes(as.Date("2020/09/01"), 2500, label = "Phase 1A", vjust = -1))
+    pbeds <- pbeds + geom_hline(yintercept=5000, linetype="dashed", color=colbeds, size=0.5) +
+        geom_text(aes(as.Date("2020/08/15"), 5000, label = "Phase 1B", vjust = -0.3), color=colbeds)
+    pbeds <- pbeds + geom_hline(yintercept=7*1500, linetype="dashed", color=colbeds, size=0.5) +
+        geom_text(aes(as.Date("2020/08/15"), 7*1500, label = "Phase 2A", vjust = -0.3), color=colbeds)
+    pbeds <- pbeds + geom_hline(yintercept=7*2000, linetype="dashed", color=colbeds, size=0.5) +
+        geom_text(aes(as.Date("2020/08/15"), 7*2000, label = "Phase 2B", vjust = -0.3), color=colbeds)
+
+    ## pbeds <- pbeds + geom_hline(yintercept=300, linetype="dashed", color=colicu, size=0.5) +
+    ##     geom_text(aes(as.Date("2020/09/01"), 300, label = "Phase 0", vjust = -1))
+    ## pbeds <- pbeds + geom_hline(yintercept=500, linetype="dashed", color=colicu, size=0.5) +
+    ##     geom_text(aes(as.Date("2020/09/01"), 500, label = "Phase 1A", vjust = -1))
+    pbeds <- pbeds + geom_hline(yintercept=1000, linetype="dashed", color=colicu, size=0.5) +
+        geom_text(aes(as.Date("2020/08/15"), 1000, label = "Phase 1B", vjust = -0.3), color=colicu)
+    pbeds <- pbeds + geom_hline(yintercept=1500, linetype="dashed", color=colicu, size=0.5) +
+        geom_text(aes(as.Date("2020/08/15"), 1500, label = "Phase 2A", vjust = -0.3), color=colicu)
+    pbeds <- pbeds + geom_hline(yintercept=2000, linetype="dashed", color=colicu, size=0.5) +
+        geom_text(aes(as.Date("2020/08/15"), 2000, label = "Phase 2B", vjust = -0.3), color=colicu)
+
     if (zoom == 2) {
         pifr <- pifr + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
                                        ylim = c(0, 0.5))
         page <- page + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
                                        ylim = c(0, 50))
+        pbeds <- pbeds + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
+                                         ylim = c(0, 10000))
     } else {
         pifr <- pifr + coord_cartesian(ylim = c(0, 1.5))
         page <- page + coord_cartesian(ylim = c(0, 50))
     }
-    
+
     ##grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
-    grid.arrange(p1, p3b, p3, p4, p6, p5, pifr, page, nrow=2)
+    grid.arrange(p1, p3b, p3, pbeds, p4, p6, p5, pifr, nrow=2)
 }
 
 death_hosp_plots_age <- function(date_markers) {
