@@ -165,16 +165,6 @@ o.ifr <- as.numeric(unlist(predict(m.oifr, yf)$y))
 m.ifr <- smooth.spline(weekifr$index, weekifr$all.weekifr.x, df=6)
 all.ifr <- as.numeric(unlist(predict(m.ifr, yf)$y))
 
-## Apply treatment improvements
-##  Estimated : 50% reduction in IFR since june
-trimp <- glogis(1:length(y.ifr), 1, 1 - ifr_red, 1, 0.5, 0.1,
-                as.numeric(as.Date("2020-06-01") - dstartdate),
-                0.5)
-
-y.ifr <- y.ifr * trimp
-o.ifr <- o.ifr * trimp
-all.ifr <- all.ifr * trimp
-
 pdf("ifr.pdf", width=15, height=5)
 par(mfrow=c(1,3))
 x <-seq(dstartdate, dstartdate+length(y.ifr)-1, by=1)
@@ -319,7 +309,10 @@ o.N <- N - y.N
 
 vs <- 1:length(y.ifr)
 
-g <- glogis(vs, 0, 1, 1, 0.5, 0.1, 200, 0.5)
+g <- glogis(vs, 0, 1, 1, 0.5, 0.1,
+            200, 0.5)
+gtrimp <- glogis(vs, 0, 1, 1, 0.5, 0.1,
+                 as.numeric(as.Date("2020-07-01") - dstartdate), 0.5)
 
 plot(x, y.ifr, type='l', ylim=c(0, 1E-3))
-points(x, y.ifr * (1 - 0.5 * g))
+points(x, y.ifr * (1 - 0.5 * g) * (1 - 0.4 * gtrimp))
