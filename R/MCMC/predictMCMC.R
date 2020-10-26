@@ -1014,14 +1014,18 @@ est.tr <- function(state, params) {
     y.i = -diff(state$y.S)
     o.i = -diff(state$o.S)
 
-    case_cv_profile = caseProfile(12, 5)
-    padding = -case_cv_profile$kbegin + 1
+    ycase_latency <- params[44]
+    ocase_latency <- params[45]
+    
+    ycase_cv_profile = caseProfile(ycase_latency, 5)
+    ocase_cv_profile = caseProfile(ocase_latency, 5)
+    padding = max(-ycase_cv_profile$kbegin, -ocase_cv_profile$kbegin) + 1
 
     y.d = y.i
-    y.d[(padding + 1):length(y.i)] = convolute(y.i, padding + 1, length(y.i), case_cv_profile)
+    y.d[(padding + 1):length(y.i)] = convolute(y.i, padding + 1, length(y.i), ycase_cv_profile)
 
     o.d = o.i
-    o.d[(padding + 1):length(o.i)] = convolute(o.i, padding + 1, length(o.i), case_cv_profile)
+    o.d[(padding + 1):length(o.i)] = convolute(o.i, padding + 1, length(o.i), ocase_cv_profile)
     
     t1 <- state$offset
     L <- length(y.dcasei)

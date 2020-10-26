@@ -116,7 +116,7 @@ o.dmorti <- o.dmorti[1:(length(o.dmorti) - 2)]
 y.dmort <- cumsum(y.dmorti)
 o.dmort <- cumsum(o.dmorti)
 
-par(nrow=3)
+par(mfrow=c(1,3))
 barplot(y.dmorti)
 barplot(o.dmorti)
 barplot(y.dmorti + o.dmorti)
