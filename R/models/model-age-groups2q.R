@@ -554,7 +554,7 @@ calclogl <- function(params, x) {
                          size=hosp_nbinom_size2, log=T)) +
              sum(dnbinom(dhospi[(length(dhosp) - 7):length(dhosp)],
                          mu=pmax(0.1, (state$y.hospi + state$o.hospi)[(dend - 7):dend]),
-                         size=hosp_nbinom_size2 * 3, log=T))
+                         size=hosp_nbinom_size2 * 1, log=T))
 
     if (it %% 1000 == 0) {
         a <- dhospi[length(dhosp)]

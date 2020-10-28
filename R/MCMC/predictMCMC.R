@@ -251,9 +251,9 @@ all_plots_age <- function(date_markers) {
     p1 <- p1 + theme(legend.position = c(0.2, 0.85))
 
     if (zoom == 1) {
-        p1 <- p1 + coord_cartesian(ylim = c(0, 100))
+        p1 <- p1 + coord_cartesian(ylim = c(0, 150))
     } else if (zoom == 2) {
-        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 100))
+        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date), ylim = c(0, 150))
     }
 
     ## Add y curves
@@ -352,10 +352,10 @@ all_plots_age <- function(date_markers) {
     p3 <- p3 + theme(legend.position = c(0.2, 0.85))
 
     if (zoom == 1) {
-        p3 <- p3 + coord_cartesian(ylim = c(0, 15000))
+        p3 <- p3 + coord_cartesian(ylim = c(0, 20000))
     } else if (zoom == 2) {
-        p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
-                                   ylim = c(0, 15000))
+        p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
+                                   ylim = c(0, 20000))
     }
 
 
@@ -377,9 +377,9 @@ all_plots_age <- function(date_markers) {
     p3b <- p3b + theme(legend.position = c(0.2, 0.85))
 
     if (zoom == 1) {
-        p3b <- p3b + coord_cartesian(ylim = c(0, 750))
+        p3b <- p3b + coord_cartesian(ylim = c(0, 900))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 750))
+        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date), ylim = c(0, 900))
     }
 
     ## Add y/o curves
@@ -402,7 +402,7 @@ all_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p4 <- p4 + coord_cartesian(ylim = c(0, 10))
     } else if (zoom == 2) {
-        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
+        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
                                    ylim = c(0, 10))
     }
 
@@ -439,7 +439,7 @@ all_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
     } else if (zoom == 2) {
-        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
+        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
                                    ylim = c(0, 2))
     } else {
         p6 <- p6 + coord_cartesian(ylim = c(0, NA))
@@ -491,29 +491,29 @@ all_plots_age <- function(date_markers) {
     ## pbeds <- pbeds + geom_hline(yintercept=2500, linetype="dashed", color=colbeds, size=0.5) +
     ##     geom_text(aes(as.Date("2020/09/01"), 2500, label = "Phase 1A", vjust = -1))
     pbeds <- pbeds + geom_hline(yintercept=5000, linetype="dashed", color=colbeds, size=0.5) +
-        geom_text(aes(as.Date("2020/08/15"), 5000, label = "Phase 1B", vjust = -0.3), color=colbeds)
+        geom_text(aes(as.Date("2020/09/15"), 5000, label = "Phase 1B", vjust = -0.3), color=colbeds)
     pbeds <- pbeds + geom_hline(yintercept=7*1500, linetype="dashed", color=colbeds, size=0.5) +
-        geom_text(aes(as.Date("2020/08/15"), 7*1500, label = "Phase 2A", vjust = -0.3), color=colbeds)
+        geom_text(aes(as.Date("2020/09/15"), 7*1500, label = "Phase 2A", vjust = -0.3), color=colbeds)
     pbeds <- pbeds + geom_hline(yintercept=7*2000, linetype="dashed", color=colbeds, size=0.5) +
-        geom_text(aes(as.Date("2020/08/15"), 7*2000, label = "Phase 2B", vjust = -0.3), color=colbeds)
+        geom_text(aes(as.Date("2020/09/15"), 7*2000, label = "Phase 2B", vjust = -0.3), color=colbeds)
 
     ## pbeds <- pbeds + geom_hline(yintercept=300, linetype="dashed", color=colicu, size=0.5) +
     ##     geom_text(aes(as.Date("2020/09/01"), 300, label = "Phase 0", vjust = -1))
     ## pbeds <- pbeds + geom_hline(yintercept=500, linetype="dashed", color=colicu, size=0.5) +
     ##     geom_text(aes(as.Date("2020/09/01"), 500, label = "Phase 1A", vjust = -1))
     pbeds <- pbeds + geom_hline(yintercept=1000, linetype="dashed", color=colicu, size=0.5) +
-        geom_text(aes(as.Date("2020/08/15"), 1000, label = "Phase 1B", vjust = -0.3), color=colicu)
+        geom_text(aes(as.Date("2020/09/15"), 1000, label = "Phase 1B", vjust = -0.3), color=colicu)
     pbeds <- pbeds + geom_hline(yintercept=1500, linetype="dashed", color=colicu, size=0.5) +
-        geom_text(aes(as.Date("2020/08/15"), 1500, label = "Phase 2A", vjust = -0.3), color=colicu)
+        geom_text(aes(as.Date("2020/09/15"), 1500, label = "Phase 2A", vjust = -0.3), color=colicu)
     pbeds <- pbeds + geom_hline(yintercept=2000, linetype="dashed", color=colicu, size=0.5) +
-        geom_text(aes(as.Date("2020/08/15"), 2000, label = "Phase 2B", vjust = -0.3), color=colicu)
+        geom_text(aes(as.Date("2020/09/15"), 2000, label = "Phase 2B", vjust = -0.3), color=colicu)
 
     if (zoom == 2) {
-        pifr <- pifr + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
+        pifr <- pifr + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
                                        ylim = c(0, 0.5))
-        page <- page + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
+        page <- page + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
                                        ylim = c(0, 50))
-        pbeds <- pbeds + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
+        pbeds <- pbeds + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
                                          ylim = c(0, 10000))
     } else {
         pifr <- pifr + coord_cartesian(ylim = c(0, 1.5))
@@ -922,6 +922,7 @@ pdf("current-state-2.pdf", width=25, height=10)
 ## all_plots(dates)
 zoom <- 0
 all_plots(dates)
+plot_end_date <- as.Date("2020/12/1")
 zoom <- 2
 all_plots(dates)
 
