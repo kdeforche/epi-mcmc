@@ -218,8 +218,8 @@ calculateModel <- function(params, period)
     state$y.I[(padding + 1):(padding + period)] = out[,5]
     state$y.R[(padding + 1):(padding + period)] = out[,6]
     state$o.S[(padding + 1):(padding + period)] = out[,7]
-    state$o.E[(padding + 1):(padding + period)] = out[,8]
-    state$o.I[(padding + 1):(padding + period)] = out[,9] + out[,10]
+    state$o.E[(padding + 1):(padding + period)] = out[,8] + out[,9]
+    state$o.I[(padding + 1):(padding + period)] = out[,10]
     state$o.R[(padding + 1):(padding + period)] = out[,11]
     state$Re[(padding + 1):(padding + period)] = out[,12]
     state$Rt[(padding + 1):(padding + period)] = out[,13]
@@ -466,24 +466,21 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(fo9, log(0.85), log(1.07), log=T)
     logPriorP <- logPriorP + dlnorm(fyo9, log(0.85), log(1.07), log=T)
 
-    ## priors for latencies?
-    ## weight for first wave?
-    
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(ycase_latency, mean=10, sd=3, log=T)
     logPriorP <- logPriorP + dnorm(ocase_latency, mean=10, sd=3, log=T)
-    logPriorP <- logPriorP + dnorm(yhosp_latency, mean=10, sd=3, log=T)
-    logPriorP <- logPriorP + dnorm(ohosp_latency, mean=10, sd=3, log=T)
-    logPriorP <- logPriorP + dnorm(ydied_latency, mean=16, sd=2, log=T)
-    logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(yhosp_latency, mean=13, sd=3, log=T)
+    logPriorP <- logPriorP + dnorm(ohosp_latency, mean=13, sd=3, log=T)
+    logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=0.5, log=T)
+    logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=0.5, log=T)
 
     logPriorP <- logPriorP + dlnorm(fyifr, log(0.3), log(2), log=T) # */ 2
     logPriorP <- logPriorP + dlnorm(fyhr, log(0.3), log(2), log=T)
-    logPriorP <- logPriorP + dlnorm(ifrred, log(0.35), log(1.2), log=T) # */ 1.2
+    logPriorP <- logPriorP + dlnorm(ifrred, log(0.35), log(1.3), log=T) # */ 1.3
 
     logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(ohosp_rate, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(ohosp_rate, 0, lSD, log=T)
     
     logPriorP
 }
@@ -554,7 +551,7 @@ calclogl <- function(params, x) {
                          size=hosp_nbinom_size2, log=T)) +
              sum(dnbinom(dhospi[(length(dhosp) - 7):length(dhosp)],
                          mu=pmax(0.1, (state$y.hospi + state$o.hospi)[(dend - 7):dend]),
-                         size=hosp_nbinom_size2 * 1, log=T))
+                         size=hosp_nbinom_size2 * hosp_last7, log=T))
 
     if (it %% 1000 == 0) {
         a <- dhospi[length(dhosp)]
@@ -586,7 +583,7 @@ calclogl <- function(params, x) {
 
     y.loglD <- sum(dnbinom(y.dmorti,
                            mu=pmax(0.001, state$y.deadi[dstart:dend]),
-                           size=mort_nbinom_size, log=T))
+                           size=mort_nbinom_size*2, log=T))
 
     o.loglD <- sum(dnbinom(o.dmorti,
                            mu=pmax(0.001, state$o.deadi[dstart:dend]),

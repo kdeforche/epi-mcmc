@@ -1,6 +1,6 @@
 library("deSolve")
 
-cppname <- "model-ageo"
+cppname <- "model-ager"
 
 system(paste("R CMD SHLIB ", cppname, ".cpp", sep=""))
 dyn.load(paste(cppname, ".so", sep=""))
@@ -16,6 +16,7 @@ o.died_rate <- o.ifr[1]
 a1 <- 1/Tinc1
 a2 <- 1/Tinc2
 gamma <- 1/((G - (Tinc1 + Tinc2)) * 2)
+eta <- 1/(0.75 * 356) ## 9 months
 
 calcGammaProfile <- function(mean, sd)
 {
@@ -149,11 +150,11 @@ calculateModel <- function(params, period)
     state$Rt <- rep(0, padding + period)
     state$y.Re <- rep(0, padding + period)
     state$o.Re <- rep(0, padding + period)
+    state$y.i <- rep(0, padding + period)
+    state$o.i <- rep(0, padding + period)
 
-    state$i <- padding + 1
-    
     parms <- c(Ny = y.N, No = o.N,
-               a1 = a1, a2 = a2, gamma = gamma,
+               a1 = a1, a2 = a2, gamma = gamma, eta = eta,
                t0 = 1E10, t1 = 1E10, t2 = 1E10,
                betay0 = betay0, betao0 = betao0, betayo0 = betayo0,
                betay1 = betay1, betao1 = betao1, betayo1 = betayo1,
@@ -176,16 +177,17 @@ calculateModel <- function(params, period)
 
     out <- ode(Y, times, func = "derivs", parms = parms,
                dllname = cppname,
-               initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
+               initfunc = "initmod", nout = 6, outnames = c("Re", "Rt", "y.Re", "o.Re",
+                                                            "y.i", "o.i"))
 
-    state$y.S[(padding + 1):(padding + period1)] = out[,2]
-    state$o.S[(padding + 1):(padding + period1)] = out[,7]
+    state$y.i[(padding + 1):(padding + period1)] = out[,16]
+    state$o.i[(padding + 1):(padding + period1)] = out[,17]
 
-    s2 <- convolute(state$y.S, padding + 1, padding + period1, y.died_cv_profile)
-    state$y.died[(padding + 1):(padding + period1)] = (y.N - s2) * y.died_rate
+    y.deadi <- convolute(state$y.i, padding + 1, padding + period1, y.died_cv_profile) * y.died_rate
+    state$y.died[(padding + 1):(padding + period1)] = cumsum(y.deadi)
 
-    s2 <- convolute(state$o.S, padding + 1, padding + period1, o.died_cv_profile)
-    state$o.died[(padding + 1):(padding + period1)] = (o.N - s2) * o.died_rate
+    o.deadi <- convolute(state$o.i, padding + 1, padding + period1, o.died_cv_profile) * o.died_rate
+    state$o.died[(padding + 1):(padding + period1)] = cumsum(o.deadi)
 
     state$died = state$y.died + state$o.died
 
@@ -207,7 +209,7 @@ calculateModel <- function(params, period)
         t11 <- data_offset + d10 + 4
 
         parms <- c(Ny = y.N, No = o.N,
-                   a1 = a1, a2 = a2, gamma = gamma,
+                   a1 = a1, a2 = a2, gamma = gamma, eta = eta,
                    t0 = data_offset + lockdown_offset + t0o,
                    t1 = data_offset + lockdown_offset + max(t0o, 0),
                    t2 = t2,
@@ -228,7 +230,8 @@ calculateModel <- function(params, period)
         
         out <- ode(Y, times, func = "derivs", parms = parms,
                    dllname = cppname,
-                   initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
+                   initfunc = "initmod",
+                   nout = 6, outnames = c("Re", "Rt", "y.Re", "o.Re", "y.i", "o.i"))
     }
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
@@ -236,13 +239,15 @@ calculateModel <- function(params, period)
     state$y.I[(padding + 1):(padding + period)] = out[,5]
     state$y.R[(padding + 1):(padding + period)] = out[,6]
     state$o.S[(padding + 1):(padding + period)] = out[,7]
-    state$o.E[(padding + 1):(padding + period)] = out[,8]
-    state$o.I[(padding + 1):(padding + period)] = out[,9] + out[,10]
+    state$o.E[(padding + 1):(padding + period)] = out[,8] + out[,9]
+    state$o.I[(padding + 1):(padding + period)] = out[,10]
     state$o.R[(padding + 1):(padding + period)] = out[,11]
     state$Re[(padding + 1):(padding + period)] = out[,12]
     state$Rt[(padding + 1):(padding + period)] = out[,13]
     state$y.Re[(padding + 1):(padding + period)] = out[,14]
     state$o.Re[(padding + 1):(padding + period)] = out[,15]
+    state$y.i[(padding + 1):(padding + period)] = out[,16]
+    state$o.i[(padding + 1):(padding + period)] = out[,17]
 
     gycr <- pmin(1, ycase_rate * y.ifr * (1 + (fyifr - 1) * g))     ## fyifr: age reduction
     gyifr <- y.ifr * (1 + (fyifr - 1) * g) * (1 - ifrred * gtrimp)  ## ifrred: treatment improvement -> on lowers IFR 
@@ -253,8 +258,7 @@ calculateModel <- function(params, period)
     gohr <- ohosp_rate * o.hr
 
     ## y.case
-    s2 <- y.N - convolute(state$y.S, padding + 1, padding + period, y.case_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$y.i, padding + 1, padding + period, y.case_cv_profile)
     if (data_offset != InvalidDataOffset) {
         ## IFR is based on death, IHR is shifted in time (DL - CL) earlier
         t1 <- data_offset + round(-ydied_latency + ycase_latency)
@@ -270,8 +274,7 @@ calculateModel <- function(params, period)
     state$y.case = cumsum(state$y.casei)
 
     ## y.hosp
-    s2 <- y.N - convolute(state$y.S, padding + 1, padding + period, y.hosp_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$y.i, padding + 1, padding + period, y.hosp_cv_profile)
     if (data_offset != InvalidDataOffset) {
         ## IFR is based on death, IHR is shifted in time (DL - HL) earlier
         t1 <- data_offset + round(-ydied_latency + yhosp_latency)
@@ -286,8 +289,7 @@ calculateModel <- function(params, period)
     }
 
     ## y.dead
-    s2 <- y.N - convolute(state$y.S, padding + 1, padding + period, y.died_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$y.i, padding + 1, padding + period, y.died_cv_profile)
     if (data_offset != InvalidDataOffset) {
         t1 <- data_offset
         t2 <- min(padding + period, t1 + length(gyifr) - 1)
@@ -302,8 +304,7 @@ calculateModel <- function(params, period)
     state$y.died = cumsum(state$y.deadi)
 
     ## o.case
-    s2 <- o.N - convolute(state$o.S, padding + 1, padding + period, o.case_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$o.i, padding + 1, padding + period, o.case_cv_profile)
     if (data_offset != InvalidDataOffset) {
         t1 <- data_offset + round(-ydied_latency + ocase_latency)
         t2 <- min(padding + period, t1 + length(gocr) - 1)
@@ -318,8 +319,7 @@ calculateModel <- function(params, period)
     state$o.case = cumsum(state$o.casei)
 
     ## o.hosp
-    s2 <- o.N - convolute(state$o.S, padding + 1, padding + period, o.hosp_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$o.i, padding + 1, padding + period, o.hosp_cv_profile)
     if (data_offset != InvalidDataOffset) {
         t1 <- data_offset + round(-ydied_latency + ohosp_latency)
         t2 <- min(padding + period, t1 + length(gohr) - 1)
@@ -333,8 +333,7 @@ calculateModel <- function(params, period)
     }
 
     ## o.dead
-    s2 <- o.N - convolute(state$o.S, padding + 1, padding + period, o.died_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$o.i, padding + 1, padding + period, o.died_cv_profile)
     if (data_offset != InvalidDataOffset) {
         t1 <- data_offset
         t2 <- min(padding + period, t1 + length(goifr) - 1)

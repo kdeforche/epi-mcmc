@@ -134,7 +134,7 @@ graphs <- function() {
          log="y")
     points(days[1:length(dmort)],dmort,col='blue')
 
-    plot(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='blue',
+    plot(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='red',
          xlab='Date', ylab='Count', ylim=c(0.1, 20000),
          main='New deaths per day', log="y")
 
@@ -143,7 +143,7 @@ graphs <- function() {
     lines(days[1:len],(state$y.hospi)[state$offset:period], type='l', lty=2, col='orange')
     lines(days[1:len],(state$o.hospi)[state$offset:period], type='l', lty=3, col='orange')
 
-    points(days[1:length(dmorti)],y.dmorti,col=c("blue"))
+    points(days[1:length(dmorti)],y.dmorti,col=c("red"))
     points(days[1:length(dmorti)],o.dmorti,col=c("blue"))
     points(days[1:length(dhospi)],dhospi,col=c("orange"))
 }
