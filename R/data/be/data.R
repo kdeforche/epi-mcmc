@@ -78,7 +78,10 @@ d7 <- as.numeric(as.Date("2020/9/21") - dstartdate)
 d8 <- as.numeric(as.Date("2020/10/9") - dstartdate)
 d10 <- as.numeric(as.Date("2020/10/28") - dstartdate)
 
-d.reliable.cases <- as.numeric(as.Date("2020/8/1") - dstartdate)
+d.reliable.cases <- as.numeric(as.Date("2020/10/1") - dstartdate)
+##d.reliable.cases <- as.numeric(as.Date("2020/7/1") - dstartdate)
 d.reliable.hosp <- as.numeric(as.Date("2020/6/1") - dstartdate)
 d.hosp.o1 <- as.numeric(as.Date("2020/6/22") - dstartdate)
 d.hosp.o2 <- as.numeric(as.Date("2020/9/14") - dstartdate)
+d.symp.cases <- as.numeric(as.Date("2020/10/21") - dstartdate)
+symp.cases.factor <- 0.75

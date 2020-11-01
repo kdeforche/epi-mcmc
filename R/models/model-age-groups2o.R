@@ -108,9 +108,10 @@ calculateModel <- function(params, period)
     betao10 <- betao9
     betayo10 <- betayo9
 
-    betay11 <- betay2
-    betao11 <- min(betao2,betao9)
-    betayo11 <- min(betayo2,betayo9)
+    ## 2nd lockdown : 1.2 ~ 1st lockdown
+    betay11 <- 1.2 * betay2
+    betao11 <- min(1.2 * betao2, betao9)
+    betayo11 <- min(1.2 * betayo2, betayo9)
     
     CLsd <- 5
     
@@ -252,6 +253,8 @@ calculateModel <- function(params, period)
     goifr <- o.ifr                         * (1 - ifrred * gtrimp)
     gohr <- ohosp_rate * o.hr
 
+    t.symp <- data_offset + d.symp.cases
+
     ## y.case
     s2 <- y.N - convolute(state$y.S, padding + 1, padding + period, y.case_cv_profile)
     s2i <- c(s2[1], diff(s2))
@@ -264,9 +267,13 @@ calculateModel <- function(params, period)
             state$y.casei[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * gycr[1:(t2 - t1 + 1)]
             state$y.casei[t2:(padding + period)] = s2i[(t2 - padding):period] * gycr[length(gycr)]
         }
+
+        state$y.casei[t.symp:length(state$y.casei)] =
+            state$y.casei[t.symp:length(state$y.casei)] * symp.cases.factor
     } else {
         state$y.casei[(padding + 1):(padding + period)] = s2i * gycr[1]
     }
+
     state$y.case = cumsum(state$y.casei)
 
     ## y.hosp
@@ -312,9 +319,14 @@ calculateModel <- function(params, period)
             state$o.casei[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * gocr[1:(t2 - t1 + 1)]
             state$o.casei[t2:(padding + period)] = s2i[(t2 - padding):period] * gocr[length(gocr)]
         }
+
+        state$o.casei[t.symp:length(state$o.casei)] =
+            state$o.casei[t.symp:length(state$o.casei)] * symp.cases.factor
+
     } else {
         state$o.casei[(padding + 1):(padding + period)] = s2i * gocr[1]
     }
+
     state$o.case = cumsum(state$o.casei)
 
     ## o.hosp
@@ -486,8 +498,8 @@ calclogp <- function(params) {
 
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(ycase_latency, mean=10, sd=3, log=T)
-    logPriorP <- logPriorP + dnorm(ocase_latency, mean=10, sd=3, log=T)
+    logPriorP <- logPriorP + dnorm(ycase_latency, mean=10, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(ocase_latency, mean=10, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(yhosp_latency, mean=13, sd=3, log=T)
     logPriorP <- logPriorP + dnorm(ohosp_latency, mean=13, sd=3, log=T)
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=0.5, log=T)
@@ -639,45 +651,45 @@ keyparamnames <- c("betay6", "betao6", "betayo6",
                    "fy9", "fo9", "fyo9", "ifrred")
 fitkeyparamnames <- keyparamnames
 
-init <- c(2.7, 1.7, 1.7,
-          2.3, 0.8, 0.8,
-          0.6, 0.4, 0.1,
-          2000, 1, 10, 15,
-          50, 2.5, 10, 21,
-          16, -10, 5, 5, 0.15, 0.5,
+init <- c(2.9, 1.5, 1.5,
+          1.5, 0.8, 0.7,
+          0.7, 0.5, 0.07,
+          2200, 1.2, 15, 19,
+          60, 1.3, 13, 21,
+          14, -8, 4.1, 6, 0.13, 0.10,
           d3 - lockdown_offset - lockdown_transition_period,
-          d4 - d3, 1, 0.2, 0.05,
-                   0.7, 0.2, 0.01,
-          d6 - d5, 1.1, 0.4, 0.03,
-          d7 - d6, 1.4, 0.4, 0.08,
-          0.85, 0.85, 0.85, 0.4, 10, 10)
+          d4 - d3, 1, 0.11, 0.04,
+                   0.6, 0.16, 0.03,
+          d6 - d5, 1.2, 0.3, 0.08,
+          d7 - d6, 1.7, 0.4, 0.12,
+          0.85, 0.85, 0.85, 0.3, 11, 10)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(2 * gamma, 2 * gamma, 2 * gamma,
-                                1 * gamma, 1 * gamma, 1 * gamma,
-                                0.05 * gamma, 0.01 * gamma, 0.01 * gamma,
-                                3, 0.5, 6, 10,
-                                3, 0.5, 6, 10,
-                                0, -30, 2, 2, 0.05, 0.05,
+                        min = c(2 * gamma, 1 * gamma, 1 * gamma,
+                                1 * gamma, 0.5 * gamma, 0.5 * gamma,
+                                0.1 * gamma, 0.1 * gamma, 0.01 * gamma,
+                                500, 0.5, 6, 14,
+                                3, 0.5, 6, 14,
+                                0, -20, 2, 2, 0.05, 0.05,
                                 60,
-                                10, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                    0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                10, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                10, 0.05 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                0.6, 0.6, 0.6, 0.1, 4, 4),
-                        max = c(8 * gamma, 8 * gamma, 8 * gamma,
-                                5 * gamma, 5 * gamma, 5 * gamma,
+                                10, 0.5 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                    0.1 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                10, 0.5 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                10, 0.5 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                0.5, 0.5, 0.5, 0.1, 4, 4),
+                        max = c(8 * gamma, 5 * gamma, 5 * gamma,
+                                5 * gamma, 3 * gamma, 3 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
-                                5000, 1.5, 15, 25,
-                                100, 6, 15, 25,
+                                5000, 2, 20, 25,
+                                100, 6, 20, 25,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
-                                30, 9, 9, 1.5, 1.5,
-                                90,
-                                50, 3 * gamma, 3 * gamma, 3 * gamma,
-                                    1.5 * gamma, 1.5 * gamma, 0.5 * gamma,
+                                10, 9, 9, 1, 1,
+                                100,
+                                50, 3 * gamma, 1 * gamma, 0.5 * gamma,
+                                    2 * gamma, 1 * gamma, 0.5 * gamma,
                                 50, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                 50, 3 * gamma, 3 * gamma, 0.5 * gamma,
-                                1.1, 1.1, 1.1, 0.7, 14, 14),
+                                1.2, 1.2, 1.2, 0.7, 14, 17),
                         init = init)
 
 print(df_params)

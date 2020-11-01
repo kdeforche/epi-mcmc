@@ -35,6 +35,7 @@ case_nbinom_sizeo2 = 1
 hosp_nbinom_size1 = 20 
 hosp_nbinom_size2 = 40 
 mort_nbinom_size = 120
+hosp_last7 = 3
 
 if (.Device == "null device") {
     x11(width=15, height=8)

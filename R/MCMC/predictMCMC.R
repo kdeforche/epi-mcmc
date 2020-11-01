@@ -55,19 +55,11 @@ agepop.from.ifr <- function(ifr) {
     a + b * log(ifr)
 }
 
-est.ifr.1 <- function(state, params) {
-    y.i = -diff(state$y.S)
-    y.l <- round(params[14] + rnorm(1, 0, 2))
-    o.i = -diff(state$o.S)
-    o.l <- round(params[19] + rnorm(1, 0, 2)) 
-
-    (c(state$y.deadi[(y.l+1):length(y.i)], rep(0, y.l)) + c(state$o.deadi[(o.l+1):length(o.i)], rep(0, o.l))) / (y.i + o.i) * 100
-}
-
 est.ifr <- function(state, params) {
     fyifr = params[37]
     
     y.i = -diff(state$y.S)
+    ##y.i = state$y.i
     L = length(y.i)
     gyifr <- y.ifr * (1 + fyifr * g)
     t1 <- state$offset
@@ -78,6 +70,7 @@ est.ifr <- function(state, params) {
     ydead[t2:L] = y.i[t2:L] * gyifr[length(gyifr)]
 
     o.i = -diff(state$o.S)
+    ##o.i = state$o.i
     L = length(o.i)
     goifr <- o.ifr
     t1 <- state$offset
@@ -126,7 +119,11 @@ est.beds <- function(state, params) {
 
 est.icubeds <- function(state, params) {
     beds <- est.beds(state, params)
-    icu <- c(rep(0, 5), beds[1:(length(beds) - 5)] / 3.9)
+    ##icu <- c(rep(0, 5), beds[1:(length(beds) - 5)] / 3.9)
+    t0 <- as.numeric(state$offset + (as.Date("2020/10/01") - dstartdate))
+    s1 <- seq(1:length(beds))
+    logis <- (1 - 0.3 / (1 + exp(-(s1 - t0) * 0.075)))
+    icu <- beds / 4.5 * logis
     icu
 }
 
@@ -510,7 +507,7 @@ all_plots_age <- function(date_markers) {
 
     if (zoom == 2) {
         pifr <- pifr + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
-                                       ylim = c(0, 0.5))
+                                       ylim = c(0, 1.0))
         page <- page + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
                                        ylim = c(0, 50))
         pbeds <- pbeds + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
@@ -965,7 +962,7 @@ dev.off()
 
 ## Population group Re values
 
-plot_end_date <- Sys.Date()
+plot_end_date <- as.Date("2021/1/1")
 dateRange <- c(plot_start_date, plot_end_date)
 fair_cols <- c("#38170B","#BF1B0B", "#FFC465", "#66ADE5", "#252A52")
 
@@ -1014,6 +1011,9 @@ print(o.est.infected[nowi,])
 est.tr <- function(state, params) {
     y.i = -diff(state$y.S)
     o.i = -diff(state$o.S)
+
+    ##y.i = state$y.i
+    ##o.i = state$o.i
 
     ycase_latency <- params[44]
     ocase_latency <- params[45]

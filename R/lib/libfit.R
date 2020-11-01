@@ -138,11 +138,15 @@ graphs <- function() {
          xlab='Date', ylab='Count', ylim=c(0.1, 20000),
          main='New deaths per day', log="y")
 
+    lines(days[1:len],state$y.casei[state$offset:period], type='l', lty=2, col='darkgreen')
+    lines(days[1:len],state$o.casei[state$offset:period], type='l', lty=3, col='darkgreen')
     lines(days[1:len],state$o.deadi[state$offset:period], type='l', lty=3, col='blue')
     lines(days[1:len],(state$y.hospi + state$o.hospi)[state$offset:period], type='l', col='orange')
     lines(days[1:len],(state$y.hospi)[state$offset:period], type='l', lty=2, col='orange')
     lines(days[1:len],(state$o.hospi)[state$offset:period], type='l', lty=3, col='orange')
 
+    points(days[1:length(dmorti)],y.dcasei,col=c("darkgreen"))
+    points(days[1:length(dmorti)],o.dcasei,col=c("darkgreen"))
     points(days[1:length(dmorti)],y.dmorti,col=c("red"))
     points(days[1:length(dmorti)],o.dmorti,col=c("blue"))
     points(days[1:length(dhospi)],dhospi,col=c("orange"))
