@@ -58,26 +58,30 @@ agepop.from.ifr <- function(ifr) {
 est.ifr <- function(state, params) {
     fyifr = params[37]
     
-    y.i = -diff(state$y.S)
-    ##y.i = state$y.i
+    ##y.i = -diff(state$y.S)
+    y.i = state$y.i
     L = length(y.i)
     gyifr <- y.ifr * (1 + fyifr * g)
     t1 <- state$offset
     t2 <- min(L, t1 + length(gyifr) - 1)
     ydead <- rep(0, L)
     ydead[1:t1] = y.i[1:t1] * gyifr[1]
-    ydead[t1:t2] = y.i[t1:t2] * gyifr[1:(t2 - t1 + 1)]
+    if (t2 > t1) {
+        ydead[t1:t2] = y.i[t1:t2] * gyifr[1:(t2 - t1 + 1)]
+    }
     ydead[t2:L] = y.i[t2:L] * gyifr[length(gyifr)]
 
-    o.i = -diff(state$o.S)
-    ##o.i = state$o.i
+    ##o.i = -diff(state$o.S)
+    o.i = state$o.i
     L = length(o.i)
     goifr <- o.ifr
     t1 <- state$offset
     t2 <- min(L, t1 + length(goifr) - 1)
     odead <- rep(0, L)
     odead[1:t1] = o.i[1:t1] * goifr[1]
-    odead[t1:t2] = o.i[t1:t2] * goifr[1:(t2 - t1 + 1)]
+    if (t2 > t1) {
+        odead[t1:t2] = o.i[t1:t2] * goifr[1:(t2 - t1 + 1)]
+    }
     odead[t2:L] = o.i[t2:L] * goifr[length(goifr)]
 
     (ydead + odead) / (y.i + o.i) * 100
@@ -118,12 +122,19 @@ est.beds <- function(state, params) {
 }
 
 est.icubeds <- function(state, params) {
-    beds <- est.beds(state, params)
-    ##icu <- c(rep(0, 5), beds[1:(length(beds) - 5)] / 3.9)
-    t0 <- as.numeric(state$offset + (as.Date("2020/10/01") - dstartdate))
-    s1 <- seq(1:length(beds))
-    logis <- (1 - 0.3 / (1 + exp(-(s1 - t0) * 0.075)))
-    icu <- beds / 4.5 * logis
+    t <- runif(1)
+
+    if (t > 0.5) {
+        beds <- est.beds(state, params)
+        icu <- c(rep(0, 5), beds[1:(length(beds) - 5)] / 4)
+    } else {
+        beds <- est.beds(state, params)
+        t0 <- as.numeric(state$offset + (as.Date("2020/10/01") - dstartdate))
+        s1 <- seq(1:length(beds))
+        logis <- (1 - 0.3 / (1 + exp(-(s1 - t0) * 0.075)))
+        icu <- beds / 4.5 * logis
+    }
+
     icu
 }
 
@@ -912,6 +923,7 @@ est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$R
 colnames(est.Re) <- c("q5", "q50", "q95")
 
 print(c(est.Re[Sys.Date() - dstartdate + 1,]))
+print(c(est.Re[d10,]))
 
 pdf("current-state-2.pdf", width=25, height=10)
 
@@ -1009,11 +1021,11 @@ print(y.est.infected[nowi,])
 print(o.est.infected[nowi,])
 
 est.tr <- function(state, params) {
-    y.i = -diff(state$y.S)
-    o.i = -diff(state$o.S)
+    ##y.i = -diff(state$y.S)
+    ##o.i = -diff(state$o.S)
 
-    ##y.i = state$y.i
-    ##o.i = state$o.i
+    y.i = state$y.i
+    o.i = state$o.i
 
     ycase_latency <- params[44]
     ocase_latency <- params[45]

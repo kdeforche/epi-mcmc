@@ -1,6 +1,6 @@
 library("deSolve")
 
-cppname <- "model-ageo"
+cppname <- "model-ager"
 
 system(paste("R CMD SHLIB ", cppname, ".cpp", sep=""))
 dyn.load(paste(cppname, ".so", sep=""))
@@ -16,6 +16,7 @@ o.died_rate <- o.ifr[1]
 a1 <- 1/Tinc1
 a2 <- 1/Tinc2
 gamma <- 1/((G - (Tinc1 + Tinc2)) * 2)
+eta <- 1/(0.75 * 356) ## 9 months
 
 calcGammaProfile <- function(mean, sd)
 {
@@ -150,11 +151,11 @@ calculateModel <- function(params, period)
     state$Rt <- rep(0, padding + period)
     state$y.Re <- rep(0, padding + period)
     state$o.Re <- rep(0, padding + period)
+    state$y.i <- rep(0, padding + period)
+    state$o.i <- rep(0, padding + period)
 
-    state$i <- padding + 1
-    
     parms <- c(Ny = y.N, No = o.N,
-               a1 = a1, a2 = a2, gamma = gamma,
+               a1 = a1, a2 = a2, gamma = gamma, eta = eta,
                t0 = 1E10, t1 = 1E10, t2 = 1E10,
                betay0 = betay0, betao0 = betao0, betayo0 = betayo0,
                betay1 = betay1, betao1 = betao1, betayo1 = betayo1,
@@ -177,16 +178,17 @@ calculateModel <- function(params, period)
 
     out <- ode(Y, times, func = "derivs", parms = parms,
                dllname = cppname,
-               initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
+               initfunc = "initmod", nout = 6, outnames = c("Re", "Rt", "y.Re", "o.Re",
+                                                            "y.i", "o.i"))
 
-    state$y.S[(padding + 1):(padding + period1)] = out[,2]
-    state$o.S[(padding + 1):(padding + period1)] = out[,7]
+    state$y.i[(padding + 1):(padding + period1)] = out[,16]
+    state$o.i[(padding + 1):(padding + period1)] = out[,17]
 
-    s2 <- convolute(state$y.S, padding + 1, padding + period1, y.died_cv_profile)
-    state$y.died[(padding + 1):(padding + period1)] = (y.N - s2) * y.died_rate
+    y.deadi <- convolute(state$y.i, padding + 1, padding + period1, y.died_cv_profile) * y.died_rate
+    state$y.died[(padding + 1):(padding + period1)] = cumsum(y.deadi)
 
-    s2 <- convolute(state$o.S, padding + 1, padding + period1, o.died_cv_profile)
-    state$o.died[(padding + 1):(padding + period1)] = (o.N - s2) * o.died_rate
+    o.deadi <- convolute(state$o.i, padding + 1, padding + period1, o.died_cv_profile) * o.died_rate
+    state$o.died[(padding + 1):(padding + period1)] = cumsum(o.deadi)
 
     state$died = state$y.died + state$o.died
 
@@ -208,7 +210,7 @@ calculateModel <- function(params, period)
         t11 <- data_offset + d10 + 4
 
         parms <- c(Ny = y.N, No = o.N,
-                   a1 = a1, a2 = a2, gamma = gamma,
+                   a1 = a1, a2 = a2, gamma = gamma, eta = eta,
                    t0 = data_offset + lockdown_offset + t0o,
                    t1 = data_offset + lockdown_offset + max(t0o, 0),
                    t2 = t2,
@@ -229,7 +231,8 @@ calculateModel <- function(params, period)
         
         out <- ode(Y, times, func = "derivs", parms = parms,
                    dllname = cppname,
-                   initfunc = "initmod", nout = 4, outnames = c("Re", "Rt", "y.Re", "o.Re"))
+                   initfunc = "initmod",
+                   nout = 6, outnames = c("Re", "Rt", "y.Re", "o.Re", "y.i", "o.i"))
     }
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
@@ -244,6 +247,8 @@ calculateModel <- function(params, period)
     state$Rt[(padding + 1):(padding + period)] = out[,13]
     state$y.Re[(padding + 1):(padding + period)] = out[,14]
     state$o.Re[(padding + 1):(padding + period)] = out[,15]
+    state$y.i[(padding + 1):(padding + period)] = out[,16]
+    state$o.i[(padding + 1):(padding + period)] = out[,17]
 
     gycr <- pmin(1, ycase_rate * y.ifr * (1 + (fyifr - 1) * g))     ## fyifr: age reduction
     gyifr <- y.ifr * (1 + (fyifr - 1) * g) * (1 - ifrred * gtrimp)  ## ifrred: treatment improvement -> on lowers IFR 
@@ -254,10 +259,9 @@ calculateModel <- function(params, period)
     gohr <- ohosp_rate * o.hr
 
     t.symp <- data_offset + d.symp.cases
-
+    
     ## y.case
-    s2 <- y.N - convolute(state$y.S, padding + 1, padding + period, y.case_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$y.i, padding + 1, padding + period, y.case_cv_profile)
     if (data_offset != InvalidDataOffset) {
         ## IFR is based on death, IHR is shifted in time (DL - CL) earlier
         t1 <- data_offset + round(-ydied_latency + ycase_latency)
@@ -273,12 +277,10 @@ calculateModel <- function(params, period)
     } else {
         state$y.casei[(padding + 1):(padding + period)] = s2i * gycr[1]
     }
-
     state$y.case = cumsum(state$y.casei)
 
     ## y.hosp
-    s2 <- y.N - convolute(state$y.S, padding + 1, padding + period, y.hosp_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$y.i, padding + 1, padding + period, y.hosp_cv_profile)
     if (data_offset != InvalidDataOffset) {
         ## IFR is based on death, IHR is shifted in time (DL - HL) earlier
         t1 <- data_offset + round(-ydied_latency + yhosp_latency)
@@ -293,8 +295,7 @@ calculateModel <- function(params, period)
     }
 
     ## y.dead
-    s2 <- y.N - convolute(state$y.S, padding + 1, padding + period, y.died_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$y.i, padding + 1, padding + period, y.died_cv_profile)
     if (data_offset != InvalidDataOffset) {
         t1 <- data_offset
         t2 <- min(padding + period, t1 + length(gyifr) - 1)
@@ -309,8 +310,7 @@ calculateModel <- function(params, period)
     state$y.died = cumsum(state$y.deadi)
 
     ## o.case
-    s2 <- o.N - convolute(state$o.S, padding + 1, padding + period, o.case_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$o.i, padding + 1, padding + period, o.case_cv_profile)
     if (data_offset != InvalidDataOffset) {
         t1 <- data_offset + round(-ydied_latency + ocase_latency)
         t2 <- min(padding + period, t1 + length(gocr) - 1)
@@ -319,19 +319,15 @@ calculateModel <- function(params, period)
             state$o.casei[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * gocr[1:(t2 - t1 + 1)]
             state$o.casei[t2:(padding + period)] = s2i[(t2 - padding):period] * gocr[length(gocr)]
         }
-
         state$o.casei[t.symp:length(state$o.casei)] =
             state$o.casei[t.symp:length(state$o.casei)] * symp.cases.factor
-
     } else {
         state$o.casei[(padding + 1):(padding + period)] = s2i * gocr[1]
     }
-
     state$o.case = cumsum(state$o.casei)
 
     ## o.hosp
-    s2 <- o.N - convolute(state$o.S, padding + 1, padding + period, o.hosp_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$o.i, padding + 1, padding + period, o.hosp_cv_profile)
     if (data_offset != InvalidDataOffset) {
         t1 <- data_offset + round(-ydied_latency + ohosp_latency)
         t2 <- min(padding + period, t1 + length(gohr) - 1)
@@ -345,8 +341,7 @@ calculateModel <- function(params, period)
     }
 
     ## o.dead
-    s2 <- o.N - convolute(state$o.S, padding + 1, padding + period, o.died_cv_profile)
-    s2i <- c(s2[1], diff(s2))
+    s2i <- convolute(state$o.i, padding + 1, padding + period, o.died_cv_profile)
     if (data_offset != InvalidDataOffset) {
         t1 <- data_offset
         t2 <- min(padding + period, t1 + length(goifr) - 1)
@@ -472,10 +467,11 @@ calclogp <- function(params) {
 
     SD <- log(2) ## SD = */ 2
     lSD <- log(1.5) ## SD = */ 1.5
+    llSD <- log(1.2) ## SD = */ 1.2
 
-    logPriorP <- logPriorP + dlnorm(betay0/betay1, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao0/betao1, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo0/betayo1, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay0/betay1, 0, llSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao0/betao1, 0, llSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo0/betayo1, 0, llSD, log=T)
     logPriorP <- logPriorP + dlnorm(betay1/betay2, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao1/betao2, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo1/betayo2, 0, SD, log=T)
@@ -501,8 +497,8 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=0.5, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=0.5, log=T)
 
-    logPriorP <- logPriorP + dlnorm(fyifr, log(0.3), log(2), log=T) # */ 2
-    logPriorP <- logPriorP + dlnorm(fyhr, log(0.3), log(2), log=T)
+    logPriorP <- logPriorP + dlnorm(fyifr, log(1), log(1.05), log=T) # */ 2
+    logPriorP <- logPriorP + dlnorm(fyhr, log(1), log(1.05), log=T)
     logPriorP <- logPriorP + dlnorm(ifrred, log(0.35), log(1.3), log=T) # */ 1.3
 
     logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
@@ -653,7 +649,7 @@ init <- c(2.9, 1.5, 1.5,
           0.7, 0.5, 0.07,
           2200, 1.2, 15, 19,
           60, 1.3, 13, 21,
-          14, -8, 4.1, 6, 0.13, 0.10,
+          14, -8, 4.1, 6, 1, 1,
           d3 - lockdown_offset - lockdown_transition_period,
           d4 - d3, 1, 0.11, 0.04,
                    0.6, 0.16, 0.03,
@@ -668,7 +664,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 0.1 * gamma, 0.1 * gamma, 0.01 * gamma,
                                 500, 0.5, 9, 14,
                                 3, 0.5, 9, 14,
-                                0, -20, 2, 2, 0.05, 0.05,
+                                0, -20, 2, 2, 0.8, 0.8,
                                 60,
                                 10, 0.5 * gamma, 0.01 * gamma, 0.002 * gamma,
                                     0.1 * gamma, 0.01 * gamma, 0.002 * gamma,
@@ -682,7 +678,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 5000, 2, 18, 25,
                                 100, 6, 18, 25,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
-                                10, 9, 9, 1, 1,
+                                10, 9, 9, 1.2, 1.2,
                                 100,
                                 50, 3 * gamma, 1 * gamma, 0.5 * gamma,
                                     2 * gamma, 1 * gamma, 0.5 * gamma,
@@ -693,4 +689,3 @@ df_params <- data.frame(name = fit.paramnames,
                         init = init)
 
 print(df_params)
-

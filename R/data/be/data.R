@@ -62,10 +62,10 @@ country_adjective <- "Belgian"
 #####################
 
 ## Date of lockdown phase (1)
-lockdown_offset <- as.numeric(as.Date("2020/3/13") - dstartdate)
+lockdown_offset <- as.numeric(as.Date("2020/3/12") - dstartdate)
 
 ## over how many days the lockdown is estimated to have occurred
-lockdown_transition_period <- 7
+lockdown_transition_period <- 10
 
 ## how many deaths at date of lockdown
 total_deaths_at_lockdown <- 5
