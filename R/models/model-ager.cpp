@@ -1,7 +1,7 @@
 #include <iostream>
 #include <R.h>
 
-static const int PARAM_N = 54;
+static const int PARAM_N = 58;
 static double parms[PARAM_N];
 
 #define Ny parms[0]
@@ -58,6 +58,10 @@ static double parms[PARAM_N];
 #define betay11 parms[51]
 #define betao11 parms[52]
 #define betayo11 parms[53]
+#define t12 parms[54]      // step change point
+#define betay12 parms[55]
+#define betao12 parms[56]
+#define betayo12 parms[57]
 
 #define Sy y[0]
 #define E1y y[1]
@@ -83,9 +87,12 @@ extern "C" {
 static double interpolate(double t,
 			  double vt0, double vt1, double vt2, double vt3,
 			  double vt4, double vt5, double vt6, double vt7,
-			  double vt8, double vt9, double vt10, double vt11)
+			  double vt8, double vt9, double vt10, double vt11,
+			  double vt12)
 {
-  if (t > t11)
+  if (t > t12)
+    return vt12;
+  else if (t > t11)
     return vt11;
   else if (t > t10)
     return vt10 + (t - t10) / (t11 - t10) * (vt11 - vt10);
@@ -142,17 +149,19 @@ extern "C" {
     const double betay = interpolate(*t,
 				     betay0, betay1, betay2, betay3, betay4,
 				     betay5, betay6, betay7, betay8, betay9,
-				     betay10, betay11);
+				     betay10, betay11, betay12);
     const double betao = interpolate(*t,
 				     betao0, betao1, betao2, betao3, betao4,
 				     betao5, betao6, betao7, betao8, betao9,
-				     betao10, betao11);
+				     betao10, betao11, betao12);
     const double betayo = interpolate(*t,
 				      betayo0, betayo1, betayo2, betayo3, betayo4,
 				      betayo5, betayo6, betayo7, betayo8, betayo9,
-				      betayo10, betayo11);
+				      betayo10, betayo11, betayo12);
 
-    const double ygot_infected = (betay * Iy) / Ny * Sy;
+    const double Syeff = std::max(0.0, Ny * 0.8 - (Ny - Sy));
+
+    const double ygot_infected = (betay * Iy) / Ny * Syeff;
     const double ygot_latent2 = a1 * E1y;
     const double ygot_infectious = a2 * E2y;
     const double ygot_removed = gamma * Iy;

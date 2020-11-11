@@ -77,41 +77,43 @@ calculateModel <- function(params, period)
     fyifr <- params[22]
     fyhr <- params[23]
     t3o <- params[24] ## start of increase, ~ 6 June
-    betay3 <- betay2
-    t4o <- params[25] ## end of increase, ~ 6 July
-    betay4 <- params[26]
-    betao4 <- params[27]
-    betayo4 <- params[28]
-    betao3 <- betao4
-    betayo3 <- betayo4
-    betay5 <- params[29] ## new lockdown, 27 July
-    betao5 <- params[30]
-    betayo5 <- params[31]
-    t6o <- params[32] ## exiting lockdown ~ mid August
-    betay6 <- params[33]
-    betao6 <- params[34]
-    betayo6 <- params[35]
-    t7o <- params[36]  ## sept 15 ?
-    betay7 <- params[37]
-    betao7 <- params[38]
-    betayo7 <- params[39]
+    betay3 <- params[25]
+    betao3 <- params[26]
+    betayo3 <- params[27]
+    t4o <- params[28] ## end of increase, ~ 6 July
+    betay4 <- params[29]
+    betao4 <- params[30]
+    betayo4 <- params[31]
+    betay5 <- params[32] ## new lockdown, 27 July
+    betao5 <- params[33]
+    betayo5 <- params[34]
+    t6o <- params[35] ## exiting lockdown ~ mid August
+    betay6 <- params[36]
+    betao6 <- params[37]
+    betayo6 <- params[38]
+    t7o <- params[39]  ## sept 15 ?
+    betay7 <- params[40]
+    betao7 <- params[41]
+    betayo7 <- params[42]
     betay8 <- betay7
     betao8 <- betao7
     betayo8 <- betayo7
-    betay9 <- params[40]
-    betao9 <- params[41]
-    betayo9 <- params[42]
-    ifrred <- params[43]
-    ycase_latency <- params[44]
-    ocase_latency <- params[45]
+    betay9 <- params[43]
+    betao9 <- params[44]
+    betayo9 <- params[45]
+    ifrred <- params[46]
+    ycase_latency <- params[47]
+    ocase_latency <- params[48]
 
     betay10 <- betay9
     betao10 <- betao9
     betayo10 <- betayo9
 
-    betay11 <- lockdown2 * betay9
-    betao11 <- lockdown2 * betao9
-    betayo11 <- lockdown2 * betayo9
+    ld <- rep(lockdown2, 3) ## rlnorm(3, meanlog=log(lockdown2), sdlog=log(1.15))
+    
+    betay11 <- ld[1] * betay9
+    betao11 <- ld[2] * betao9
+    betayo11 <- ld[3] * betayo9
 
     betay12 <- betay9
     betao12 <- betao9
@@ -433,33 +435,33 @@ calclogp <- function(params) {
     fyifr <- params[22]
     fyhr <- params[23]
     t3o <- params[24] ## start of increase, ~ 6 June
-    betay3 <- betay2
-    t4o <- params[25] ## end of increase, ~ 6 July
-    betay4 <- params[26]
-    betao4 <- params[27]
-    betayo4 <- params[28]
-    betao3 <- betao4
-    betayo3 <- betayo4
-    betay5 <- params[29] ## new lockdown, 27 July
-    betao5 <- params[30]
-    betayo5 <- params[31]
-    t6o <- params[32] ## exiting lockdown ~ mid August
-    betay6 <- params[33]
-    betao6 <- params[34]
-    betayo6 <- params[35]
-    t7o <- params[36]  ## sept 15 ?
-    betay7 <- params[37]
-    betao7 <- params[38]
-    betayo7 <- params[39]
+    betay3 <- params[25]
+    betao3 <- params[26]
+    betayo3 <- params[27]
+    t4o <- params[28] ## end of increase, ~ 6 July
+    betay4 <- params[29]
+    betao4 <- params[30]
+    betayo4 <- params[31]
+    betay5 <- params[32] ## new lockdown, 27 July
+    betao5 <- params[33]
+    betayo5 <- params[34]
+    t6o <- params[35] ## exiting lockdown ~ mid August
+    betay6 <- params[36]
+    betao6 <- params[37]
+    betayo6 <- params[38]
+    t7o <- params[39]  ## sept 15 ?
+    betay7 <- params[40]
+    betao7 <- params[41]
+    betayo7 <- params[42]
     betay8 <- betay7
     betao8 <- betao7
     betayo8 <- betayo7
-    betay9 <- params[40]
-    betao9 <- params[41]
-    betayo9 <- params[42]
-    ifrred <- params[43]
-    ycase_latency <- params[44]
-    ocase_latency <- params[45]
+    betay9 <- params[43]
+    betao9 <- params[44]
+    betayo9 <- params[45]
+    ifrred <- params[46]
+    ycase_latency <- params[47]
+    ocase_latency <- params[48]
 
     logPriorP <- 0
     
@@ -481,18 +483,21 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betay1/betay2, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao1/betao2, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo1/betayo2, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay2/betay3, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao2/betao3, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo2/betayo3, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betay3/betay4, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao2/betao4, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo2/betayo4, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao3/betao4, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo3/betayo4, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betay5/betay6, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao5/betao6, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo5/betayo6, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betay6/betay7, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao6/betao7, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo6/betayo7, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betay7/betay9, log(1.5), lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao7/betao9, log(1.5), lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo7/betayo9, log(1.5), lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay7/betay9, log(1.3), lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao7/betao9, log(1.3), lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo7/betayo9, log(1.3), lSD, log=T)
 
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
@@ -503,7 +508,7 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=0.5, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=0.5, log=T)
 
-    logPriorP <- logPriorP + dlnorm(fyifr, log(0.1), log(2), log=T) # */ 2
+    logPriorP <- logPriorP + dlnorm(fyifr, log(0.35), log(1.2), log=T) # */ 2
     logPriorP <- logPriorP + dlnorm(ifrred, log(0.35), log(1.3), log=T) # */ 1.3
 
     logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
@@ -614,7 +619,11 @@ calclogl <- function(params, x) {
 
     o.loglD <- sum(dnbinom(o.dmorti,
                            mu=pmax(0.001, state$o.deadi[dstart:dend]),
-                           size=o.wdmorti * mort_nbinom_size, log=T))
+                           size=o.wdmorti * mort_nbinom_size, log=T)) +
+               sum(dnbinom(o.dmorti[(length(o.dmorti) - 7):length(o.dmorti)],
+                           mu=pmax(0.001, state$o.deadi[(dend - 7):dend]),
+                           size=mort_nbinom_size * 2, log=T))
+  
 
     result <- y.loglC + o.loglC + loglH + loglHRatio + y.loglD + o.loglD
     
@@ -636,9 +645,9 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t0_morts", "t0o",
                     "HLsd", "DLsd",
                     "fyifr", "fyhr",
-                    "t3o",
+                    "t3o", "betay3", "betao3", "betayo3",
                     "t4o", "betay4", "betao4", "betayo4",
-                    "betay5", "betao5", "betayo5",
+                           "betay5", "betao5", "betayo5",
                     "t6o", "betay6", "betao6", "betayo6",
                     "t7o", "betay7", "betao7", "betayo7",
                            "betay9", "betao9", "betayo9",
@@ -649,28 +658,28 @@ keyparamnames <- c("betay6", "betao6", "betayo6",
                    "ifrred")
 fitkeyparamnames <- keyparamnames
 
-init <- c(2.9, 0.8, 0.8,
-          1.5, 0.7, 0.6,
-          0.7, 0.4, 0.07,
-          1400, 0.75, 13, 19,
-          60, 1.6, 13, 21,
-          10, -8, 5, 5, 0.2, 0.25,
-          d3 - lockdown_offset - lockdown_transition_period,
-          d4 - d3, 1.1, 0.13, 0.03,
-                   0.7, 0.2, 0.03,
-          d6 - d5, 1.1, 0.6, 0.04,
-          d7 - d6, 1.6, 0.5, 0.08,
-                   1.3, 0.26, 0.03,
-          0.3, 10, 11)
+init <- c(3.1, 0.6, 0.5,
+          1.3, 0.6, 0.4,
+          0.85, 0.4, 0.07,
+          1100, 0.8, 13, 20,
+          17, 1.45, 13, 21,
+          13, -7, 5.4, 5.5, 0.36, 0.39,
+          93,      1.0, 0.2, 0.01,
+          25,      1.4, 0.5, 0.04,
+                   0.9, 0.2, 0.01,
+          27,      1.4, 0.5, 0.04,
+          38,      2.1, 0.5, 0.08,
+                   1.2, 0.3, 0.04,
+          0.3, 10, 10)
 
 df_params <- data.frame(name = fit.paramnames,
-                        min = c(2 * gamma, 1 * gamma, 1 * gamma,
+                        min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,
                                 1 * gamma, 0.5 * gamma, 0.5 * gamma,
                                 0.1 * gamma, 0.1 * gamma, 0.01 * gamma,
                                 500, 0.5, 9, 14,
                                 3, 0.5, 9, 14,
                                 0, -20, 2, 2, 0.05, 0.05,
-                                60,
+                                60, 0.5 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 10, 0.5 * gamma, 0.01 * gamma, 0.002 * gamma,
                                     0.1 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 10, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
@@ -684,7 +693,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 100, 6, 18, 25,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 10, 9, 9, 1, 1,
-                                100,
+                                100, 3 * gamma, 1 * gamma, 0.5 * gamma,
                                 50, 3 * gamma, 1 * gamma, 0.5 * gamma,
                                     2 * gamma, 1 * gamma, 0.5 * gamma,
                                 50, 3 * gamma, 3 * gamma, 0.5 * gamma,

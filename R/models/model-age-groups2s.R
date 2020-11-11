@@ -109,10 +109,13 @@ calculateModel <- function(params, period)
     betao10 <- betao9
     betayo10 <- betayo9
 
-    ## 2nd lockdown : 1.2 ~ 1st lockdown
-    betay11 <- 1.2 * betay2
-    betao11 <- min(1.2 * betao2, betao9)
-    betayo11 <- min(1.2 * betayo2, betayo9)
+    betay11 <- lockdown2 * betay2
+    betao11 <- min(lockdown2 * betao2, betao9)
+    betayo11 <- min(lockdown2 * betayo2, betayo9)
+
+    betay12 <- betay9
+    betao12 <- betao9
+    betayo12 <- betayo9
     
     CLsd <- 5
     
@@ -168,7 +171,8 @@ calculateModel <- function(params, period)
                t8 = 1E10, betay8 = betay8, betao8 = betao8, betayo8 = betayo8,
                t9 = 1E10, betay9 = betay9, betao9 = betao9, betayo9 = betayo9,
                t10 = 1E10, betay10 = betay10, betao10 = betao10, betayo10 = betayo10,
-               t11 = 1E10, betay11 = betay11, betao11 = betao11, betayo11 = betayo11)
+               t11 = 1E10, betay11 = betay11, betao11 = betao11, betayo11 = betayo11,
+               t12 = 1E10, betay12 = betay12, betao12 = betao12, betayo12 = betayo12)
 
     Y <- c(Sy = y.N - Initial, E1y = Initial, E2y = 0, Iy = 0, Ry = 0,
            So = o.N, E1o = 0, E2o = 0, Io = 0, Ro = 0)
@@ -208,6 +212,7 @@ calculateModel <- function(params, period)
         t9 <- t8 + 2
         t10 <- data_offset + d10
         t11 <- data_offset + d10 + 4
+        t12 <- data_offset + d12
 
         parms <- c(Ny = y.N, No = o.N,
                    a1 = a1, a2 = a2, gamma = gamma, eta = eta,
@@ -225,7 +230,8 @@ calculateModel <- function(params, period)
                    t8 = t8, betay8 = betay8, betao8 = betao8, betayo8 = betayo8,
                    t9 = t9, betay9 = betay9, betao9 = betao9, betayo9 = betayo9,
                    t10 = t10, betay10 = betay10, betao10 = betao10, betayo10 = betayo10,
-                   t11 = t11, betay11 = betay11, betao11 = betao11, betayo11 = betayo11)
+                   t11 = t11, betay11 = betay11, betao11 = betao11, betayo11 = betayo11,
+                   t12 = t12, betay12 = betay12, betao12 = betao12, betayo12 = betayo12)
 
         times <- (padding + 1):(padding + period)
         

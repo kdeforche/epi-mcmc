@@ -122,20 +122,15 @@ est.beds <- function(state, params) {
 }
 
 est.icubeds <- function(state, params) {
-    t <- runif(1)
+    beds <- est.beds(state, params)
 
-    if (t > 0.5) {
-        beds <- est.beds(state, params)
-        icu <- c(rep(0, 5), beds[1:(length(beds) - 5)] / 4)
-    } else {
-        beds <- est.beds(state, params)
-        t0 <- as.numeric(state$offset + (as.Date("2020/10/01") - dstartdate))
-        s1 <- seq(1:length(beds))
-        logis <- (1 - 0.3 / (1 + exp(-(s1 - t0) * 0.075)))
-        icu <- beds / 4.5 * logis
-    }
+    icu1 <- c(rep(0, 5), beds[1:(length(beds) - 5)] / 4)
+    t0 <- as.numeric(state$offset + (as.Date("2020/10/01") - dstartdate))
+    s1 <- seq(1:length(beds))
+    logis <- (1 - 0.3 / (1 + exp(-(s1 - t0) * 0.070)))
+    icu2 <- beds / 4.5 * logis
 
-    icu
+    (icu1 + icu2) / 2
 }
 
 DIC <- function(posterior1) {
@@ -212,7 +207,7 @@ all_plots <- function(date_markers) {
 
     p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state, params) { state$R/N * 100 }, "#33FF66",
-                   c(paste(country_adjective, "population (%)"), "Recovered from disease"), date_markers, NULL)
+                   c(paste(country_adjective, "population (%)"), "Immune"), date_markers, NULL)
 
     p6 <- makePlot(data_sample, c(dstartdate, plot_end_date),
                    function(state, params) { state$Re }, "#33FFFF",
@@ -256,12 +251,12 @@ all_plots_age <- function(date_markers) {
     ## dm1[(start + 1):(start + length(dmorti))] = dmorti
     ## p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=0.5, color="#1144CC")
 
-    p1 <- p1 + theme(legend.position = c(0.2, 0.85))
-
     if (zoom == 1) {
-        p1 <- p1 + coord_cartesian(ylim = c(0, 150))
+        p1 <- p1 + coord_cartesian(ylim = c(0, 200))
+        p1 <- p1 + theme(legend.position = c(0.8, 0.85))
     } else if (zoom == 2) {
-        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date), ylim = c(0, 150))
+        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date), ylim = c(0, 200))
+        p1 <- p1 + theme(legend.position = c(0.2, 0.85))
     }
 
     ## Add y curves
@@ -357,13 +352,13 @@ all_plots_age <- function(date_markers) {
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
 
-    p3 <- p3 + theme(legend.position = c(0.2, 0.85))
-
     if (zoom == 1) {
         p3 <- p3 + coord_cartesian(ylim = c(0, 20000))
+        p3 <- p3 + theme(legend.position = c(0.8, 0.85))
     } else if (zoom == 2) {
         p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
                                    ylim = c(0, 20000))
+        p3 <- p3 + theme(legend.position = c(0.2, 0.85))
     }
 
 
@@ -428,7 +423,7 @@ all_plots_age <- function(date_markers) {
 
     p5 <- makePlot(data_sample, dateRange,
                    function(state, params) { (state$y.R + state$o.R)/N * 100 }, "#33CC66",
-                   c("Population group (%)", "Recovered from disease"), date_markers, 'solid')
+                   c("Population group (%)", "Immune"), date_markers, 'solid')
     p5 <- p5 + theme(legend.position = c(0.2, 0.85))
 
     ## Add y/o curves
@@ -475,7 +470,7 @@ all_plots_age <- function(date_markers) {
     pbeds <- makePlot(data_sample, dateRange, est.beds, colbeds,
                       c("Count", "Hospital/ICU bed occupation"), dates, NULL)
 
-    pbeds <- addExtraPlotQ2(pbeds, data_sample, dateRange, est.icubeds, colicu, NULL)
+    pbeds <- addExtraPlotQ(pbeds, data_sample, dateRange, est.icubeds, colicu, NULL)
 
     pdbeds <- numeric(length(pbeds$data$x))
     pdbeds[1:length(pbeds$data$x)] = NA
@@ -522,7 +517,7 @@ all_plots_age <- function(date_markers) {
         page <- page + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
                                        ylim = c(0, 50))
         pbeds <- pbeds + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
-                                         ylim = c(0, 10000))
+                                         ylim = c(0, 8000))
     } else {
         pifr <- pifr + coord_cartesian(ylim = c(0, 1.5))
         page <- page + coord_cartesian(ylim = c(0, 50))
@@ -629,7 +624,7 @@ death_hosp_plots_age <- function(date_markers) {
 
     p5 <- makePlot(data_sample, dateRange,
                    function(state, params) { (state$y.R + state$o.R)/N * 100 }, "#33CC66",
-                   c("Population group (%)", "Recovered from disease"), date_markers, 'solid')
+                   c("Population group (%)", "Immune"), date_markers, 'solid')
     p5 <- p5 + theme(legend.position = c(0.2, 0.85))
 
     ## Add y/o curves
@@ -807,7 +802,7 @@ all_plots_age3 <- function(dates) {
 
     p5 <- makePlot(data_sample, dateRange,
                    function(state, params) { (state$y.R + state$m.R + state$o.R)/N * 100 }, "#33CC66",
-                   c("Population group (%)", "Recovered from disease"), dates, 'solid')
+                   c("Population group (%)", "Immune"), dates, 'solid')
     p5 <- p5 + theme(legend.position = c(0.2, 0.85))
 
     ## Add y/m/o curves
