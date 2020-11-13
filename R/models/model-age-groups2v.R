@@ -504,8 +504,8 @@ calclogp <- function(params) {
 
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(ycase_latency, mean=10, sd=2, log=T)
-    logPriorP <- logPriorP + dnorm(ocase_latency, mean=10, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(ycase_latency, mean=9, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(ocase_latency, mean=9, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(yhosp_latency, mean=13, sd=0.5, log=T)
     logPriorP <- logPriorP + dnorm(ohosp_latency, mean=13, sd=0.5, log=T)
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=0.5, log=T)
@@ -662,20 +662,20 @@ keyparamnames <- c("betay6", "betao6", "betayo6",
                    "ifrred")
 fitkeyparamnames <- keyparamnames
 
-init <- c(3.1, 0.6, 0.5,
-          1.3, 0.6, 0.4,
-          0.85, 0.4, 0.07,
-          1100, 0.8, 13, 20,
-          17, 1.45, 13, 21,
-          13, -7, 5.4, 5.5, 0.36, 0.39,
-          93,      1.0, 0.2, 0.01,
-          25,      1.4, 0.5, 0.04,
-                   0.9, 0.2, 0.01,
-          27,      1.4, 0.5, 0.04,
-          38,      2.1, 0.5, 0.08,
-                   1.2, 0.3, 0.04,
+init <- c(2.9, 0.6, 0.5,
+          1.4, 0.6, 0.5,
+          0.9, 0.4, 0.06,
+          1200, 1.1, 13, 20,
+          60, 1.45, 13, 21,
+          15, -8, 5.4, 5.5, 0.33, 0.35,
+          93, 0.9, 0.2, 0.01,
+          25, 1.4, 0.4, 0.05,
+              0.9, 0.2, 0.01,
+          27, 1.4, 0.5, 0.04,
+          39, 1.9, 0.4, 0.14,
+              1.4, 0.2, 0.05,
           0.3, 10, 10,
-                   1.0, 0.2, 0.03)
+              1.1, 0.2, 0.04)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,

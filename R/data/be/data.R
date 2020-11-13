@@ -87,4 +87,4 @@ d.reliable.hosp <- as.numeric(as.Date("2020/6/1") - dstartdate)
 d.hosp.o1 <- as.numeric(as.Date("2020/6/22") - dstartdate)
 d.hosp.o2 <- as.numeric(as.Date("2020/9/14") - dstartdate)
 d.symp.cases <- as.numeric(as.Date("2020/10/21") - dstartdate)
-symp.cases.factor <- 0.75
+symp.cases.factor <- 0.65
