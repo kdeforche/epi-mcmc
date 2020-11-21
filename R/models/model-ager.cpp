@@ -125,7 +125,7 @@ extern "C" {
   void derivs (int *neq, double *t, double *y, double *ydot,
 	       double *yout, int *ip)
   {
-    if (ip[0] < 6) error("nout should be at least 6");
+    if (ip[0] < 9) error("nout should be at least 9");
     
     if (Sy < 0  || E1y < 0  || E2y < 0  || Iy < 0  || Ry < 0  ||
 	Sy > Ny || E1y > Ny || E2y > Ny || Iy > Ny || Ry > Ny ||
@@ -193,5 +193,8 @@ extern "C" {
 
     yout[4] = ygot_infected;
     yout[5] = ogot_infected;
+    yout[6] = betay;
+    yout[7] = betao;
+    yout[8] = betayo;
   }
 }

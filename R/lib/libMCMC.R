@@ -268,10 +268,10 @@ makePlot2 <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
         geom_ribbon(aes(ymin = q5, ymax=q95, fill=brightness(colour, 1.5)), alpha=0.1) ## +
  ##       geom_ribbon(aes(ymin = q25, ymax=q75, fill=brightness(colour, 3)), alpha=0.1)
 
-    if (is.null(lty))
-        result <- result + geom_line(aes(y = q50, colour=colour), size = 0.5, colour=colour)
-    else
-        result <- result + geom_line(aes(y = q50, linetype = lty), size = 0.5, colour=colour)
+    ##if (is.null(lty))
+        result <- result + geom_line(aes(y = q50, colour=colour), size = 0.5)
+    ##else
+    ##    result <- result + geom_line(aes(y = q50, linetype = lty), size = 0.5, colour=colour)
 
     result <- result +
         labs(x="Date") +
@@ -303,7 +303,7 @@ addExtraPlotQ2 <- function(plot, sample, dateRange, fun, colour2, lty)
     result <- plot +
         geom_ribbon(aes(ymin = qd$q5, ymax=qd$q95, fill=brightness(colour2, 1.5)), alpha=0.1) +
 ##        geom_ribbon(aes(ymin = qd$q25, ymax=qd$q75, fill=brightness(colour2, 3)), alpha=0.1) +
-        geom_line(aes(y = qd$q50, colour=colour2), colour=colour2, size = 0.5)
+        geom_line(aes(y = qd$q50, colour=colour2), size = 0.5)
 
     result
 }

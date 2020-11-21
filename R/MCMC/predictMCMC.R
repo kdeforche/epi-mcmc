@@ -170,66 +170,6 @@ sourceR <- function(file) {
 
 sourceR("lib/libMCMC.R")
 
-all_plots <- function(date_markers) {
-    p1 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state, params) state$deadi, "#3366FF",
-                   c("Count", "Deaths"), date_markers, NULL)
-    dm1 <- numeric(length(p1$data$x))
-    dm1[1:length(p1$data$x)] = NA
-    dm1[1:length(dmort)] = dmorti
-    p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1), size=0.5, color="#1144CC")
-    
-    p2 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state, params) state$died, "#3366FF",
-                   c("Count", "Total deaths"), date_markers, NULL)
-    dm2 <- numeric(length(p2$data$x))
-    dm2[1:length(p2$data$x)] = NA
-    dm2[1:length(dmort)] = dmort
-    p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2),  size=0.5, color="#1144CC")
-
-    p3 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state, params) state$casei, "#FF6633",
-                   c("Count", paste(c(CaseLabel, "per day"))), date_markers, NULL)
-    dm3 <- numeric(length(p3$data$x))
-    dm3[1:length(p3$data$x)] = NA
-    dm3[1:length(dcasei)] = dcasei
-    p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=0.5, color="#CC4411")
-
-    p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state, params) { (state$E + state$In + state$Is)/N * 100 },
-                   "#FFFF66", c(paste(country_adjective, "population (%)"), "Infected people"), date_markers, NULL)
-
-    ## p4 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-    ##                function(state, params) { (state$E + state$I)/N * 100 },
-    ##                "#FFFF66", c(paste(country_adjective, "population (%)"), "Infected people"), date_markers, NULL)
-
-    p5 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state, params) { state$R/N * 100 }, "#33FF66",
-                   c(paste(country_adjective, "population (%)"), "Immune"), date_markers, NULL)
-
-    p6 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-                   function(state, params) { state$Re }, "#33FFFF",
-                   c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
-
-    p6 <- p6 + coord_cartesian(ylim = c(0, NA)) +
-        geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
-
-    ## p7 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-    ##                function(state, params) { state$BS }, "#33FF66",
-    ##                c(paste(country_adjective, "BS"), ""), date_markers, NULL)
-
-    ## p8 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-    ##                function(state, params) { state$Ib * state$BS }, "#33FF66",
-    ##                c(paste(country_adjective, "Ib * BS"), ""), date_markers, NULL)
-
-    ## p9 <- makePlot(data_sample, c(dstartdate, plot_end_date),
-    ##                function(state, params) { (state$Ib / (N / state$BS)) }, "#33FF66",
-    ##                c("homogeneity", ""), date_markers, NULL)
-   
-    ## grid.arrange(p1, p2, p3, p4, p5, p6, p7, p8, p9, nrow=3)
-    grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
-}
-
 all_plots_age <- function(date_markers) {
     dateRange <- c(plot_start_date, plot_end_date)
 
@@ -284,41 +224,6 @@ all_plots_age <- function(date_markers) {
         scale_linetype_manual(name = 'Age group',
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
-    
-    ## ## Plot 2 : total deaths
-    
-    ## p2 <- makePlot(data_sample, dateRange,
-    ##                function(state, params) { state$y.died + state$o.died }, "#3366FF",
-    ##                c("Count", "Total deaths"), date_markers1, 'solid')
-    ## p2 <- p2 + theme(legend.position = c(0.2, 0.85))
-
-    ## dm2 <- numeric(length(p2$data$x))
-    ## dm2[1:length(p2$data$x)] = NA
-    ## dm2[(start + 1):(start + length(dmort))] = dmort
-    ## p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2), size=0.25, color="#1144CC")
-
-    ## ## Add y curves
-    ## p2 <- addExtraPlot(p2, data_sample, dateRange, function(state, params) { state$y.died }, "#3366FF", "dashed")
-
-    ## dm2y <- numeric(length(p2$data$x))
-    ## dm2y[1:length(p2$data$x)] = NA
-    ## dm2y[(start + 1):(start + length(y.dmort))] = y.dmort
-    
-    ## p2 <- p2 + geom_line(aes(y = dm2y), linetype="dashed") + geom_point(aes(y = dm2y),  size=0.25, color="#1144CC")
-
-    ## ## Add o curves
-    ## p2 <- addExtraPlot(p2, data_sample, dateRange, function(state, params) { state$o.died }, "#3366FF", "dotted")
-
-    ## dm2o <- numeric(length(p2$data$x))
-    ## dm2o[1:length(p2$data$x)] = NA
-    ## dm2o[(start + 1):(start + length(o.dmort))] = o.dmort
-
-    ## p2 <- p2 + geom_line(aes(y = dm2o), linetype="dotted") + geom_point(aes(y = dm2o),  size=0.25, color="#1144CC")
-
-    ## p2 <- p2 + scale_colour_manual(values = c("#1144CC"), guide=FALSE) +
-    ##     scale_linetype_manual(name = 'Age group',
-    ##                           values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
-    ##                           labels = ageGroupLabels)
 
     ## Plot 3 : cases
 
@@ -554,198 +459,30 @@ all_plots_age <- function(date_markers) {
     grid.arrange(p1, p3b, p3, pbeds, p4, p6, p5, pifr, nrow=2)
 }
 
-death_hosp_plots_age <- function(date_markers) {
+other_plots_age <- function(date_markers) {
     dateRange <- c(plot_start_date, plot_end_date)
+
+    if (zoom == 0) {
+        date_markers1 <- subset(date_markers, color == "black" | color=="red")
+    } else {
+        date_markers1 <- date_markers
+    }
 
     ageGroupLabels = c('< 65y','>= 65y','All (50%, 90% cri)')
 
-    ## Plot 1 : daily deaths
-
-    p1 <- makePlot(data_sample, dateRange,
-                   function(state, params) { state$y.deadi + state$o.deadi }, "#3366FF",
-                   c("Count", "Deaths"), date_markers, 'solid')
-
     start <- as.numeric(dstartdate - dateRange[1])
-
-    if (zoom == 1) {
-        p1 <- p1 + coord_cartesian(ylim = c(0, 50))
-    } else if (zoom == 2) {
-        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 50))
-    }
-
-    ## Add y curves
-    p1 <- addExtraPlot(p1, data_sample, dateRange, function(state, params) { state$y.deadi }, "#3366FF", "dashed")
-
-    dm1y <- numeric(length(p1$data$x))
-    dm1y[1:length(p1$data$x)] = NA
-    dm1y[(start + 1):(start + length(y.dmorti))] = y.dmorti
     
-    p1 <- p1 + geom_line(aes(y = dm1y), linetype="dashed", size=0.1) + geom_point(aes(y = dm1y), size=0.25, color="#1144CC")
-
-    ## Add o curves
-    p1 <- addExtraPlot(p1, data_sample, dateRange, function(state, params) { state$o.deadi }, "#3366FF", "dotted")
-
-    dm1o <- numeric(length(p1$data$x))
-    dm1o[1:length(p1$data$x)] = NA
-    dm1o[(start + 1):(start + length(o.dmorti))] = o.dmorti
-
-    p1 <- p1 + geom_line(aes(y = dm1o), linetype="dotted", size=0.1) + geom_point(aes(y = dm1o),  size=0.25, color="#1144CC")
-
-    p1 <- p1 + scale_colour_manual(values = c("#3366FF"), guide=FALSE) +
-        scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
-                              labels = ageGroupLabels)
-    
-    ## Plot 3b : daily hospitalisations
-
-    p3b <- makePlot(data_sample, dateRange,
-                    function(state, params) { state$y.hospi + state$o.hospi }, "#581845",
-                    c("Count", "Hospitalisations"), date_markers, 'solid')
-
-    start <- as.numeric(dstartdate - dateRange[1])
-   
-    dm3b <- numeric(length(p3b$data$x))
-    dm3b[1:length(p3b$data$x)] = NA
-    dm3b[(start + 1):(start + length(dhospi))] = dhospi
-    p3b <- p3b + geom_line(aes(y = dm3b), size=0.1) + geom_point(aes(y = dm3b),  size=0.25, color="#581845")
-
-    if (zoom == 1) {
-        p3b <- p3b + coord_cartesian(ylim = c(0, 300))
-    } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date), ylim = c(0, 200))
-    }
-
-    ## Add y/o curves
-    p3b <- addExtraPlot(p3b, data_sample, dateRange, function(state, params) { state$y.hospi }, "#581845", "dashed")
-    p3b <- addExtraPlot(p3b, data_sample, dateRange, function(state, params) { state$o.hospi }, "#581845", "dotted")
-
-    p3b <- p3b + scale_colour_manual(values = c("#581845"), guide=FALSE) +
-        scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
-                              labels = ageGroupLabels)
-    
-    ## Plot 4 : infected people
-    
-    p4 <- makePlot(data_sample, dateRange,
-                   function(state, params) { (state$y.E + state$y.I + state$o.E + state$o.I)/N * 100 },
-                   "#A67514", c("Population group (%)", "Infected people"), date_markers, 'solid')
-
-    if (zoom == 1) {
-        p4 <- p4 + coord_cartesian(ylim = c(0, 2))
-    } else if (zoom == 2) {
-        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
-                                   ylim = c(0, 2))
-    }
-
-
-    ## Add y/o curves
-    p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$y.E + state$y.I)/y.N * 100 }, "#A67514", "dashed")
-    p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$o.E + state$o.I)/o.N * 100 }, "#A67514", "dotted")
-
-    p4 <- p4 + scale_colour_manual(values = c("#A67514"), guide=FALSE) +
-        scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
-                              labels = ageGroupLabels)
-    
-    ## Plot 5 : recovered people
-
-    p5 <- makePlot(data_sample, dateRange,
-                   function(state, params) { (state$y.R + state$o.R)/N * 100 }, "#33CC66",
-                   c("Population group (%)", "Immune"), date_markers, 'solid')
-    p5 <- p5 + theme(legend.position = c(0.2, 0.85))
-
-    ## Add y/o curves
-    p5 <- addExtraPlot(p5, data_sample, dateRange, function(state, params) { state$y.R/y.N * 100 }, "#33CC66", "dashed")
-    p5 <- addExtraPlot(p5, data_sample, dateRange, function(state, params) { state$o.R/o.N * 100 }, "#33CC66", "dotted")
-
-    p5 <- p5 + scale_colour_manual(values = c("#33CC66"), guide=FALSE) +
-        scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
-                              labels = ageGroupLabels)
-
-    p6 <- makePlot(data_sample, dateRange,
-                   function(state, params) { state$Re }, "#33FFFF",
-                   c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
-
-    if (zoom == 1) {
-        p6 <- p6 + coord_cartesian(ylim = c(0, 2))
-    } else if (zoom == 2) {
-        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/8/1"), plot_end_date),
-                                   ylim = c(0, 2))
-    } else {
-        p6 <- p6 + coord_cartesian(ylim = c(0, NA))
-    }
-
-    p6 <- p6 +  geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
-
-    
-    grid.arrange(p1, p3b, p4, p6, p5, nrow=2)
-}
-
-all_plots_age3 <- function(dates) {
-    dateRange <- c(plot_start_date, plot_end_date)
-
-    ageGroupLabels = c('< 40y', '40 - 60y','> 60y','All (50%, 90% cri)')
-
-    ## Plot 1 : daily deaths
-
-    p1 <- makePlot(data_sample, dateRange,
-                   function(state, params) { state$y.deadi + state$m.deadi + state$o.deadi }, "#3366FF",
-                   c("Count", "Deaths"), dates, 'solid')
-
-    start <- as.numeric(dstartdate - dateRange[1])
-   
-    dm1 <- numeric(length(p1$data$x))
-    dm1[1:length(p1$data$x)] = NA
-    dm1[(start + 1):(start + length(dmorti))] = dmorti
-    p1 <- p1 + geom_line(aes(y = dm1)) + geom_point(aes(y = dm1),  size=0.5, color="#1144CC")
-
-    if (zoom > 0) {
-        p1 <- p1 + coord_cartesian(ylim = c(0, 50))
-    }
-
-    ## Add y curves
-    p1 <- addExtraPlot(p1, data_sample, dateRange, function(state, params) { state$y.deadi }, "#3366FF", "dashed")
-
-    dm1y <- numeric(length(p1$data$x))
-    dm1y[1:length(p1$data$x)] = NA
-    dm1y[(start + 1):(start + length(y.dmorti))] = y.dmorti
-    
-    p1 <- p1 + geom_line(aes(y = dm1y), linetype="dashed") + geom_point(aes(y = dm1y),  size=0.5, color="#1144CC")
-
-    ## Add m curves
-    p1 <- addExtraPlot(p1, data_sample, dateRange, function(state, params) { state$m.deadi }, "#3366FF", "dotdash")
-
-    dm1m <- numeric(length(p1$data$x))
-    dm1m[1:length(p1$data$x)] = NA
-    dm1m[(start + 1):(start + length(m.dmorti))] = m.dmorti
-    
-    p1 <- p1 + geom_line(aes(y = dm1m), linetype="dotdash") + geom_point(aes(y = dm1m),  size=0.5, color="#1144CC")
-
-    ## Add o curves
-    p1 <- addExtraPlot(p1, data_sample, dateRange, function(state, params) { state$o.deadi }, "#3366FF", "dotted")
-
-    dm1o <- numeric(length(p1$data$x))
-    dm1o[1:length(p1$data$x)] = NA
-    dm1o[(start + 1):(start + length(o.dmorti))] = o.dmorti
-
-    p1 <- p1 + geom_line(aes(y = dm1o), linetype="dotted") + geom_point(aes(y = dm1o),  size=0.5, color="#1144CC")
-
-    p1 <- p1 + scale_colour_manual(values = c("#3366FF"), guide=FALSE) +
-        scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotdash'='dotdash','dotted'='dotted'),
-                              labels = ageGroupLabels)
-    ## Plot 2 : total deaths
+    ## ## Plot 2 : total deaths
     
     p2 <- makePlot(data_sample, dateRange,
-                   function(state, params) { state$y.died + state$m.died + state$o.died }, "#3366FF",
-                   c("Count", "Total deaths"), dates, 'solid')
+                   function(state, params) { state$y.died + state$o.died }, "#3366FF",
+                   c("Count", "Total deaths"), date_markers1, 'solid')
     p2 <- p2 + theme(legend.position = c(0.2, 0.85))
 
     dm2 <- numeric(length(p2$data$x))
     dm2[1:length(p2$data$x)] = NA
     dm2[(start + 1):(start + length(dmort))] = dmort
-    p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2), size=0.5, color="#1144CC")
+    p2 <- p2 + geom_line(aes(y = dm2)) + geom_point(aes(y = dm2), size=0.25, color="#1144CC")
 
     ## Add y curves
     p2 <- addExtraPlot(p2, data_sample, dateRange, function(state, params) { state$y.died }, "#3366FF", "dashed")
@@ -754,16 +491,7 @@ all_plots_age3 <- function(dates) {
     dm2y[1:length(p2$data$x)] = NA
     dm2y[(start + 1):(start + length(y.dmort))] = y.dmort
     
-    p2 <- p2 + geom_line(aes(y = dm2y), linetype="dashed") + geom_point(aes(y = dm2y),  size=0.5, color="#1144CC")
-
-    ## Add m curves
-    p2 <- addExtraPlot(p2, data_sample, dateRange, function(state, params) { state$m.died }, "#3366FF", "dotdash")
-
-    dm2 <- numeric(length(p2$data$x))
-    dm2[1:length(p2$data$x)] = NA
-    dm2[(start + 1):(start + length(m.dmort))] = m.dmort
-    
-    p2 <- p2 + geom_line(aes(y = dm2), linetype="dotdash") + geom_point(aes(y = dm2),  size=0.5, color="#1144CC")
+    p2 <- p2 + geom_line(aes(y = dm2y), linetype="dashed") + geom_point(aes(y = dm2y),  size=0.25, color="#1144CC")
 
     ## Add o curves
     p2 <- addExtraPlot(p2, data_sample, dateRange, function(state, params) { state$o.died }, "#3366FF", "dotted")
@@ -772,99 +500,63 @@ all_plots_age3 <- function(dates) {
     dm2o[1:length(p2$data$x)] = NA
     dm2o[(start + 1):(start + length(o.dmort))] = o.dmort
 
-    p2 <- p2 + geom_line(aes(y = dm2o), linetype="dotted") + geom_point(aes(y = dm2o),  size=0.5, color="#1144CC")
+    p2 <- p2 + geom_line(aes(y = dm2o), linetype="dotted") + geom_point(aes(y = dm2o),  size=0.25, color="#1144CC")
 
     p2 <- p2 + scale_colour_manual(values = c("#1144CC"), guide=FALSE) +
         scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotdash'='dotdash','dotted'='dotted'),
+                              values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
 
-    ## Plot 3 : cases
-
-    p3 <- makePlot(data_sample, dateRange,
-                   function(state, params) { state$y.casei + state$m.casei + state$o.casei }, "#FF6633",
-                   c("Count", paste(c("Cases"))), dates, 'solid')
-    dm3 <- numeric(length(p3$data$x))
-    dm3[1:length(p3$data$x)] = NA
-    dm3[(start + 1):(start + length(dcasei))] = dcasei
-    p3 <- p3 + geom_line(aes(y = dm3)) + geom_point(aes(y = dm3),  size=0.5, color="#CC4411")
-
-    if (zoom > 0) {
-        p3 <- p3 + coord_cartesian(ylim = c(0, 1500))
+    annotateF <- function(plot) {
+        plot +
+            annotate("rect", xmin = d2 + dstartdate, xmax = d3 + dstartdate - 30,
+                     ymin = 0, ymax = Inf, alpha = .05, fill='red') +
+            annotate("rect", xmin = d10 + dstartdate + 3, xmax = d12 + dstartdate,
+                     ymin = 0, ymax = Inf, alpha = .05, fill='red')
     }
 
-    ## Add y/m/o curves
-    p3 <- addExtraPlot(p3, data_sample, dateRange, function(state, params) { state$y.casei }, "#FF6633", "dashed")
-    p3 <- addExtraPlot(p3, data_sample, dateRange, function(state, params) { state$m.casei }, "#FF6633", "dotdash")
-    p3 <- addExtraPlot(p3, data_sample, dateRange, function(state, params) { state$o.casei }, "#FF6633", "dotted")
+    p7 <- makePlotAnnotate(data_sample, dateRange,
+                           function(state, params) { state$Rt }, "#33FFFF",
+                           c("Rt", "Time-varying reproduction number (Rt)"), date_markers, NULL,
+                           annotateF)
 
-    p3 <- p3 + scale_colour_manual(values = c("#FF6633"), guide=FALSE) +
-        scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotdash'='dotdash','dotted'='dotted'),
-                              labels = ageGroupLabels)
-
-    # p3 <- p3 + scale_y_continuous(limits=c(0, 2500))
-
-    ## Plot 4 : infected people
-    
-    p4 <- makePlot(data_sample, dateRange,
-                   function(state, params) { (state$y.E + state$y.I + state$m.E + state$m.I + state$o.E + state$o.I)/N * 100 },
-                   "#A67514", c("Population group (%)", "Infected people"), dates, 'solid')
-
-    if (zoom > 0) {
-        p4 <- p4 + coord_cartesian(ylim = c(0, 0.5))
-    }
-
-    ## Add y/m/o curves
-    p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$y.E + state$y.I)/y.N * 100 }, "#A67514", "dashed")
-    p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$m.E + state$m.I)/m.N * 100 }, "#A67514", "dotdash")
-    p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$o.E + state$o.I)/o.N * 100 }, "#A67514", "dotted")
-
-    p4 <- p4 + scale_colour_manual(values = c("#A67514"), guide=FALSE) +
-        scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotdash'='dotdash','dotted'='dotted'),
-                              labels = ageGroupLabels)
-    
-    ## Plot 5 : recovered people
-
-    p5 <- makePlot(data_sample, dateRange,
-                   function(state, params) { (state$y.R + state$m.R + state$o.R)/N * 100 }, "#33CC66",
-                   c("Population group (%)", "Immune"), dates, 'solid')
-    p5 <- p5 + theme(legend.position = c(0.2, 0.85))
-
-    ## Add y/m/o curves
-    p5 <- addExtraPlot(p5, data_sample, dateRange, function(state, params) { state$y.R/y.N * 100 }, "#33CC66", "dashed")
-    p5 <- addExtraPlot(p5, data_sample, dateRange, function(state, params) { state$m.R/m.N * 100 }, "#33CC66", "dotdash")
-    p5 <- addExtraPlot(p5, data_sample, dateRange, function(state, params) { state$o.R/o.N * 100 }, "#33CC66", "dotted")
-
-    p5 <- p5 + scale_colour_manual(values = c("#33CC66"), guide=FALSE) +
-        scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotdash'='dotdash','dotted'='dotted'),
-                              labels = ageGroupLabels)
-
-    p6 <- makePlot(data_sample, dateRange,
-                   function(state, params) { state$Re }, "#33CCCC",
-                   c("Re", "Effective reproduction number (Re)"), dates, 'solid')
-    ## Add y/m/o curves
-    p6 <- addExtraPlot(p6, data_sample, dateRange, function(state, params) { state$y.Re }, "#33CCCC", "dashed")
-    p6 <- addExtraPlot(p6, data_sample, dateRange, function(state, params) { state$m.Re }, "#33CCCC", "dotdash")
-    p6 <- addExtraPlot(p6, data_sample, dateRange, function(state, params) { state$o.Re }, "#33CCCC", "dotted")
-    p6 <- p6 + scale_colour_manual(values = c("#33CCCC"), guide=FALSE) +
-        scale_linetype_manual(name = 'Age group',
-                              values=c('solid'='solid','dashed'='dashed','dotdash'='dotdash','dotted'='dotted'),
-                              labels = ageGroupLabels)
-
-    if (zoom > 0) {
-        p6 <- p6 + coord_cartesian(ylim = c(0, 2))
+    if (zoom == 1) {
+        p7 <- p7 + coord_cartesian(ylim = c(0, 2))
+    } else if (zoom == 2) {
+        p7 <- p7 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
+                                   ylim = c(0, 2))
     } else {
-        p6 <- p6 + coord_cartesian(ylim = c(0, NA))
+        p7 <- p7 + coord_cartesian(ylim = c(0, NA))
     }
 
-    p6 <- p6 +  geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
+    p7 <- p7 +  geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
 
-    
-    ##grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
-    grid.arrange(p1, p3, p4, p6, p2, p5, nrow=3)
+    ## Beta
+
+    cols <- c("#00AFBB", "#E7B800", "#FC4E07")
+
+    col.y <- cols[1]
+    col.o <- cols[2]
+    col.yo <- cols[3]
+
+    pbeta <- makePlot2(data_sample, dateRange, function(state, params) { state$y.beta },
+                       col.y, c("Infections per day", "Infections per day per infected individual"),
+                       dates, NULL)
+
+    pbeta <- addExtraPlotQ2(pbeta, data_sample, dateRange,
+                            function(state, params) { state$o.beta },
+                            col.o, NULL)
+
+    pbeta <- addExtraPlotQ2(pbeta, data_sample, dateRange,
+                            function(state, params) { state$yo.beta },
+                            col.yo, NULL)
+
+    pbeta <- pbeta + scale_colour_identity(guide = "legend",
+                                  labels = c("<65 to <65", ">65 to >65", "<65 to >65")) +
+##        theme(legend.position = c(0.2, 0.85)) +
+        theme(legend.title = element_blank())
+   
+    grid.arrange(p2, p7, pbeta, nrow=1)
 }
 
 options(scipen=999)
@@ -980,7 +672,14 @@ all_plots(dates)
 ## plot_end_date <- Sys.Date()
 ## all_plots(dates)
 
+dev.off()
+
 plot_end_date <- as.Date("2021/1/1")
+
+pdf("other-plots.pdf", width=19, height=6)
+zoom <- 0
+other_plots_age(dates)
+dev.off()
 
 est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, 400, c(0.05, 0.5, 0.95)))
 colnames(est.died) <- c("q5", "q50", "q95")

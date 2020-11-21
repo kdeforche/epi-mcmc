@@ -155,6 +155,9 @@ calculateModel <- function(params, period)
     state$o.Re <- rep(0, padding + period)
     state$y.i <- rep(0, padding + period)
     state$o.i <- rep(0, padding + period)
+    state$y.beta <- rep(0, padding + period)
+    state$o.beta <- rep(0, padding + period)
+    state$yo.beta <- rep(0, padding + period)
 
     parms <- c(Ny = y.N, No = o.N,
                a1 = a1, a2 = a2, gamma = gamma, eta = eta,
@@ -181,8 +184,9 @@ calculateModel <- function(params, period)
 
     out <- ode(Y, times, func = "derivs", parms = parms,
                dllname = cppname,
-               initfunc = "initmod", nout = 6, outnames = c("Re", "Rt", "y.Re", "o.Re",
-                                                            "y.i", "o.i"))
+               initfunc = "initmod", nout = 9,
+               outnames = c("Re", "Rt", "y.Re", "o.Re", "y.i", "o.i",
+                            "y.beta", "o.beta", "yo.beta"))
 
     state$y.i[(padding + 1):(padding + period1)] = out[,16]
     state$o.i[(padding + 1):(padding + period1)] = out[,17]
@@ -236,8 +240,9 @@ calculateModel <- function(params, period)
         
         out <- ode(Y, times, func = "derivs", parms = parms,
                    dllname = cppname,
-                   initfunc = "initmod",
-                   nout = 6, outnames = c("Re", "Rt", "y.Re", "o.Re", "y.i", "o.i"))
+                   initfunc = "initmod", nout = 9,
+                   outnames = c("Re", "Rt", "y.Re", "o.Re", "y.i", "o.i",
+                                "y.beta", "o.beta", "yo.beta"))
     }
 
     state$y.S[(padding + 1):(padding + period)] = out[,2]
@@ -254,6 +259,9 @@ calculateModel <- function(params, period)
     state$o.Re[(padding + 1):(padding + period)] = out[,15]
     state$y.i[(padding + 1):(padding + period)] = out[,16]
     state$o.i[(padding + 1):(padding + period)] = out[,17]
+    state$y.beta[(padding + 1):(padding + period)] = out[,18]
+    state$o.beta[(padding + 1):(padding + period)] = out[,19]
+    state$yo.beta[(padding + 1):(padding + period)] = out[,20]
 
     gycr <- pmin(1, ycase_rate * y.ifr * (1 + (fyifr - 1) * g))     ## fyifr: age reduction
     gyifr <- y.ifr * (1 + (fyifr - 1) * g) * (1 - ifrred * gtrimp)  ## ifrred: treatment improvement -> on lowers IFR 
@@ -515,8 +523,8 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(ycase_latency, mean=7, sd=3, log=T)
     logPriorP <- logPriorP + dnorm(ocase_latency, mean=7, sd=3, log=T)
-    logPriorP <- logPriorP + dnorm(yhosp_latency, mean=13, sd=0.5, log=T)
-    logPriorP <- logPriorP + dnorm(ohosp_latency, mean=13, sd=0.5, log=T)
+    logPriorP <- logPriorP + dnorm(yhosp_latency, mean=13, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(ohosp_latency, mean=13, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=0.5, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=0.5, log=T)
 
@@ -671,20 +679,20 @@ keyparamnames <- c("betay6", "betao6", "betayo6",
                    "ifrred")
 fitkeyparamnames <- keyparamnames
 
-init <- c(2.9, 0.6, 0.5,
-          1.4, 0.6, 0.5,
-          0.9, 0.4, 0.06,
-          1200, 1.1, 13, 20,
-          60, 1.45, 13, 21,
-          15, -8, 5.4, 5.5, 0.33, 0.35,
+init <- c(2.9, 0.5, 0.5,
+          1.4, 0.5, 0.4,
+          0.8, 0.4, 0.07,
+          700, 0.8, 13, 20,
+          13, 1.5, 13, 21,
+          14, -8, 5.4, 5.1, 0.3, 0.25,
           93, 0.9, 0.2, 0.01,
-          25, 1.4, 0.4, 0.05,
+          28, 1.4, 0.4, 0.04,
               0.9, 0.2, 0.01,
-          27, 1.4, 0.5, 0.04,
-          39, 1.9, 0.4, 0.14,
-              1.4, 0.2, 0.05,
+          28, 1.3, 0.7, 0.03,
+          35, 2.3, 0.4, 0.1,
+              1.5, 0.2, 0.07,
           0.3, 10, 10,
-              1.1, 0.2, 0.04)
+              1.5, 0.2, 0.05)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,
