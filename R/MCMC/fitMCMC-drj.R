@@ -49,5 +49,5 @@ for (chain in 1:4) {
   r_mcmc_out$output$chain <- paste("chain",chain,sep='')
   chain_outputfile <- paste(outputfile,"_",chain,sep='')
   write.csv(subset(r_mcmc_out$output, rung=="rung1" & stage=="sampling"), file=chain_outputfile)
-  write.csv(r_mcmc_out$output, file=paste("all_", chain_outputfile, sep=''))
+##  write.csv(r_mcmc_out$output, file=paste("all_", chain_outputfile, sep=''))
 }

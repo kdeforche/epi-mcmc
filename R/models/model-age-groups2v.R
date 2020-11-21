@@ -17,6 +17,8 @@ a1 <- 1/Tinc1
 a2 <- 1/Tinc2
 gamma <- 1/((G - (Tinc1 + Tinc2)) * 2)
 eta <- 1/(0.75 * 356) ## 9 months
+##CLsd <- 5
+CLsd <- 2.5
 
 calcGammaProfile <- function(mean, sd)
 {
@@ -116,8 +118,6 @@ calculateModel <- function(params, period)
     betao12 <- betao9
     betayo12 <- betayo9
     
-    CLsd <- 5
-    
     ## convolution profiles
     y.case_cv_profile = caseProfile(ycase_latency, CLsd)
     o.case_cv_profile = caseProfile(ocase_latency, CLsd)
@@ -207,8 +207,8 @@ calculateModel <- function(params, period)
         t5 <- data_offset + d5
         t6 <- t5 + t6o
         t7 <- t6 + t7o
-        t8 <- data_offset + d8 + 7
-        t9 <- t8 + 2
+        t8 <- data_offset + d8
+        t9 <- data_offset + d9
         t10 <- data_offset + d10
         t11 <- data_offset + d10 + 4
         t12 <- data_offset + d12
@@ -264,6 +264,7 @@ calculateModel <- function(params, period)
     gohr <- ohosp_rate * o.hr
 
     t.symp <- data_offset + d.symp.cases
+    t.all <- data_offset + d.all.cases - 1
     
     ## y.case
     s2i <- convolute(state$y.i, padding + 1, padding + period, y.case_cv_profile)
@@ -277,8 +278,8 @@ calculateModel <- function(params, period)
             state$y.casei[t2:(padding + period)] = s2i[(t2 - padding):period] * gycr[length(gycr)]
         }
 
-        state$y.casei[t.symp:length(state$y.casei)] =
-            state$y.casei[t.symp:length(state$y.casei)] * symp.cases.factor
+        state$y.casei[t.symp:min(t.all, length(state$y.casei))] =
+            state$y.casei[t.symp:min(t.all, length(state$y.casei))] * symp.cases.factor
     } else {
         state$y.casei[(padding + 1):(padding + period)] = s2i * gycr[1]
     }
@@ -391,6 +392,10 @@ invTransformParams <- function(posterior)
     posterior$o.Rt4 = posterior$betao4 / gamma
     posterior$yo.Rt4 = posterior$betayo4 / gamma
 
+    posterior$y.ld2 = posterior$betay11 / posterior$betay9
+    posterior$o.ld2 = posterior$betao11 / posterior$betao9
+    posterior$yo.ld2 = posterior$betayo11 / posterior$betayo9
+    
     posterior
 }
 
@@ -471,7 +476,7 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o,
                                    mean=d4, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(d5 + t6o, mean=d6, sd=5, log=T)
-    logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=4, log=T)
+    logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=2, log=T)
 
     SD <- log(2) ## SD = */ 2
     lSD <- log(1.3) ## SD = */ 1.3
@@ -498,14 +503,18 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betay7/betay9, log(1.3), lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betao7/betao9, log(1.3), lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo7/betayo9, log(1.3), lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betay9/betay11, log(1.3), log(1.15), log=T)
-    logPriorP <- logPriorP + dlnorm(betao9/betao11, log(1.3), log(1.15), log=T)
-    logPriorP <- logPriorP + dlnorm(betayo9/betayo11, log(1.3), log(1.15), log=T)
 
+    ## logPriorP <- logPriorP + dlnorm(betay9/betay11, log(1.3), log(1.15), log=T)
+    ## logPriorP <- logPriorP + dlnorm(betao9/betao11, log(1.3), log(1.15), log=T)
+    ## logPriorP <- logPriorP + dlnorm(betayo9/betayo11, log(1.3), log(1.15), log=T)
+    logPriorP <- logPriorP + dlnorm(betay9/betay11, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao9/betao11, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo9/betayo11, 0, SD, log=T)
+    
     logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
-    logPriorP <- logPriorP + dnorm(ycase_latency, mean=9, sd=2, log=T)
-    logPriorP <- logPriorP + dnorm(ocase_latency, mean=9, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(ycase_latency, mean=7, sd=3, log=T)
+    logPriorP <- logPriorP + dnorm(ocase_latency, mean=7, sd=3, log=T)
     logPriorP <- logPriorP + dnorm(yhosp_latency, mean=13, sd=0.5, log=T)
     logPriorP <- logPriorP + dnorm(ohosp_latency, mean=13, sd=0.5, log=T)
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=0.5, log=T)
@@ -702,8 +711,8 @@ df_params <- data.frame(name = fit.paramnames,
                                 100, 3 * gamma, 1 * gamma, 0.5 * gamma,
                                 50, 3 * gamma, 1 * gamma, 0.5 * gamma,
                                     2 * gamma, 1 * gamma, 0.5 * gamma,
-                                50, 3 * gamma, 3 * gamma, 0.5 * gamma,
-                                50, 3 * gamma, 3 * gamma, 0.5 * gamma,
+                                50, 4 * gamma, 3 * gamma, 0.5 * gamma,
+                                50, 4 * gamma, 3 * gamma, 0.5 * gamma,
                                     3 * gamma, 3 * gamma, 0.5 * gamma,
                                 0.7, 14, 17,
                                     3 * gamma, 3 * gamma, 0.5 * gamma),

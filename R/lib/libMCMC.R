@@ -180,6 +180,11 @@ grey75 <- "grey60"
 
 makePlot <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
 {
+    makePlotAnnotate(sample, dateRange, fun, colour, titles, date_markers, lty, NULL)
+}
+
+makePlotAnnotate <- function(sample, dateRange, fun, colour, titles, date_markers, lty, annotateF)
+{
     period <- as.numeric(dateRange[2] - dateRange[1])
     startoffset <- as.numeric(dstartdate - dateRange[1])
     qd <- data.frame(quantileData(sample, fun, startoffset, period, c(0.05, 0.25, 0.5, 0.75, 0.95)))
@@ -187,7 +192,12 @@ makePlot <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
     colnames(qd) <- c("q5", "q25", "q50", "q75", "q95")
     qd$x <- seq(dateRange[1], dateRange[1] + dim(qd)[1] - 1, 1)
 
-    result <- ggplot(qd) + aes(x = x) +
+    result <- ggplot(qd)
+
+    if (!is.null(annotateF))
+        result <- annotateF(result)
+
+    result <- result + aes(x = x) +
         geom_ribbon(aes(ymin = q5, ymax=q95, fill=grey95), alpha=0.4) +
         geom_ribbon(aes(ymin = q25, ymax=q75, fill=grey75), alpha=0.4)
 

@@ -70,6 +70,8 @@ lockdown_transition_period <- 10
 ## how many deaths at date of lockdown
 total_deaths_at_lockdown <- 5
 
+d1 <- lockdown_offset
+d2 <- d1 + lockdown_transition_period
 d3 <- as.numeric(as.Date("2020/6/6") - dstartdate)
 d4 <- as.numeric(as.Date("2020/7/6") - dstartdate)
 d5 <- as.numeric(as.Date("2020/7/27") - dstartdate)
@@ -78,8 +80,11 @@ d7 <- as.numeric(as.Date("2020/9/21") - dstartdate)
 d8 <- as.numeric(as.Date("2020/10/9") - dstartdate)
 d9 <- as.numeric(as.Date("2020/10/16") - dstartdate)
 d10 <- as.numeric(as.Date("2020/10/28") - dstartdate)
+d11 <- as.numeric(as.Date("2020/11/1") - dstartdate)
 ##d12 <- as.numeric(as.Date("2020/11/16") - dstartdate)
 d12 <- as.numeric(as.Date("2020/12/14") - dstartdate)
+d13 <- as.numeric(as.Date("2020/12/23") - dstartdate)
+d14 <- as.numeric(as.Date("2020/12/26") - dstartdate)
 
 d.reliable.cases <- as.numeric(as.Date("2020/10/1") - dstartdate)
 ##d.reliable.cases <- as.numeric(as.Date("2020/7/1") - dstartdate)
@@ -87,4 +92,5 @@ d.reliable.hosp <- as.numeric(as.Date("2020/6/1") - dstartdate)
 d.hosp.o1 <- as.numeric(as.Date("2020/6/22") - dstartdate)
 d.hosp.o2 <- as.numeric(as.Date("2020/9/14") - dstartdate)
 d.symp.cases <- as.numeric(as.Date("2020/10/21") - dstartdate)
-symp.cases.factor <- 0.65
+d.all.cases <- as.numeric(as.Date("2020/11/23") - dstartdate)
+symp.cases.factor <- 0.8

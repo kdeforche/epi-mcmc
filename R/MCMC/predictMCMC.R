@@ -58,7 +58,6 @@ agepop.from.ifr <- function(ifr) {
 est.ifr <- function(state, params) {
     fyifr = params[37]
     
-    ##y.i = -diff(state$y.S)
     y.i = state$y.i
     L = length(y.i)
     gyifr <- y.ifr * (1 + fyifr * g)
@@ -71,7 +70,6 @@ est.ifr <- function(state, params) {
     }
     ydead[t2:L] = y.i[t2:L] * gyifr[length(gyifr)]
 
-    ##o.i = -diff(state$o.S)
     o.i = state$o.i
     L = length(o.i)
     goifr <- o.ifr
@@ -235,13 +233,18 @@ all_plots <- function(date_markers) {
 all_plots_age <- function(date_markers) {
     dateRange <- c(plot_start_date, plot_end_date)
 
+    if (zoom == 0)
+        date_markers1 <- subset(date_markers, color == "black" | color=="red")
+    else
+        date_markers1 <- date_markers
+
     ageGroupLabels = c('< 65y','>= 65y','All (50%, 90% cri)')
 
     ## Plot 1 : daily deaths
 
     p1 <- makePlot(data_sample, dateRange,
                    function(state, params) { state$y.deadi + state$o.deadi }, "#3366FF",
-                   c("Count", "Deaths"), date_markers, 'solid')
+                   c("Count", "Deaths"), date_markers1, 'solid')
 
     start <- as.numeric(dstartdate - dateRange[1])
 
@@ -286,7 +289,7 @@ all_plots_age <- function(date_markers) {
     
     ## p2 <- makePlot(data_sample, dateRange,
     ##                function(state, params) { state$y.died + state$o.died }, "#3366FF",
-    ##                c("Count", "Total deaths"), date_markers, 'solid')
+    ##                c("Count", "Total deaths"), date_markers1, 'solid')
     ## p2 <- p2 + theme(legend.position = c(0.2, 0.85))
 
     ## dm2 <- numeric(length(p2$data$x))
@@ -321,7 +324,7 @@ all_plots_age <- function(date_markers) {
 
     p3 <- makePlot(data_sample, dateRange,
                    function(state, params) state$y.casei + state$o.casei, "#FF6633",
-                   c("Count", paste(c("Cases"))), date_markers, 'solid')
+                   c("Count", paste(c("Cases"))), date_markers1, 'solid')
 
     ## dm3 <- numeric(length(p3$data$x))
     ## dm3[1:length(p3$data$x)] = NA
@@ -368,7 +371,7 @@ all_plots_age <- function(date_markers) {
 
     p3b <- makePlot(data_sample, dateRange,
                     function(state, params) { state$y.hospi + state$o.hospi }, "#581845",
-                    c("Count", "Hospitalisations"), date_markers, 'solid')
+                    c("Count", "Hospitalisations"), date_markers1, 'solid')
 
     start <- as.numeric(dstartdate - dateRange[1])
    
@@ -395,20 +398,33 @@ all_plots_age <- function(date_markers) {
                               labels = ageGroupLabels)
     
     ## Plot 4 : infected people
+
+    infectedF <- function(state, params) {
+        (state$y.E + state$y.I + state$o.E + state$o.I)/N * 100
+    }
+
+    annotateF <- function(plot) {
+        plot +
+            annotate("rect", xmin = d2 + dstartdate, xmax = d3 + dstartdate - 30,
+                     ymin = 0, ymax = Inf, alpha = .05, fill='red') +
+            annotate("rect", xmin = d10 + dstartdate + 3, xmax = d12 + dstartdate,
+                     ymin = 0, ymax = Inf, alpha = .05, fill='red')
+    }
     
-    p4 <- makePlot(data_sample, dateRange,
-                   function(state, params) { (state$y.E + state$y.I + state$o.E + state$o.I)/N * 100 },
-                   "#A67514", c("Population group (%)", "Infected people"), date_markers, 'solid')
+    p4 <- makePlotAnnotate(data_sample, dateRange, infectedF,
+                           "#A67514", c("Population group (%)", "Infected people"),
+                           date_markers, 'solid', annotateF)
 
     p4 <- p4 + theme(legend.position = c(0.2, 0.85))
 
     if (zoom == 1) {
-        p4 <- p4 + coord_cartesian(ylim = c(0, 10))
+        p4 <- p4 + coord_cartesian(ylim = c(0, 6))
     } else if (zoom == 2) {
         p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
-                                   ylim = c(0, 10))
+                                   ylim = c(0, 6))
     }
 
+    ## p4 <- p4 + geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
 
     ## Add y/o curves
     p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$y.E + state$y.I)/y.N * 100 }, "#A67514", "dashed")
@@ -423,7 +439,7 @@ all_plots_age <- function(date_markers) {
 
     p5 <- makePlot(data_sample, dateRange,
                    function(state, params) { (state$y.R + state$o.R)/N * 100 }, "#33CC66",
-                   c("Population group (%)", "Immune"), date_markers, 'solid')
+                   c("Population group (%)", "Immune"), date_markers1, 'solid')
     p5 <- p5 + theme(legend.position = c(0.2, 0.85))
 
     ## Add y/o curves
@@ -435,9 +451,14 @@ all_plots_age <- function(date_markers) {
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
 
-    p6 <- makePlot(data_sample, dateRange,
-                   function(state, params) { state$Re }, "#33FFFF",
-                   c("Re", "Effective reproduction number (Re)"), date_markers, NULL)
+    if (zoom == 2) {
+        p5 <- p5 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date))
+    }
+    
+    p6 <- makePlotAnnotate(data_sample, dateRange,
+                           function(state, params) { state$Re }, "#33FFFF",
+                           c("Re", "Effective reproduction number (Re)"), date_markers, NULL,
+                           annotateF)
 
     if (zoom == 1) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
@@ -494,22 +515,28 @@ all_plots_age <- function(date_markers) {
     ## pbeds <- pbeds + geom_hline(yintercept=2500, linetype="dashed", color=colbeds, size=0.5) +
     ##     geom_text(aes(as.Date("2020/09/01"), 2500, label = "Phase 1A", vjust = -1))
     pbeds <- pbeds + geom_hline(yintercept=5000, linetype="dashed", color=colbeds, size=0.5) +
-        geom_text(aes(as.Date("2020/09/15"), 5000, label = "Phase 1B", vjust = -0.3), color=colbeds)
+        annotate("text", x=as.Date("2020/09/15"), y=5000, label = "Phase 1B",
+                 vjust = -0.3, color=colbeds)
     pbeds <- pbeds + geom_hline(yintercept=7*1500, linetype="dashed", color=colbeds, size=0.5) +
-        geom_text(aes(as.Date("2020/09/15"), 7*1500, label = "Phase 2A", vjust = -0.3), color=colbeds)
+        annotate("text", x=as.Date("2020/09/15"), y=7*1500, label = "Phase 2A",
+                 vjust = -0.3, color=colbeds)
     pbeds <- pbeds + geom_hline(yintercept=7*2000, linetype="dashed", color=colbeds, size=0.5) +
-        geom_text(aes(as.Date("2020/09/15"), 7*2000, label = "Phase 2B", vjust = -0.3), color=colbeds)
+        annotate("text", x=as.Date("2020/09/15"), y=7*2000, label = "Phase 2B",
+                 vjust = -0.3, color=colbeds)
 
     ## pbeds <- pbeds + geom_hline(yintercept=300, linetype="dashed", color=colicu, size=0.5) +
     ##     geom_text(aes(as.Date("2020/09/01"), 300, label = "Phase 0", vjust = -1))
     ## pbeds <- pbeds + geom_hline(yintercept=500, linetype="dashed", color=colicu, size=0.5) +
     ##     geom_text(aes(as.Date("2020/09/01"), 500, label = "Phase 1A", vjust = -1))
     pbeds <- pbeds + geom_hline(yintercept=1000, linetype="dashed", color=colicu, size=0.5) +
-        geom_text(aes(as.Date("2020/09/15"), 1000, label = "Phase 1B", vjust = -0.3), color=colicu)
+        annotate("text", x=as.Date("2020/09/15"), y=1000, label = "Phase 1B",
+                 vjust = -0.3, color=colicu)
     pbeds <- pbeds + geom_hline(yintercept=1500, linetype="dashed", color=colicu, size=0.5) +
-        geom_text(aes(as.Date("2020/09/15"), 1500, label = "Phase 2A", vjust = -0.3), color=colicu)
+        annotate("text", x=as.Date("2020/09/15"), y=1500, label = "Phase 2A",
+                 vjust = -0.3, color=colicu)
     pbeds <- pbeds + geom_hline(yintercept=2000, linetype="dashed", color=colicu, size=0.5) +
-        geom_text(aes(as.Date("2020/09/15"), 2000, label = "Phase 2B", vjust = -0.3), color=colicu)
+        annotate("text", x=as.Date("2020/09/15"), y=2000, label = "Phase 2B",
+                 vjust = -0.3, color=colicu)
 
     if (zoom == 2) {
         pifr <- pifr + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
@@ -899,31 +926,50 @@ all_plots <- all_plots_age
 d6 <- as.numeric(as.Date("2020/12/1") - dstartdate)
 
 plot_start_date <- as.Date("2020/2/13")
-plot_end_date <- as.Date("2021/1/1")
 
 date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
                                  dstartdate + lockdown_offset + lockdown_transition_period,
+                                 dstartdate + d5,
+                                 dstartdate + d8,
+                                 dstartdate + d9,
+                                 dstartdate + d11,
                                  Sys.Date()),
-                           color=c("orange", "red", "darkgray"))
-
-## date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
-##                                  dstartdate + lockdown_offset + lockdown_transition_period,
-##                                  dstartdate + d5,
-##                                  dstartdate + d7,
-##                                  Sys.Date()),
-##                            color=c("orange", "red", "orange", "yellow", "darkgray"))
+                           color=c("orange", "red", "orange", "orange", "orange",
+                                   "red", "black"))
 dates <- date_markers
 
-est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 250, c(0.05, 0.5, 0.95)))
+est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 300, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
 
-print(c(est.Re[Sys.Date() - dstartdate + 1,]))
-print(c(est.Re[d10,]))
+print("Re Today")
+print(unlist(est.Re[Sys.Date() - dstartdate + 1,]))
+print("Re @ d10")
+print(unlist(est.Re[d10,]))
+
+y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 300, c(0.05, 0.5, 0.95)))
+
+o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 300, c(0.05, 0.5, 0.95)))
+
+est.case <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + 300, c(0.05, 0.5, 0.95)))
+
+est.hosp <- data.frame(quantileData(data_sample, function(state, params) { state$y.hospi + state$o.hospi }, 0, lockdown_offset + 300, c(0.05, 0.5, 0.95)))
+
+sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/12/25")),
+       function(d) {
+           do = as.numeric(d - dstartdate)
+           ds = as.character(d)
+           print(paste(" === Infected young/old on :", ds))
+           print(y.est.infected[do,])
+           print(o.est.infected[do,])
+           print("Hosp :")
+           print(est.hosp[do,])
+           print("Cases :")
+           print(est.case[do,])
+       })
 
 pdf("current-state-2.pdf", width=25, height=10)
 
-## zoom <- 1
-## all_plots(dates)
+plot_end_date <- as.Date("2021/1/1")
 zoom <- 0
 all_plots(dates)
 plot_end_date <- as.Date("2020/12/1")
@@ -945,26 +991,6 @@ dmortn <- dmort[length(dmort)]
 print(paste("Deaths at date, ", plot_end_date))
 print(est.died[plot_end_date - dstartdate,] - dmortn)
 
-## d6s <- c(as.Date("2020/7/29"),
-##          as.Date("2020/8/15"),
-##          as.Date("2020/9/1"))
-
-## for (i in 1:length(d6s)) {
-##     d6d <- d6s[i]
-##     d6 <- as.numeric(d6d - dstartdate)
-
-##     dates <- data.frame(pos=c(dstartdate + lockdown_offset,
-##                               dstartdate + lockdown_offset + lockdown_transition_period,
-##                               Sys.Date(), dstartdate + d6),
-##                         color=c("orange", "red", "black", "red"))
-
-##     all_plots(dates)
-##     est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, 300, c(0.05, 0.5, 0.95)))
-##     colnames(est.died) <- c("q5", "q50", "q95")
-##     print(d6d)
-##     print(est.died[plot_end_date - dstartdate,] - dmortn)
-## }
-
 dev.off()
 
 ## Population group Re values
@@ -972,17 +998,6 @@ dev.off()
 plot_end_date <- as.Date("2021/1/1")
 dateRange <- c(plot_start_date, plot_end_date)
 fair_cols <- c("#38170B","#BF1B0B", "#FFC465", "#66ADE5", "#252A52")
-
-## p7 <- makePlot2(data_sample, dateRange,
-##                 function(state, params) { state$y.Re }, fair_cols[2],
-##                 c("Re", "Effective reproduction number (Re), < 40y"), dates, 'solid')
-## p7 <- p7 + geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
-## p7 <- addExtraPlotQ(p7, data_sample, dateRange,
-##                    function(state, params) { state$m.Re }, fair_cols[3], 'solid')
-## p7 <- addExtraPlotQ(p7, data_sample, dateRange,
-##                    function(state, params) { state$o.Re }, fair_cols[4], 'solid')
-## p7 <- p7 + coord_cartesian(ylim = c(0, 2))
-## p7
 
 p7 <- makePlot2(data_sample, dateRange,
                 function(state, params) { state$y.Re }, fair_cols[2],
@@ -1001,32 +1016,15 @@ pdf("Re-groups.pdf", width=6, height=5)
 p7
 dev.off()
 
-y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 250, c(0.05, 0.5, 0.95)))
-
-o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 250, c(0.05, 0.5, 0.95)))
-
-peaki = 10
-print(dstartdate + peaki)
-print("Infected at peak 1 young/old:")
-print(y.est.infected[10,])
-print(o.est.infected[10,])
-nowi = as.numeric(Sys.Date() - dstartdate)
-print("Infected today young/old:")
-print(y.est.infected[nowi,])
-print(o.est.infected[nowi,])
-
 est.tr <- function(state, params) {
-    ##y.i = -diff(state$y.S)
-    ##o.i = -diff(state$o.S)
-
     y.i = state$y.i
     o.i = state$o.i
 
     ycase_latency <- params[44]
     ocase_latency <- params[45]
     
-    ycase_cv_profile = caseProfile(ycase_latency, 5)
-    ocase_cv_profile = caseProfile(ocase_latency, 5)
+    ycase_cv_profile = caseProfile(ycase_latency, CLsd)
+    ocase_cv_profile = caseProfile(ocase_latency, CLsd)
     padding = max(-ycase_cv_profile$kbegin, -ocase_cv_profile$kbegin) + 1
 
     y.d = y.i
@@ -1044,7 +1042,7 @@ est.tr <- function(state, params) {
 
     d <- data.frame(value=d1)
     d$index = seq(1:length(d1))
-    md <- smooth.spline(d$index, d$value, df=10)
+    md <- smooth.spline(d$index, d$value, df=15)
     ddf <- data.frame(index=seq(1:length(d1)))
     d2 <- as.numeric(unlist(predict(md, ddf)$y))
 
