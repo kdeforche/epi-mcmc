@@ -17,7 +17,6 @@ a1 <- 1/Tinc1
 a2 <- 1/Tinc2
 gamma <- 1/((G - (Tinc1 + Tinc2)) * 2)
 eta <- 1/(0.75 * 356) ## 9 months
-##CLsd <- 5
 CLsd <- 2.5
 
 calcGammaProfile <- function(mean, sd)
@@ -512,9 +511,6 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betao7/betao9, log(1.3), lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo7/betayo9, log(1.3), lSD, log=T)
 
-    ## logPriorP <- logPriorP + dlnorm(betay9/betay11, log(1.3), log(1.15), log=T)
-    ## logPriorP <- logPriorP + dlnorm(betao9/betao11, log(1.3), log(1.15), log=T)
-    ## logPriorP <- logPriorP + dlnorm(betayo9/betayo11, log(1.3), log(1.15), log=T)
     logPriorP <- logPriorP + dlnorm(betay9/betay11, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao9/betao11, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo9/betayo11, 0, SD, log=T)
@@ -528,7 +524,10 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(ydied_latency, mean=21, sd=0.5, log=T)
     logPriorP <- logPriorP + dnorm(odied_latency, mean=21, sd=0.5, log=T)
 
-    logPriorP <- logPriorP + dlnorm(fyifr, log(0.35), log(1.2), log=T) # */ 2
+    ## .2
+    logPriorP <- logPriorP + dlnorm(fyifr, log(0.6), log(1.5), log=T) # */ 1.2
+    ##logPriorP <- logPriorP + dlnorm(fyifr, log(0.35), log(1.2), log=T) # */ 2
+
     logPriorP <- logPriorP + dlnorm(ifrred, log(0.35), log(1.3), log=T) # */ 1.3
 
     logPriorP <- logPriorP + dlnorm(yhosp_rate, 0, lSD, log=T)
@@ -680,19 +679,19 @@ keyparamnames <- c("betay6", "betao6", "betayo6",
 fitkeyparamnames <- keyparamnames
 
 init <- c(2.9, 0.5, 0.5,
-          1.4, 0.5, 0.4,
-          0.8, 0.4, 0.07,
-          700, 0.8, 13, 20,
-          13, 1.5, 13, 21,
-          14, -8, 5.4, 5.1, 0.3, 0.25,
-          93, 0.9, 0.2, 0.01,
-          28, 1.4, 0.4, 0.04,
-              0.9, 0.2, 0.01,
-          28, 1.3, 0.7, 0.03,
-          35, 2.3, 0.4, 0.1,
-              1.5, 0.2, 0.07,
-          0.3, 10, 10,
-              1.5, 0.2, 0.05)
+          1.6, 0.5, 0.4,
+          0.8, 0.3, 0.1,
+          640, 0.8, 14, 21,
+          12, 1.5, 13, 21,
+          16, -7, 5, 5, 0.35, 0.25,
+          91, 1.0, 0.15, 0.01,
+          32, 1.5, 0.3, 0.04,
+              0.9, 0.3, 0.009,
+          29, 1.3, 0.8, 0.02,
+          34, 2.3, 0.35, 0.1,
+              1.6, 0.2, 0.08,
+          0.35, 6, 11,
+              1.8, 0.2, 0.06)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,

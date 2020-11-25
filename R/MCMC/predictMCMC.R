@@ -111,11 +111,12 @@ calcLogNormCumProfile <- function(mean, sd)
     result
 }
 
-inhospprof <- calcLogNormCumProfile(8.21, 2.44)
+##inhospprof <- calcLogNormCumProfile(8.21, 2.44)
+inhospprof <- calcLogNormCumProfile(7.2, 2.3)
 delta <- 2
 
 est.beds <- function(state, params) {
-    s <- convolute(1.09 * (state$y.hospi + state$o.hospi), state$offset, length(state$y.hospi), inhospprof)
+    s <- convolute(1.15 * (state$y.hospi + state$o.hospi), state$offset, length(state$y.hospi), inhospprof)
     c(rep(0, state$offset - delta), s, rep(NA, delta))
 }
 
@@ -173,12 +174,14 @@ sourceR("lib/libMCMC.R")
 all_plots_age <- function(date_markers) {
     dateRange <- c(plot_start_date, plot_end_date)
 
-    if (zoom == 0)
+    if (zoom == 0) {
         date_markers1 <- subset(date_markers, color == "black" | color=="red")
-    else
+    } else {
         date_markers1 <- date_markers
+    }
 
     ageGroupLabels = c('< 65y','>= 65y','All (50%, 90% cri)')
+    start <- as.numeric(dstartdate - dateRange[1])
 
     ## Plot 1 : daily deaths
 
@@ -186,7 +189,6 @@ all_plots_age <- function(date_markers) {
                    function(state, params) { state$y.deadi + state$o.deadi }, "#3366FF",
                    c("Count", "Deaths"), date_markers1, 'solid')
 
-    start <- as.numeric(dstartdate - dateRange[1])
 
     ##
     ## dm1 <- numeric(length(p1$data$x))
@@ -198,8 +200,8 @@ all_plots_age <- function(date_markers) {
         p1 <- p1 + coord_cartesian(ylim = c(0, 200))
         p1 <- p1 + theme(legend.position = c(0.8, 0.85))
     } else if (zoom == 2) {
-        p1 <- p1 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date), ylim = c(0, 200))
-        p1 <- p1 + theme(legend.position = c(0.2, 0.85))
+        p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 200))
+        p1 <- p1 + theme(legend.position = c(0.8, 0.85))
     }
 
     ## Add y curves
@@ -260,13 +262,12 @@ all_plots_age <- function(date_markers) {
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
 
-    if (zoom == 1) {
-        p3 <- p3 + coord_cartesian(ylim = c(0, 20000))
-        p3 <- p3 + theme(legend.position = c(0.8, 0.85))
-    } else if (zoom == 2) {
-        p3 <- p3 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
-                                   ylim = c(0, 20000))
+    if (zoom == 0) {
         p3 <- p3 + theme(legend.position = c(0.2, 0.85))
+    } else if (zoom == 2) {
+        p3 <- p3 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
+                                   ylim = c(0, 10000))
+        p3 <- p3 + theme(legend.position = c(0.8, 0.85))
     }
 
 
@@ -285,12 +286,12 @@ all_plots_age <- function(date_markers) {
     dm3b[(start + 1):(start + length(dhospi))] = dhospi
     p3b <- p3b + geom_line(aes(y = dm3b), size=0.1) + geom_point(aes(y = dm3b),  size=0.25, color="#581845")
 
-    p3b <- p3b + theme(legend.position = c(0.2, 0.85))
-
-    if (zoom == 1) {
+    if (zoom == 0) {
         p3b <- p3b + coord_cartesian(ylim = c(0, 900))
+        p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date), ylim = c(0, 900))
+        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 900))
+        p3b <- p3b + theme(legend.position = c(0.8, 0.85))
     }
 
     ## Add y/o curves
@@ -320,13 +321,13 @@ all_plots_age <- function(date_markers) {
                            "#A67514", c("Population group (%)", "Infected people"),
                            date_markers, 'solid', annotateF)
 
-    p4 <- p4 + theme(legend.position = c(0.2, 0.85))
 
-    if (zoom == 1) {
-        p4 <- p4 + coord_cartesian(ylim = c(0, 6))
+    if (zoom == 0) {
+        p4 <- p4 + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 2) {
-        p4 <- p4 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
+        p4 <- p4 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 6))
+        p4 <- p4 + theme(legend.position = c(0.8, 0.85))
     }
 
     ## p4 <- p4 + geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
@@ -357,7 +358,7 @@ all_plots_age <- function(date_markers) {
                               labels = ageGroupLabels)
 
     if (zoom == 2) {
-        p5 <- p5 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date))
+        p5 <- p5 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date))
     }
     
     p6 <- makePlotAnnotate(data_sample, dateRange,
@@ -368,7 +369,7 @@ all_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
     } else if (zoom == 2) {
-        p6 <- p6 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
+        p6 <- p6 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 2))
     } else {
         p6 <- p6 + coord_cartesian(ylim = c(0, NA))
@@ -412,21 +413,27 @@ all_plots_age <- function(date_markers) {
 
     pbeds <- pbeds + scale_colour_identity(guide = "legend",
                                            labels = c(lbeds, licu)) +
-        theme(legend.position = c(0.2, 0.85)) +
+        theme(legend.position = c(0.8, 0.85)) +
         theme(legend.title = element_blank())
 
+    if (zoom == 0) {
+        labelDate <- as.Date("2020/2/25")
+    } else {
+        labelDate <- as.Date("2020/10/7")
+    }
+    
     ## pbeds <- pbeds + geom_hline(yintercept=1500, linetype="dashed", color=colbeds, size=0.5) +
     ##    geom_text(aes(as.Date("2020/09/01"), 1500, label = "Phase 0", vjust = -1))
     ## pbeds <- pbeds + geom_hline(yintercept=2500, linetype="dashed", color=colbeds, size=0.5) +
     ##     geom_text(aes(as.Date("2020/09/01"), 2500, label = "Phase 1A", vjust = -1))
     pbeds <- pbeds + geom_hline(yintercept=5000, linetype="dashed", color=colbeds, size=0.5) +
-        annotate("text", x=as.Date("2020/09/15"), y=5000, label = "Phase 1B",
+        annotate("text", x=labelDate, y=5000, label = "Phase 1B",
                  vjust = -0.3, color=colbeds)
     pbeds <- pbeds + geom_hline(yintercept=7*1500, linetype="dashed", color=colbeds, size=0.5) +
-        annotate("text", x=as.Date("2020/09/15"), y=7*1500, label = "Phase 2A",
+        annotate("text", x=labelDate, y=7*1500, label = "Phase 2A",
                  vjust = -0.3, color=colbeds)
     pbeds <- pbeds + geom_hline(yintercept=7*2000, linetype="dashed", color=colbeds, size=0.5) +
-        annotate("text", x=as.Date("2020/09/15"), y=7*2000, label = "Phase 2B",
+        annotate("text", x=labelDate, y=7*2000, label = "Phase 2B",
                  vjust = -0.3, color=colbeds)
 
     ## pbeds <- pbeds + geom_hline(yintercept=300, linetype="dashed", color=colicu, size=0.5) +
@@ -434,24 +441,24 @@ all_plots_age <- function(date_markers) {
     ## pbeds <- pbeds + geom_hline(yintercept=500, linetype="dashed", color=colicu, size=0.5) +
     ##     geom_text(aes(as.Date("2020/09/01"), 500, label = "Phase 1A", vjust = -1))
     pbeds <- pbeds + geom_hline(yintercept=1000, linetype="dashed", color=colicu, size=0.5) +
-        annotate("text", x=as.Date("2020/09/15"), y=1000, label = "Phase 1B",
+        annotate("text", x=labelDate, y=1000, label = "Phase 1B",
                  vjust = -0.3, color=colicu)
     pbeds <- pbeds + geom_hline(yintercept=1500, linetype="dashed", color=colicu, size=0.5) +
-        annotate("text", x=as.Date("2020/09/15"), y=1500, label = "Phase 2A",
+        annotate("text", x=labelDate, y=1500, label = "Phase 2A",
                  vjust = -0.3, color=colicu)
     pbeds <- pbeds + geom_hline(yintercept=2000, linetype="dashed", color=colicu, size=0.5) +
-        annotate("text", x=as.Date("2020/09/15"), y=2000, label = "Phase 2B",
+        annotate("text", x=labelDate, y=2000, label = "Phase 2B",
                  vjust = -0.3, color=colicu)
 
     if (zoom == 2) {
-        pifr <- pifr + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
+        pifr <- pifr + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                        ylim = c(0, 1.0))
-        page <- page + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
+        page <- page + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                        ylim = c(0, 50))
-        pbeds <- pbeds + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
+        pbeds <- pbeds + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                          ylim = c(0, 8000))
     } else {
-        pifr <- pifr + coord_cartesian(ylim = c(0, 1.5))
+        pifr <- pifr + coord_cartesian(ylim = c(0, 1.2))
         page <- page + coord_cartesian(ylim = c(0, 50))
     }
 
@@ -523,7 +530,7 @@ other_plots_age <- function(date_markers) {
     if (zoom == 1) {
         p7 <- p7 + coord_cartesian(ylim = c(0, 2))
     } else if (zoom == 2) {
-        p7 <- p7 + coord_cartesian(xlim = c(as.Date("2020/9/1"), plot_end_date),
+        p7 <- p7 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 2))
     } else {
         p7 <- p7 + coord_cartesian(ylim = c(0, NA))
@@ -605,17 +612,10 @@ outputdir <- "output"
 
 source("settings.R")
 
-# trimData(4)
-
 quantilePlotSampleSize <- 500
 data_sample <- readSample()
 
-## Configure this depending on the model
 all_plots <- all_plots_age
-##all_plots <- death_hosp_plots_age
-
-## No d6
-d6 <- as.numeric(as.Date("2020/12/1") - dstartdate)
 
 plot_start_date <- as.Date("2020/2/13")
 
@@ -664,7 +664,8 @@ pdf("current-state-2.pdf", width=25, height=10)
 plot_end_date <- as.Date("2021/1/1")
 zoom <- 0
 all_plots(dates)
-plot_end_date <- as.Date("2020/12/1")
+zoomStartDate <- as.Date("2020/10/1")    
+plot_end_date <- as.Date("2021/1/1")
 zoom <- 2
 all_plots(dates)
 
