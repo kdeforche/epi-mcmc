@@ -1,67 +1,69 @@
 #include <iostream>
 #include <R.h>
 
-static const int PARAM_N = 58;
+static const int PARAM_N = 60;
 static double parms[PARAM_N];
 
-#define Ny parms[0]
-#define No parms[1]
-#define a1 parms[2]
-#define a2 parms[3]
-#define gamma parms[4]
-#define eta parms[5]
-#define t0 parms[6] // Start of physical distancing beta0
-#define t1 parms[7] // Start of lockdown            beta1
-#define t2 parms[8] // End of lockdown transition   beta2
-#define betay0 parms[9]
-#define betao0 parms[10]
-#define betayo0 parms[11]
-#define betay1 parms[12]
-#define betao1 parms[13]
-#define betayo1 parms[14]
-#define betay2 parms[15]
-#define betao2 parms[16]
-#define betayo2 parms[17]
-#define t3 parms[18]      // linear change point
-#define betay3 parms[19]
-#define betao3 parms[20]
-#define betayo3 parms[21]
-#define t4 parms[22]      // linear change point
-#define betay4 parms[23]
-#define betao4 parms[24]
-#define betayo4 parms[25]
-#define t5 parms[26]      // step change point, lockdown 2
-#define betay5 parms[27]
-#define betao5 parms[28]
-#define betayo5 parms[29]
-#define t6 parms[30]      // step change point, end of lockdown 2
-#define betay6 parms[31]
-#define betao6 parms[32]
-#define betayo6 parms[33]
-#define t7 parms[34]      // linear change point (sept 15?)
-#define betay7 parms[35]
-#define betao7 parms[36]
-#define betayo7 parms[37]
-#define t8 parms[38]      // linear change point, oct9 rules
-#define betay8 parms[39]
-#define betao8 parms[40]
-#define betayo8 parms[41]
-#define t9 parms[42]      // linear change point, oct16 rules
-#define betay9 parms[43]
-#define betao9 parms[44]
-#define betayo9 parms[45]
-#define t10 parms[46]      // linear change point
-#define betay10 parms[47]
-#define betao10 parms[48]
-#define betayo10 parms[49]
-#define t11 parms[50]      // linear change point
-#define betay11 parms[51]
-#define betao11 parms[52]
-#define betayo11 parms[53]
-#define t12 parms[54]      // step change point
-#define betay12 parms[55]
-#define betao12 parms[56]
-#define betayo12 parms[57]
+#define Ny         parms[0]
+#define No         parms[1]
+#define a1         parms[2]
+#define a2         parms[3]
+#define gamma      parms[4]
+#define eta        parms[5]
+#define tuncertain parms[6]
+#define funcertain parms[7]
+#define t0         parms[8] // Start of physical distancing beta0
+#define t1         parms[9] // Start of lockdown            beta1
+#define t2         parms[10] // End of lockdown transition   beta2
+#define betay0     parms[11]
+#define betao0     parms[12]
+#define betayo0    parms[13]
+#define betay1     parms[14]
+#define betao1     parms[15]
+#define betayo1    parms[16]
+#define betay2     parms[17]
+#define betao2     parms[18]
+#define betayo2    parms[19]
+#define t3         parms[20]      // linear change point
+#define betay3     parms[21]
+#define betao3     parms[22]
+#define betayo3    parms[23]
+#define t4         parms[24]      // linear change point
+#define betay4     parms[25]
+#define betao4     parms[26]
+#define betayo4    parms[27]
+#define t5         parms[28]      // step change point, lockdown 2
+#define betay5     parms[29]
+#define betao5     parms[30]
+#define betayo5    parms[31]
+#define t6         parms[32]      // step change point, end of lockdown 2
+#define betay6     parms[33]
+#define betao6     parms[34]
+#define betayo6    parms[35]
+#define t7         parms[36]      // linear change point (sept 15?)
+#define betay7     parms[37]
+#define betao7     parms[38]
+#define betayo7    parms[39]
+#define t8         parms[40]      // linear change point, oct9 rules
+#define betay8     parms[41]
+#define betao8     parms[42]
+#define betayo8    parms[43]
+#define t9         parms[44]      // linear change point, oct16 rules
+#define betay9     parms[45]
+#define betao9     parms[46]
+#define betayo9    parms[47]
+#define t10        parms[48]      // linear change point
+#define betay10    parms[49]
+#define betao10    parms[50]
+#define betayo10   parms[51]
+#define t11        parms[52]      // linear change point
+#define betay11    parms[53]
+#define betao11    parms[54]
+#define betayo11   parms[55]
+#define t12        parms[56]      // step change point
+#define betay12    parms[57]
+#define betao12    parms[58]
+#define betayo12   parms[59]
 
 #define Sy y[0]
 #define E1y y[1]
@@ -120,6 +122,14 @@ static double interpolate(double t,
     return vt0;
 }
 
+static double uncertain(double t, double v)
+{
+  if (t > tuncertain)
+    return v * funcertain;
+  else
+    return v;
+}
+
 /* Derivatives and 1 output variable */
 extern "C" {
   void derivs (int *neq, double *t, double *y, double *ydot,
@@ -146,19 +156,23 @@ extern "C" {
 
     // std::cerr << "derivs t=" << *t << std::endl;
 
-    const double betay = interpolate(*t,
-				     betay0, betay1, betay2, betay3, betay4,
-				     betay5, betay6, betay7, betay8, betay9,
-				     betay10, betay11, betay12);
-    const double betao = interpolate(*t,
-				     betao0, betao1, betao2, betao3, betao4,
-				     betao5, betao6, betao7, betao8, betao9,
-				     betao10, betao11, betao12);
-    const double betayo = interpolate(*t,
-				      betayo0, betayo1, betayo2, betayo3, betayo4,
-				      betayo5, betayo6, betayo7, betayo8, betayo9,
-				      betayo10, betayo11, betayo12);
+    const double mbetay = interpolate(*t,
+				      betay0, betay1, betay2, betay3, betay4,
+				      betay5, betay6, betay7, betay8, betay9,
+				      betay10, betay11, betay12);
+    const double mbetao = interpolate(*t,
+				      betao0, betao1, betao2, betao3, betao4,
+				      betao5, betao6, betao7, betao8, betao9,
+				      betao10, betao11, betao12);
+    const double mbetayo = interpolate(*t,
+				       betayo0, betayo1, betayo2, betayo3, betayo4,
+				       betayo5, betayo6, betayo7, betayo8, betayo9,
+				       betayo10, betayo11, betayo12);
 
+    const double betay = uncertain(*t, mbetay);
+    const double betao = uncertain(*t, mbetao);
+    const double betayo = uncertain(*t, mbetayo);
+   
     const double Syeff = std::max(0.0, Ny * 0.8 - (Ny - Sy));
 
     const double ygot_infected = (betay * Iy) / Ny * Syeff;

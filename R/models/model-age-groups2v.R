@@ -160,6 +160,7 @@ calculateModel <- function(params, period)
 
     parms <- c(Ny = y.N, No = o.N,
                a1 = a1, a2 = a2, gamma = gamma, eta = eta,
+               tuncertain = 1E10, funcertain=1,
                t0 = 1E10, t1 = 1E10, t2 = 1E10,
                betay0 = betay0, betao0 = betao0, betayo0 = betayo0,
                betay1 = betay1, betao1 = betao1, betayo1 = betayo1,
@@ -215,9 +216,12 @@ calculateModel <- function(params, period)
         t10 <- data_offset + d10
         t11 <- data_offset + d10 + 4
         t12 <- data_offset + d12
+        tuncertain <- data_offset + duncertain
+        funcertain <- rlnorm(1, meanlog=0, sdlog=log(1.25))
 
         parms <- c(Ny = y.N, No = o.N,
                    a1 = a1, a2 = a2, gamma = gamma, eta = eta,
+                   tuncertain=tuncertain, funcertain=funcertain,
                    t0 = data_offset + lockdown_offset + t0o,
                    t1 = data_offset + lockdown_offset + max(t0o, 0),
                    t2 = t2,
@@ -332,8 +336,8 @@ calculateModel <- function(params, period)
             state$o.casei[t1:t2] = s2i[(t1 - padding):(t2 - padding)] * gocr[1:(t2 - t1 + 1)]
             state$o.casei[t2:(padding + period)] = s2i[(t2 - padding):period] * gocr[length(gocr)]
         }
-        state$o.casei[t.symp:length(state$o.casei)] =
-            state$o.casei[t.symp:length(state$o.casei)] * symp.cases.factor
+        state$o.casei[t.symp:min(t.all, length(state$o.casei))] =
+            state$o.casei[t.symp:min(t.all, length(state$o.casei))] * symp.cases.factor
     } else {
         state$o.casei[(padding + 1):(padding + period)] = s2i * gocr[1]
     }
