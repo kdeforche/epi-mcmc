@@ -171,6 +171,14 @@ sourceR <- function(file) {
 
 sourceR("lib/libMCMC.R")
 
+annotateF <- function(plot) {
+    plot +
+        annotate("rect", xmin = d2 + dstartdate, xmax = d3 + dstartdate - 30,
+                 ymin = 0, ymax = Inf, alpha = .05, fill='red') +
+        annotate("rect", xmin = dls2, xmax = dle2,
+                 ymin = 0, ymax = Inf, alpha = .05, fill='red')
+}
+
 all_plots_age <- function(date_markers) {
     dateRange <- c(plot_start_date, plot_end_date)
 
@@ -309,16 +317,8 @@ all_plots_age <- function(date_markers) {
         (state$y.E + state$y.I + state$o.E + state$o.I)/N * 100
     }
 
-    annotateF <- function(plot) {
-        plot +
-            annotate("rect", xmin = d2 + dstartdate, xmax = d3 + dstartdate - 30,
-                     ymin = 0, ymax = Inf, alpha = .05, fill='red') +
-            annotate("rect", xmin = d10 + dstartdate + 3, xmax = d12 + dstartdate,
-                     ymin = 0, ymax = Inf, alpha = .05, fill='red')
-    }
-    
     p4 <- makePlotAnnotate(data_sample, dateRange, infectedF,
-                           "#A67514", c("Population group (%)", "Infected people"),
+                           "#A67514", c("Population group (%)", "Infected people (model != reality)"),
                            date_markers, 'solid', annotateF)
 
 
@@ -345,7 +345,7 @@ all_plots_age <- function(date_markers) {
 
     p5 <- makePlot(data_sample, dateRange,
                    function(state, params) { (state$y.R + state$o.R)/N * 100 }, "#33CC66",
-                   c("Population group (%)", "Immune"), date_markers1, 'solid')
+                   c("Population group (%)", "Immune (model != reality)"), date_markers1, 'solid')
     p5 <- p5 + theme(legend.position = c(0.2, 0.85))
 
     ## Add y/o curves
@@ -514,14 +514,6 @@ other_plots_age <- function(date_markers) {
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
 
-    annotateF <- function(plot) {
-        plot +
-            annotate("rect", xmin = d2 + dstartdate, xmax = d3 + dstartdate - 30,
-                     ymin = 0, ymax = Inf, alpha = .05, fill='red') +
-            annotate("rect", xmin = d10 + dstartdate + 3, xmax = d12 + dstartdate,
-                     ymin = 0, ymax = Inf, alpha = .05, fill='red')
-    }
-
     p7 <- makePlotAnnotate(data_sample, dateRange,
                            function(state, params) { state$Rt }, "#33FFFF",
                            c("Rt", "Time-varying reproduction number (Rt)"), date_markers, NULL,
@@ -622,12 +614,10 @@ plot_start_date <- as.Date("2020/2/13")
 date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
                                  dstartdate + lockdown_offset + lockdown_transition_period,
                                  dstartdate + d5,
-                                 dstartdate + d8,
                                  dstartdate + d9,
-                                 dstartdate + d11,
+                                 as.Date("2020/11/1"),
                                  Sys.Date()),
-                           color=c("orange", "red", "orange", "orange", "orange",
-                                   "red", "black"))
+                           color=c("orange", "red", "orange", "orange", "red", "black"))
 dates <- date_markers
 
 est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 300, c(0.05, 0.5, 0.95)))

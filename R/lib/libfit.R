@@ -76,4 +76,6 @@ graphs <- function() {
     points(days[1:length(y.dmorti)],y.dmorti,col=c("red"))
     points(days[1:length(o.dmorti)],o.dmorti,col=c("blue"))
     points(days[1:length(dhospi)],dhospi,col=c("orange"))
+
+    lines(days[1:len],state$Re[state$offset:period], type='l', lty=1, lwd=2, col='black')
 }

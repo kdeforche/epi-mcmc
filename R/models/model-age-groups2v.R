@@ -217,7 +217,7 @@ calculateModel <- function(params, period)
         t11 <- data_offset + d10 + 4
         t12 <- data_offset + d12
         tuncertain <- data_offset + duncertain
-        funcertain <- rlnorm(1, meanlog=0, sdlog=log(1.25))
+        funcertain <- 1 ## rlnorm(1, meanlog=0, sdlog=log(1.25))
 
         parms <- c(Ny = y.N, No = o.N,
                    a1 = a1, a2 = a2, gamma = gamma, eta = eta,
@@ -519,7 +519,7 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betao9/betao11, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo9/betayo11, 0, SD, log=T)
     
-    logPriorP <- logPriorP + dnorm(HLsd, mean=5, sd=1, log=T)
+    logPriorP <- logPriorP + dnorm(HLsd, mean=4, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(ycase_latency, mean=7, sd=3, log=T)
     logPriorP <- logPriorP + dnorm(ocase_latency, mean=7, sd=3, log=T)
@@ -682,20 +682,20 @@ keyparamnames <- c("betay6", "betao6", "betayo6",
                    "ifrred")
 fitkeyparamnames <- keyparamnames
 
-init <- c(2.9, 0.5, 0.5,
-          1.6, 0.5, 0.4,
-          0.8, 0.3, 0.1,
-          640, 0.8, 14, 21,
-          12, 1.5, 13, 21,
-          16, -7, 5, 5, 0.35, 0.25,
-          91, 1.0, 0.15, 0.01,
-          32, 1.5, 0.3, 0.04,
-              0.9, 0.3, 0.009,
-          29, 1.3, 0.8, 0.02,
-          34, 2.3, 0.35, 0.1,
-              1.6, 0.2, 0.08,
-          0.35, 6, 11,
-              1.8, 0.2, 0.06)
+init <- c(2.9, 0.5, 0.4,
+          1.5, 0.5, 0.4,
+          0.8, 0.35, 0.1,
+          600, 0.8, 14, 21,
+          11, 1.5, 14, 21,
+          16, -8, 5, 5, 0.35, 0.25,
+          92, 1.0, 0.17, 0.016,
+          26, 1.4, 0.4, 0.04,
+              0.95, 0.3, 0.007,
+          29, 1.3, 0.8, 0.03,
+          32, 2.1, 0.5, 0.08,
+              1.7, 0.3, 0.05,
+          0.37, 6, 11,
+              1.5, 0.3, 0.06)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,
