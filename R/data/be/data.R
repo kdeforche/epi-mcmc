@@ -70,6 +70,8 @@ lockdown_transition_period <- 10
 ## how many deaths at date of lockdown
 total_deaths_at_lockdown <- 5
 
+xmas <- F
+
 d1 <- lockdown_offset
 d2 <- d1 + lockdown_transition_period
 d3 <- as.numeric(as.Date("2020/6/6") - dstartdate)
@@ -79,10 +81,18 @@ d6 <- as.numeric(as.Date("2020/8/17") - dstartdate)
 d7 <- as.numeric(as.Date("2020/9/21") - dstartdate)
 d8 <- as.numeric(as.Date("2020/10/16") - dstartdate)
 d9 <- as.numeric(as.Date("2020/10/19") - dstartdate)
-d10 <- as.numeric(as.Date("2020/11/11") - dstartdate)
-d12 <- as.numeric(as.Date("2020/12/31") - dstartdate)
-d13 <- as.numeric(as.Date("2020/12/23") - dstartdate)
-d14 <- as.numeric(as.Date("2020/12/26") - dstartdate)
+d10 <- as.numeric(as.Date("2020/11/15") - dstartdate)
+##d10 <- as.numeric(as.Date("2020/11/1") - dstartdate)
+##d11 <- as.numeric(as.Date("2020/11/15") - dstartdate)
+d12 <- as.numeric(as.Date("2021/3/1") - dstartdate)
+## if (xmas) {
+##     d12 <- as.numeric(as.Date("2020/12/24") - dstartdate)
+##     d13 <- as.numeric(as.Date("2020/12/25") - dstartdate)
+## } else {
+##     d12 <- as.numeric(as.Date("2020/12/31") - dstartdate)
+##     d13 <- as.numeric(as.Date("2021/1/1") - dstartdate)
+## }
+d14 <- as.numeric(as.Date("2021/03/01") - dstartdate)
 dls2 <- as.Date("2020/11/1")
 dle2 <- as.Date("2020/12/15")
 

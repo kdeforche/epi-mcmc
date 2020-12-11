@@ -40,23 +40,23 @@ static double parms[PARAM_N];
 #define betay6     parms[33]
 #define betao6     parms[34]
 #define betayo6    parms[35]
-#define t7         parms[36]      // linear change point (sept 15?)
+#define t7         parms[36]      // step change point (~ sept 22)
 #define betay7     parms[37]
 #define betao7     parms[38]
 #define betayo7    parms[39]
-#define t8         parms[40]      // linear change point, oct9 rules
+#define t8         parms[40]      // linear change point, oct16 rules transition start
 #define betay8     parms[41]
 #define betao8     parms[42]
 #define betayo8    parms[43]
-#define t9         parms[44]      // linear change point, oct16 rules
+#define t9         parms[44]      // linear change point, oct19 rules transition end
 #define betay9     parms[45]
 #define betao9     parms[46]
 #define betayo9    parms[47]
-#define t10        parms[48]      // linear change point
+#define t10        parms[48]      // linear change point, school reopening transition start
 #define betay10    parms[49]
 #define betao10    parms[50]
 #define betayo10   parms[51]
-#define t11        parms[52]      // linear change point
+#define t11        parms[52]      // linear change point, school reopening transition end
 #define betay11    parms[53]
 #define betao11    parms[54]
 #define betayo11   parms[55]

@@ -29,8 +29,9 @@ state <- NULL
 
 ## Iteration counter to log periodically during log likelihood calculations
 it <- 0
+maxLogL <- -1E10
 
-graphs <- function() {
+graphs <- function(logl) {
     ## only if a device is open already
     if (.Device == "null device") {
         return(0)
@@ -62,7 +63,7 @@ graphs <- function() {
 
     plot(days[1:len],state$y.deadi[state$offset:period], type='l', lty=2, col='red',
          xlab='Date', ylab='Count', ylim=c(0.1, 20000),
-         main='New deaths per day', log="y")
+         main=paste('Fit, logl=', logl), log="y")
 
     lines(days[1:len],state$y.casei[state$offset:period], type='l', lty=2, col='darkgreen')
     lines(days[1:len],state$o.casei[state$offset:period], type='l', lty=3, col='darkgreen')

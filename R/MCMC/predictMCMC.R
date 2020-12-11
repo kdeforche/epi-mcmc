@@ -210,6 +210,9 @@ all_plots_age <- function(date_markers) {
     } else if (zoom == 2) {
         p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 200))
         p1 <- p1 + theme(legend.position = c(0.8, 0.85))
+    } else if (zoom == 3) {
+        p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 50))
+        p1 <- p1 + theme(legend.position = c(0.8, 0.85))
     }
 
     ## Add y curves
@@ -276,6 +279,10 @@ all_plots_age <- function(date_markers) {
         p3 <- p3 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 10000))
         p3 <- p3 + theme(legend.position = c(0.8, 0.85))
+    } else if (zoom == 3) {
+        p3 <- p3 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
+                                   ylim = c(0, 5000))
+        p3 <- p3 + theme(legend.position = c(0.8, 0.85))
     }
 
 
@@ -299,6 +306,9 @@ all_plots_age <- function(date_markers) {
         p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 2) {
         p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 900))
+        p3b <- p3b + theme(legend.position = c(0.8, 0.85))
+    } else if (zoom == 3) {
+        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 150))
         p3b <- p3b + theme(legend.position = c(0.8, 0.85))
     }
 
@@ -327,6 +337,10 @@ all_plots_age <- function(date_markers) {
     } else if (zoom == 2) {
         p4 <- p4 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 6))
+        p4 <- p4 + theme(legend.position = c(0.8, 0.85))
+    } else if (zoom == 3) {
+        p4 <- p4 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
+                                   ylim = c(0, 1))
         p4 <- p4 + theme(legend.position = c(0.8, 0.85))
     }
 
@@ -371,6 +385,9 @@ all_plots_age <- function(date_markers) {
     } else if (zoom == 2) {
         p6 <- p6 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 2))
+    } else if (zoom == 3) {
+        p6 <- p6 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
+                                   ylim = c(0, NA))
     } else {
         p6 <- p6 + coord_cartesian(ylim = c(0, NA))
     }
@@ -457,13 +474,20 @@ all_plots_age <- function(date_markers) {
                                        ylim = c(0, 50))
         pbeds <- pbeds + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                          ylim = c(0, 8000))
+    } else if (zoom == 3) {
+        pifr <- pifr + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
+                                       ylim = c(0, 1.0))
+        page <- page + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
+                                       ylim = c(0, 50))
+        pbeds <- pbeds + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
+                                         ylim = c(0, 1500))
     } else {
         pifr <- pifr + coord_cartesian(ylim = c(0, 1.2))
         page <- page + coord_cartesian(ylim = c(0, 50))
     }
 
-    ##grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
     grid.arrange(p1, p3b, p3, pbeds, p4, p6, p5, pifr, nrow=2)
+    ##grid.arrange(p1, p3b, pbeds, p6, nrow=2)
 }
 
 other_plots_age <- function(date_markers) {
@@ -650,13 +674,16 @@ sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/
        })
 
 pdf("current-state-2.pdf", width=25, height=10)
+##pdf("current-state-2.pdf", width=15, height=10)
 
-plot_end_date <- as.Date("2021/1/1")
+##plot_end_date <- as.Date("2021/3/1")
+plot_end_date <- as.Date("2021/2/1")
 zoom <- 0
 all_plots(dates)
-zoomStartDate <- as.Date("2020/10/1")    
-plot_end_date <- as.Date("2021/1/1")
+##zoomStartDate <- as.Date("2020/12/15")
+zoomStartDate <- as.Date("2020/10/1")
 zoom <- 2
+##zoom <- 3
 all_plots(dates)
 
 ## zoom <- 0
@@ -664,8 +691,6 @@ all_plots(dates)
 ## all_plots(dates)
 
 dev.off()
-
-plot_end_date <- as.Date("2021/1/1")
 
 pdf("other-plots.pdf", width=19, height=6)
 zoom <- 0

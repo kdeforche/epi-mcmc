@@ -105,9 +105,10 @@ calculateModel <- function(params, period)
     ifrred <- params[46]
     ycase_latency <- params[47]
     ocase_latency <- params[48]
-    betay11 <- params[49]
-    betao11 <- params[50]
-    betayo11 <- params[51]
+    t10o <- params[49]
+    betay11 <- params[50]
+    betao11 <- params[51]
+    betayo11 <- params[52]
 
     betay10 <- betay9
     betao10 <- betao9
@@ -213,8 +214,8 @@ calculateModel <- function(params, period)
         t7 <- t6 + t7o
         t8 <- data_offset + d8
         t9 <- data_offset + d9
-        t10 <- data_offset + d10
-        t11 <- data_offset + d10 + 4
+        t10 <- data_offset + t10o
+        t11 <- t10 + 3
         t12 <- data_offset + d12
         tuncertain <- data_offset + duncertain
         funcertain <- 1 ## rlnorm(1, meanlog=0, sdlog=log(1.25))
@@ -475,19 +476,22 @@ calclogp <- function(params) {
     ifrred <- params[46]
     ycase_latency <- params[47]
     ocase_latency <- params[48]
-    betay11 <- params[49]
-    betao11 <- params[50]
-    betayo11 <- params[51]
+    t10o <- params[49]
+    betay11 <- params[50]
+    betao11 <- params[51]
+    betayo11 <- params[52]
 
     logPriorP <- 0
-    
+
+    ## easier is to have all offsets relative to startdate ?
     logPriorP <- logPriorP + dnorm(t0o, mean=0, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o,
                                    mean=d3, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(lockdown_offset + lockdown_transition_period + t3o + t4o,
                                    mean=d4, sd=10, log=T)
     logPriorP <- logPriorP + dnorm(d5 + t6o, mean=d6, sd=5, log=T)
-    logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7-lockdown_offset, sd=2, log=T)
+    logPriorP <- logPriorP + dnorm(t10o, mean=d10, sd=3, log=T) ## was sd=2
 
     SD <- log(2) ## SD = */ 2
     lSD <- log(1.3) ## SD = */ 1.3
@@ -515,9 +519,9 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betao7/betao9, log(1.3), lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo7/betayo9, log(1.3), lSD, log=T)
 
-    logPriorP <- logPriorP + dlnorm(betay9/betay11, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao9/betao11, 0, SD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo9/betayo11, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay9/betay11, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao9/betao11, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo9/betayo11, 0, lSD, log=T)
     
     logPriorP <- logPriorP + dnorm(HLsd, mean=4, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
@@ -578,7 +582,10 @@ calclogl <- function(params, x) {
                            size=case_nbinom_size1, log=T)) +
                sum(dnbinom(o.dcasei[d.reliable.cases:length(o.dcasei)],
                            mu=pmax(0.1, state$o.casei[(dstart + d.reliable.cases + 1):dend]),
-                           size=case_nbinom_sizeo2, log=T))
+                           size=case_nbinom_sizeo2, log=T)) +
+               sum(dnbinom(o.dcasei[(length(o.dcasei) - 7):length(o.dcasei)],
+                           mu=pmax(0.1, state$o.casei[(dend - 7):dend]),
+                           size=case_nbinom_sizeo2 * hosp_last7, log=T))
 
     ## hosp
     dstart <- state$offset
@@ -645,16 +652,29 @@ calclogl <- function(params, x) {
                            size=o.wdmorti * mort_nbinom_size, log=T)) +
                sum(dnbinom(o.dmorti[(length(o.dmorti) - 7):length(o.dmorti)],
                            mu=pmax(0.001, state$o.deadi[(dend - 7):dend]),
-                           size=mort_nbinom_size * 2, log=T))
+                           size=mort_nbinom_size * hosp_last7, log=T))
   
 
     result <- y.loglC + o.loglC + loglH + loglHRatio + y.loglD + o.loglD
-    
+
+    if (!is.na(result)) {
+        if (result > maxLogL) {
+            maxLogL <<- result
+            print(params)
+            print(c(it, y.loglC, o.loglC, loglH, loglHRatio, y.loglD, o.loglD, result))
+            write.csv(c(result, params), file="max.csv")
+            state <<- calcNominalState(state)
+            pdf("max.pdf", width=20, height=10)
+            graphs(result)
+            dev.off()
+        }
+    }
+
     if (it %% 1000 == 0) {
         print(params)
-	print(c(it, y.loglC, o.loglC, loglH, loglHRatio, y.loglD, o.loglD, result))
+        print(c(it, y.loglC, o.loglC, loglH, loglHRatio, y.loglD, o.loglD, result))
         state <<- calcNominalState(state)
-	graphs()
+        graphs(result)
     }
 
     result
@@ -675,27 +695,27 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t7o", "betay7", "betao7", "betayo7",
                            "betay9", "betao9", "betayo9",
                     "ifrred", "y.CL", "o.CL",
-                           "betay11", "betao11", "betayo11")
+                    "t10o", "betay11", "betao11", "betayo11")
 keyparamnames <- c("betay6", "betao6", "betayo6",
                    "betay7", "betao7", "betayo7",
                    "betay9", "betao9", "betayo9",
                    "ifrred")
 fitkeyparamnames <- keyparamnames
 
-init <- c(2.8, 0.5, 0.4,
-          1.5, 0.5, 0.4,
-          0.8, 0.35, 0.1,
-          540, 0.8, 14, 21,
-          11, 1.4, 13, 21,
-          17, -8, 4.4, 5.4, 0.4, 0.3,
-          92, 1.0, 0.16, 0.02,
-          24, 1.4, 0.4, 0.04,
-              0.9, 0.2, 0.01,
-          29, 1.3, 0.6, 0.04,
-          32, 2.0, 0.4, 0.11,
-              1.7, 0.26, 0.056,
-          0.37, 6, 10,
-              1.5, 0.37, 0.063)
+init <- c(3.1, 0.52, 0.50,
+          1.5, 0.50, 0.44,
+          0.8, 0.35, 0.09,
+          550, 0.75, 14, 21,
+          11, 1.5, 14, 21,
+          14, -8, 5.2, 5.8, 0.49, 0.30,
+          92, 1.0, 0.18, 0.02,
+          29, 1.4, 0.4, 0.04,
+              0.96, 0.27, 0.007,
+          28, 1.2, 0.9, 0.02,
+          32, 2.0, 0.6, 0.10,
+              1.3, 0.3, 0.05,
+          0.34, 6, 11,
+          245, 1.9, 0.3, 0.04)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,
@@ -711,7 +731,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 10, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                     0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 0.1, 4, 4,
-                                    0.2 * gamma, 0.01 * gamma, 0.002 * gamma),
+                                d10 - 10, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma),
                         max = c(8 * gamma, 5 * gamma, 5 * gamma,
                                 5 * gamma, 3 * gamma, 3 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
@@ -726,7 +746,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 50, 4 * gamma, 3 * gamma, 0.5 * gamma,
                                     3 * gamma, 3 * gamma, 0.5 * gamma,
                                 0.7, 14, 17,
-                                    3 * gamma, 3 * gamma, 0.5 * gamma),
+                                duncertain - 2, 3 * gamma, 3 * gamma, 0.5 * gamma),
                         init = init)
 
 print(df_params)
