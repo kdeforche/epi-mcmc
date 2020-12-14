@@ -1,26 +1,12 @@
-####################
-##
-## Read data into dmort, dmorti, dhosp, dhospi:
-##  dmort, dmorti: cumulative and incident deaths per day
-##  dhosp, dhospi: cumulative and incident hospitalisations per day
-##  dstartdate: first entry
-##
-####################
-
 source("data.R")
 
 glogis <- function(t, A, K, C, Q, B, M, v) {
     A + (K - A)/((C + Q * exp(-B * (t - M)))^(1/v))
 }
 
-######
 ##
-## Separate young and old deaths
+## y.dcasei, o.dcasei
 ##
-######
-
-##
-## dcasei : ages are recorded
 
 levs <- as.character(seq(min(as.Date(be.case$DATE[!is.na(be.case$DATE)])), max(as.Date(be.case$DATE[!is.na(be.case$DATE)])), by=1))
 dates <- data.frame(date=levs)
@@ -58,7 +44,42 @@ dcase <- y.dcase + o.dcase
 dcasei <- y.dcasei + o.dcasei
 
 ##
-## dmorti : ages are recorded
+## y.dhospw, o.dhospw
+##
+
+be.whosp <- read.csv('Belgium COVID-19 Dashboard - Sciensano_Hospitalizations 2_Time series.csv')
+
+be.whosp$y = (be.whosp$AgeGroup == '00–05' | be.whosp$AgeGroup == '06–19' | be.whosp$AgeGroup == '20–39' | be.whosp$AgeGroup == '40–59')
+
+whosp_age_aggr = aggregate(be.whosp$Hospitalisations, by=list(y=be.whosp$y, Week=be.whosp$Week), FUN=sum, drop=FALSE)
+
+ds <- seq(dstartdate, dstartdate+length(dhospi)-1, by=1)
+ws <- as.numeric(format(ds, "%W"))
+whospi = data.frame(week = ws, count = dhospi)
+
+while (max(whosp_age_aggr$Week) < max(whospi$week)) {
+    w <- max(whosp_age_aggr$Week) + 1
+    toadd <- whosp_age_aggr[whosp_age_aggr$Week==max(whosp_age_aggr$Week),]
+    toadd$Week = toadd$Week+1
+    whosp_age_aggr = rbind(whosp_age_aggr, toadd)
+}
+
+whosp_aggr = aggregate(whospi$count, by=list(week=whospi$week), FUN=sum, drop=FALSE)
+
+whosp_aggr1 <- merge(whosp_age_aggr, whosp_aggr, by.x=c("Week"), by.y=c("week"), all=TRUE)
+names(whosp_aggr1) <- c("Week", "y", "frac", "hosp")
+
+whosp_aggr1$f.hosp = whosp_aggr1$frac * whosp_aggr1$hosp
+
+ywhosp <- subset(whosp_aggr1, y==TRUE)
+owhosp <- subset(whosp_aggr1, y==FALSE)
+
+y.whospi <- round(ywhosp$f.hosp)
+o.whospi <- round(owhosp$f.hosp)
+
+##
+## y.dmorti, o.dmorti
+##
 
 levs <- as.character(seq(min(as.Date(be.mort$DATE)), max(as.Date(be.mort$DATE)), by=1))
 dates <- data.frame(date=levs)
@@ -121,7 +142,6 @@ if (length(be.mort$week[be.mort$week == lastweek]) < 10) {
 
 weekgroup = aggregate(be.mort$DEATHS, by=list(week=be.mort$week,group=be.mort$AGEGROUP), FUN=sum, drop=F)
 weekgroup$x[is.na(weekgroup$x)] = 0
-
 
 ##g.ifr <- c(0.009604, 0.090175, 0.82025, 3.105, 6.04, 11.7) / 100
 ## Based on "Belgian Covid-19 Mortaility ...", Geert Molenbergs et. al; Table 6

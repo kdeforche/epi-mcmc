@@ -82,6 +82,7 @@ d7 <- as.numeric(as.Date("2020/9/21") - dstartdate)
 d8 <- as.numeric(as.Date("2020/10/16") - dstartdate)
 d9 <- as.numeric(as.Date("2020/10/19") - dstartdate)
 d10 <- as.numeric(as.Date("2020/11/15") - dstartdate)
+d11 <- as.numeric(as.Date("2020/11/22") - dstartdate)
 ##d10 <- as.numeric(as.Date("2020/11/1") - dstartdate)
 ##d11 <- as.numeric(as.Date("2020/11/15") - dstartdate)
 d12 <- as.numeric(as.Date("2021/3/1") - dstartdate)
@@ -102,6 +103,16 @@ d.reliable.hosp <- as.numeric(as.Date("2020/6/1") - dstartdate)
 d.hosp.o1 <- as.numeric(as.Date("2020/6/22") - dstartdate)
 d.hosp.o2 <- as.numeric(as.Date("2020/9/14") - dstartdate)
 d.symp.cases <- as.numeric(as.Date("2020/10/21") - dstartdate)
-d.all.cases <- as.numeric(as.Date("2020/11/23") - dstartdate)
-symp.cases.factor <- 0.8
+d.all.cases <- as.numeric(as.Date("2020/11/23") - dstartdate) + 14
+y.symp.cases.factor <- 0.8
+o.symp.cases.factor <- 0.9
 duncertain <- as.numeric(Sys.Date() - 12 - dstartdate)
+
+trans.1 <- 7
+trans.2 <- 14
+symp.profile <- rep(y.symp.cases.factor, d.all.cases - d.symp.cases)
+symp.profile[1:(trans.1 + 1)] = seq(1, y.symp.cases.factor, (y.symp.cases.factor - 1) / trans.1)
+symp.profile[(length(symp.profile) - trans.2):length(symp.profile)] = seq(y.symp.cases.factor, 1, (1 - y.symp.cases.factor) / trans.2)
+
+y.symp.profile = symp.profile
+o.symp.profile = 1 - (1 - y.symp.profile) * (1 - o.symp.cases.factor) / (1 - y.symp.cases.factor)

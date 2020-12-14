@@ -29,7 +29,7 @@ state <- NULL
 
 ## Iteration counter to log periodically during log likelihood calculations
 it <- 0
-maxLogL <- -1E10
+maxLogP <- -1E10
 
 graphs <- function(logl) {
     ## only if a device is open already
