@@ -106,9 +106,10 @@ calculateModel <- function(params, period)
     ycase_latency <- params[47]
     ocase_latency <- params[48]
     t10o <- params[49]
-    betay11 <- params[50]
-    betao11 <- params[51]
-    betayo11 <- params[52]
+    t11o <- params[50]
+    betay11 <- params[51]
+    betao11 <- params[52]
+    betayo11 <- params[53]
 
     betay10 <- betay9
     betao10 <- betao9
@@ -214,11 +215,11 @@ calculateModel <- function(params, period)
         t7 <- t6 + t7o
         t8 <- data_offset + d8
         t9 <- data_offset + d9
-        t10 <- data_offset + t10o - 3
-        t11 <- t10 + 6
+        t10 <- data_offset + t10o
+        t11 <- data_offset + t11o
         t12 <- data_offset + d12
         tuncertain <- data_offset + duncertain
-        funcertain <- 1 ## rlnorm(1, meanlog=0, sdlog=log(1.15))
+        funcertain <- 1 ## rlnorm(1, meanlog=0, sdlog=log(1.1))
 
         parms <- c(Ny = y.N, No = o.N,
                    a1 = a1, a2 = a2, gamma = gamma, eta = eta,
@@ -477,9 +478,10 @@ calclogp <- function(params) {
     ycase_latency <- params[47]
     ocase_latency <- params[48]
     t10o <- params[49]
-    betay11 <- params[50]
-    betao11 <- params[51]
-    betayo11 <- params[52]
+    t11o <- params[50]
+    betay11 <- params[51]
+    betao11 <- params[52]
+    betayo11 <- params[53]
 
     logPriorP <- 0
 
@@ -492,6 +494,7 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dnorm(d5 + t6o, mean=d6, sd=5, log=T)
     logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(t10o, mean=d10, sd=7, log=T)
+    logPriorP <- logPriorP + dnorm(t11o, mean=d11, sd=7, log=T)
 
     SD <- log(2) ## SD = */ 2
     lSD <- log(1.3) ## SD = */ 1.3
@@ -519,9 +522,9 @@ calclogp <- function(params) {
     logPriorP <- logPriorP + dlnorm(betao7/betao9, log(1.3), lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo7/betayo9, log(1.3), lSD, log=T)
 
-    logPriorP <- logPriorP + dlnorm(betay9/betay11, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao9/betao11, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo9/betayo11, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay9/betay11, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao9/betao11, 0, SD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo9/betayo11, 0, SD, log=T)
     
     logPriorP <- logPriorP + dnorm(HLsd, mean=4, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
@@ -570,12 +573,17 @@ calclogl <- function(params, x) {
         dend <- dstart + length(y.dcasei) - 1
     }
 
+    last <- 21
+    
     y.loglC <- sum(dnbinom(y.dcasei[1:(d.reliable.cases-1)],
                            mu=pmax(0.1, state$y.casei[dstart:(dstart + d.reliable.cases)]),
                            size=case_nbinom_size1, log=T)) +
                sum(dnbinom(y.dcasei[d.reliable.cases:length(y.dcasei)],
                            mu=pmax(0.1, state$y.casei[(dstart + d.reliable.cases + 1):dend]),
-                           size=case_nbinom_sizey2, log=T))
+                           size=case_nbinom_sizey2, log=T)) +
+               sum(dnbinom(y.dcasei[(length(y.dcasei) - last):length(y.dcasei)],
+                           mu=pmax(0.1, state$y.casei[(dend - last):dend]),
+                           size=case_nbinom_sizey2 * f_last7, log=T))
 
     o.loglC <- sum(dnbinom(o.dcasei[1:(d.reliable.cases-1)],
                            mu=pmax(0.1, state$o.casei[dstart:(dstart + d.reliable.cases)]),
@@ -583,11 +591,36 @@ calclogl <- function(params, x) {
                sum(dnbinom(o.dcasei[d.reliable.cases:length(o.dcasei)],
                            mu=pmax(0.1, state$o.casei[(dstart + d.reliable.cases + 1):dend]),
                            size=case_nbinom_sizeo2, log=T)) +
-               sum(dnbinom(o.dcasei[(length(o.dcasei) - 7):length(o.dcasei)],
-                           mu=pmax(0.1, state$o.casei[(dend - 7):dend]),
+               sum(dnbinom(o.dcasei[(length(o.dcasei) - last):length(o.dcasei)],
+                           mu=pmax(0.1, state$o.casei[(dend - last):dend]),
                            size=case_nbinom_sizeo2 * f_last7, log=T))
 
     ## hosp
+    dstart <- state$offset
+    dend <- state$offset + length(ws) - 1
+
+    if (dend > length(state$y.hospi)) {
+        ##print("=========================== Increase FitTotalPeriod ===================")
+        dend <- length(state$y.hospi)
+        dstart <- dend - length(ws) + 1
+    }
+
+    if (dstart < 1) {
+        ##print("=========================== Increase Padding ? ===================")
+        dstart <- 1
+        dend <- dstart + length(ws) - 1
+    }
+
+    ## state dstart-dend corresponds with dhospi
+
+    state.y.whospi <- aggregate(state$y.hospi[dstart:dend], by=list(week=ws), FUN=sum)
+    state.o.whospi <- aggregate(state$o.hospi[dstart:dend], by=list(week=ws), FUN=sum)
+    
+    loglH.1 <- sum(dnbinom(y.whospi, mu=pmax(0.1, state.y.whospi$x),
+                           size=whosp_nbinom_size, log=T)) +
+        sum(dnbinom(o.whospi, mu=pmax(0.1, state.o.whospi$x),
+                    size=whosp_nbinom_size, log=T))
+
     dstart <- state$offset
     dend <- state$offset + length(dhospi) - 1
 
@@ -602,17 +635,21 @@ calclogl <- function(params, x) {
         dstart <- 1
         dend <- dstart + length(dhospi) - 1
     }
-
-    ## state dstart-dend corresponds with dhospi
-
-    state.y.whospi <- aggregate(state$y.hospi[dstart:dend], by=list(week=ws), FUN=sum)
-    state.o.whospi <- aggregate(state$o.hospi[dstart:dend], by=list(week=ws), FUN=sum)
     
-    loglH <- sum(dnbinom(y.whospi, mu=pmax(0.1, state.y.whospi$x),
-                          size=whosp_nbinom_size, log=T)) +
-         sum(dnbinom(o.whospi, mu=pmax(0.1, state.o.whospi$x),
-                     size=whosp_nbinom_size, log=T))
+    loglH.2 <- sum(dnbinom(dhospi[1:(d.reliable.hosp-1)],
+                           mu=pmax(0.1, (state$y.hospi + state$o.hospi)
+                                   [dstart:(dstart + d.reliable.hosp)]),
+                           size=hosp_nbinom_size1, log=T)) +
+        sum(dnbinom(dhospi[d.reliable.hosp:length(dhosp)],
+                    mu=pmax(0.1, (state$y.hospi + state$o.hospi)
+                            [(dstart + d.reliable.hosp + 1):dend]),
+                    size=hosp_nbinom_size2, log=T)) +
+        sum(dnbinom(dhospi[(length(dhosp) - last):length(dhosp)],
+                    mu=pmax(0.1, (state$y.hospi + state$o.hospi)[(dend - last):dend]),
+                    size=hosp_nbinom_size2 * f_last7, log=T))
 
+    loglH <- loglH.1 + loglH.2
+    
     ##loglH <- sum(dpois(y.whospi, lambda=pmax(0.1, state.y.whospi$x), log=T)) +
     ##         sum(dpois(o.whospi, lambda=pmax(0.1, state.o.whospi$x), log=T))
 
@@ -634,13 +671,16 @@ calclogl <- function(params, x) {
 
     y.loglD <- sum(dnbinom(y.dmorti,
                            mu=pmax(0.001, state$y.deadi[dstart:dend]),
-                           size=mort_nbinom_size * 5, log=T))
+                           size=mort_nbinom_size * 2, log=T)) +
+               sum(dnbinom(y.dmorti[(length(y.dmorti) - last):length(y.dmorti)],
+                           mu=pmax(0.001, state$y.deadi[(dend - last):dend]),
+                           size=mort_nbinom_size * 2 * f_last7, log=T))
 
     o.loglD <- sum(dnbinom(o.dmorti,
                            mu=pmax(0.001, state$o.deadi[dstart:dend]),
                            size=o.wdmorti * mort_nbinom_size, log=T)) +
-               sum(dnbinom(o.dmorti[(length(o.dmorti) - 7):length(o.dmorti)],
-                           mu=pmax(0.001, state$o.deadi[(dend - 7):dend]),
+               sum(dnbinom(o.dmorti[(length(o.dmorti) - last):length(o.dmorti)],
+                           mu=pmax(0.001, state$o.deadi[(dend - last):dend]),
                            size=mort_nbinom_size * f_last7, log=T))
   
 
@@ -664,10 +704,12 @@ calclogl <- function(params, x) {
     }
 
     if (it %% 1000 == 0) {
+        priorp <- calclogp(params)
+        postp <- result + priorp
         print(params)
-        print(c(it, y.loglC, o.loglC, loglH, y.loglD, o.loglD, result))
+        print(c(it, y.loglC, o.loglC, loglH, y.loglD, o.loglD, priorp, result, postp))
         state <<- calcNominalState(state)
-        graphs(result)
+        graphs(postp)
     }
 
     result
@@ -688,7 +730,7 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t7o", "betay7", "betao7", "betayo7",
                            "betay9", "betao9", "betayo9",
                     "ifrred", "y.CL", "o.CL",
-                    "t10o", "betay11", "betao11", "betayo11")
+                    "t10o", "t11o", "betay11", "betao11", "betayo11")
 keyparamnames <- c("betay6", "betao6", "betayo6",
                    "betay7", "betao7", "betayo7",
                    "betay9", "betao9", "betayo9",
@@ -708,7 +750,7 @@ init <- c(3.1, 0.52, 0.50,
           32, 2.0, 0.6, 0.10,
               1.3, 0.3, 0.05,
           0.34, 6, 11,
-          245, 1.9, 0.3, 0.04)
+          245, 260, 1.9, 0.3, 0.04)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,
@@ -724,7 +766,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 10, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                     0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 0.1, 4, 4,
-                                d10 - 10, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma),
+                                d10 - 10, d11 - 10, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma),
                         max = c(8 * gamma, 5 * gamma, 5 * gamma,
                                 5 * gamma, 3 * gamma, 3 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
@@ -739,7 +781,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 50, 4 * gamma, 3 * gamma, 0.5 * gamma,
                                     3 * gamma, 3 * gamma, 0.5 * gamma,
                                 0.7, 14, 17,
-                                duncertain - 7 - 3, 3 * gamma, 3 * gamma, 0.5 * gamma),
+                                duncertain - 7, duncertain, 3 * gamma, 3 * gamma, 0.5 * gamma),
                         init = init)
 
 print(df_params)

@@ -5,6 +5,13 @@ source("settings.R")
 source(data, chdir=T)
 source(fitmodel, chdir=T)
 
+if (file.exists("max.csv")) {
+    print("Loading initial state from max.csv")
+    r <- read.csv("max.csv")
+    init <- r$x[2:(length(init) + 1)]
+    df_params$init = init
+}
+
 source(paste(Rdir, "lib/libfit.R", sep=""))
 
 options(scipen=999)
@@ -39,7 +46,7 @@ for (chain in 1:4) {
                        loglike = calcloglMCMC,
                        logprior = calclogp,
                        burnin = 1e3,
-                       samples = 2e3,
+                       samples = 0.5e3,
                        rungs = 20,
                        chains = chains,
                        cluster = cl,

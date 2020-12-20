@@ -57,6 +57,11 @@ ds <- seq(dstartdate, dstartdate+length(dhospi)-1, by=1)
 ws <- as.numeric(format(ds, "%W"))
 whospi = data.frame(week = ws, count = dhospi)
 
+lwc <- length(whospi$week[whospi$week == max(whospi$week)])
+if (lwc < 6) {
+    whospi = subset(whospi, whospi$week != max(whospi$week))
+}
+
 while (max(whosp_age_aggr$Week) < max(whospi$week)) {
     w <- max(whosp_age_aggr$Week) + 1
     toadd <- whosp_age_aggr[whosp_age_aggr$Week==max(whosp_age_aggr$Week),]
@@ -76,6 +81,8 @@ owhosp <- subset(whosp_aggr1, y==FALSE)
 
 y.whospi <- round(ywhosp$f.hosp)
 o.whospi <- round(owhosp$f.hosp)
+
+ws <- whospi$week
 
 ##
 ## y.dmorti, o.dmorti
@@ -175,8 +182,10 @@ all.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr, 
 weekifr <- data.frame(y.weekifr$week, y.weekifr$x, o.weekifr$x, all.weekifr$x)
 weekifr$index = (seq(3,length(o.dmorti) + 7,7))[1:(length(y.weekifr$week))]
 
-m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=5)
-yf <- data.frame(index=seq(1:length(o.dmorti)))
+l.ifr <- length(o.dmorti) + 30 ## extrapolate 1 month further
+
+m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=7)
+yf <- data.frame(index=seq(1:l.ifr))
 y.ifr <- as.numeric(unlist(predict(m.yifr, yf)$y))
 
 m.oifr <- smooth.spline(weekifr$index, weekifr$o.weekifr.x, df=3)
@@ -271,8 +280,8 @@ all.weekhr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calchr, dr
 weekhr <- data.frame(y.weekhr$week, y.weekhr$x, o.weekhr$x, all.weekhr$x)
 weekhr$index = (seq(3,length(o.dmorti) + 7,7))[1:(length(y.weekhr$week))]
 
-m.yhr <- smooth.spline(weekhr$index, weekhr$y.weekhr.x, df=5)
-yf <- data.frame(index=seq(1:length(o.dmorti)))
+m.yhr <- smooth.spline(weekhr$index, weekhr$y.weekhr.x, df=7)
+yf <- data.frame(index=seq(1:l.ifr))
 y.hr <- as.numeric(unlist(predict(m.yhr, yf)$y))
 
 m.ohr <- smooth.spline(weekhr$index, weekhr$o.weekhr.x, df=3)
