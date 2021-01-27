@@ -11,7 +11,7 @@ dstartdate <- as.Date("2020/3/10")
 
 be.hosp <- read.csv(url("https://epistat.sciensano.be/Data/COVID19BE_HOSP.csv"))
 ##be.hosp <- read.csv("COVID19BE_HOSP.csv")
-print(aggregate(be.hosp$NEW_IN, by=list(date=be.hosp$DATE), FUN=sum))
+##print(aggregate(be.hosp$NEW_IN, by=list(date=be.hosp$DATE), FUN=sum))
 dhospi <- aggregate(be.hosp$NEW_IN, by=list(date=be.hosp$DATE), FUN=sum)$x
 dbeds <- aggregate(be.hosp$TOTAL_IN, by=list(date=be.hosp$DATE), FUN=sum)$x
 dicu <- aggregate(be.hosp$TOTAL_IN_ICU, by=list(date=be.hosp$DATE), FUN=sum)$x
@@ -28,7 +28,7 @@ dhosp <- cumsum(dhospi)
 
 be.mort <- read.csv(url("https://epistat.sciensano.be/Data/COVID19BE_MORT.csv"))
 ##be.mort <- read.csv("COVID19BE_MORT.csv")
-print(aggregate(be.mort$DEATHS, by=list(date=be.mort$DATE), FUN=sum))
+##print(aggregate(be.mort$DEATHS, by=list(date=be.mort$DATE), FUN=sum))
 dmorti <- aggregate(be.mort$DEATHS, by=list(date=be.mort$DATE), FUN=sum)$x
 
 ## remove two latest data point, may be incomplete because of WZC
@@ -37,11 +37,9 @@ dmort <- cumsum(dmorti)
 
 ## all data series are now from 10/3
 
-print(paste("last day morti: ", dstartdate + length(dmorti) - 1))
-
 be.case <- read.csv(url("https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.csv"))
 ##be.case <- read.csv("COVID19BE_CASES_AGESEX.csv")
-print(aggregate(be.case$CASES, by=list(date=be.case$DATE), FUN=sum))
+##print(aggregate(be.case$CASES, by=list(date=be.case$DATE), FUN=sum))
 dcasei <- aggregate(be.case$CASES, by=list(date=be.case$DATE), FUN=sum)$x
 
 ## also start from 10/3
@@ -83,19 +81,13 @@ d8 <- as.numeric(as.Date("2020/10/16") - dstartdate)
 d9 <- as.numeric(as.Date("2020/10/19") - dstartdate)
 d10 <- as.numeric(as.Date("2020/11/15") - dstartdate)
 d11 <- as.numeric(as.Date("2020/11/29") - dstartdate)
-##d10 <- as.numeric(as.Date("2020/11/1") - dstartdate)
-##d11 <- as.numeric(as.Date("2020/11/15") - dstartdate)
-d12 <- as.numeric(as.Date("2021/3/1") - dstartdate)
-## if (xmas) {
-##     d12 <- as.numeric(as.Date("2020/12/24") - dstartdate)
-##     d13 <- as.numeric(as.Date("2020/12/25") - dstartdate)
-## } else {
-##     d12 <- as.numeric(as.Date("2020/12/31") - dstartdate)
-##     d13 <- as.numeric(as.Date("2021/1/1") - dstartdate)
-## }
+d12 <- as.numeric(as.Date("2020/12/1") - dstartdate)
+d13 <- as.numeric(as.Date("2021/02/15") - dstartdate)
 d14 <- as.numeric(as.Date("2021/03/01") - dstartdate)
 dls2 <- as.Date("2020/11/1")
-dle2 <- as.Date("2021/1/15")
+dle2 <- as.Date("2021/2/15")
+
+mt.d0 <- as.numeric(as.Date("2020/11/1") - dstartdate)
 
 d.reliable.cases <- as.numeric(as.Date("2020/10/1") - dstartdate)
 ##d.reliable.cases <- as.numeric(as.Date("2020/7/1") - dstartdate)
@@ -103,12 +95,12 @@ d.reliable.hosp <- as.numeric(as.Date("2020/6/1") - dstartdate)
 d.hosp.o1 <- as.numeric(as.Date("2020/6/22") - dstartdate)
 d.hosp.o2 <- as.numeric(as.Date("2020/9/14") - dstartdate)
 d.symp.cases <- as.numeric(as.Date("2020/10/21") - dstartdate)
-d.all.cases <- as.numeric(as.Date("2020/11/23") - dstartdate) + 14
-y.symp.cases.factor <- 0.8
+d.all.cases <- as.numeric(as.Date("2020/11/23") - dstartdate) + 21
+y.symp.cases.factor <- 0.5
 o.symp.cases.factor <- 0.9
 duncertain <- as.numeric(Sys.Date() - 12 - dstartdate)
 
-trans.1 <- 7
+trans.1 <- 14
 trans.2 <- 14
 symp.profile <- rep(y.symp.cases.factor, d.all.cases - d.symp.cases)
 symp.profile[1:(trans.1 + 1)] = seq(1, y.symp.cases.factor, (y.symp.cases.factor - 1) / trans.1)

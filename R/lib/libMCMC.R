@@ -171,6 +171,22 @@ quantileData <- function(sample, fun, startoffset, period, quantiles)
     result
 }
 
+marginalizeData <- function(sample, fun, startoffset, period, marginfun)
+{
+    simperiod = period * 3
+    
+    sampleSize <- dim(sample)[1]
+    result <- c()
+    for (i in 1:sampleSize) {
+        params <- sample[i,]
+        params <- transformParams(unlist(params, use.names=FALSE))
+        state <- calculateModel(params, simperiod)
+        v <- takeAndPad(fun(state, params), state$offset - startoffset, simperiod)
+        result <- c(result, marginfun(v))
+    }
+    result
+}
+
 ##
 ## Creates a banded plot of the given fun, over the given period, for te posterior state sample 
 ##
@@ -235,6 +251,20 @@ addExtraPlot <- function(plot, sample, dateRange, fun, colour, lty)
     
     result <- plot +
         geom_line(aes(y = qd$q50, linetype = lty), colour=colour, size = 0.5)
+
+    result
+}
+
+addExtraPlotColour <- function(plot, sample, dateRange, fun, colour, lty)
+{
+    period <- as.numeric(dateRange[2] - dateRange[1])
+    startoffset <- as.numeric(dstartdate - dateRange[1])
+    qd <- data.frame(quantileData(sample, fun, startoffset, period, c(0.5)))
+
+    colnames(qd) <- c("q50")
+    
+    result <- plot +
+        geom_line(aes(y = qd$q50, linetype = lty, colour=colour), size = 0.5)
 
     result
 }

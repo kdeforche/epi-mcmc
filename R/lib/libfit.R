@@ -36,7 +36,7 @@ graphs <- function(logl) {
     if (.Device == "null device") {
         return(0)
     }
-   
+
     par(mfrow=c(1,2))
 
     days <- seq(dstartdate, dstartdate + length(dmort) + 30, 1)

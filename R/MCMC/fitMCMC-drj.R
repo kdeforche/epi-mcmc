@@ -16,7 +16,7 @@ source(paste(Rdir, "lib/libfit.R", sep=""))
 
 options(scipen=999)
 
-calcloglMCMC <- function(params, x) {
+calcloglMCMC <- function(params, x, misc) {
     return(calclogl(transformParams(params)))
 }
 
@@ -40,8 +40,10 @@ chains <- 1
 ##     it <<- 0
 ## })
 
+data = list(x=2)
+
 for (chain in 1:4) {
-  r_mcmc_out <- run_mcmc(data = y.dmorti,
+  r_mcmc_out <- run_mcmc(data = data,
                        df_params = df_params,
                        loglike = calcloglMCMC,
                        logprior = calclogp,
@@ -55,6 +57,6 @@ for (chain in 1:4) {
   print(data.frame(r_mcmc_out$diagnostics$mc_accept))
   r_mcmc_out$output$chain <- paste("chain",chain,sep='')
   chain_outputfile <- paste(outputfile,"_",chain,sep='')
-  write.csv(subset(r_mcmc_out$output, rung=="rung1" & stage=="sampling"), file=chain_outputfile)
+  write.csv(subset(r_mcmc_out$output, rung==20 & phase=="sampling"), file=chain_outputfile)
 ##  write.csv(r_mcmc_out$output, file=paste("all_", chain_outputfile, sep=''))
 }

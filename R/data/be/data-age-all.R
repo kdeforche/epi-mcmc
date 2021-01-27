@@ -1,5 +1,7 @@
 source("data.R")
 
+require("aweek")
+
 glogis <- function(t, A, K, C, Q, B, M, v) {
     A + (K - A)/((C + Q * exp(-B * (t - M)))^(1/v))
 }
@@ -47,20 +49,30 @@ dcasei <- y.dcasei + o.dcasei
 ## y.dhospw, o.dhospw
 ##
 
-be.whosp <- read.csv('Belgium COVID-19 Dashboard - Sciensano_Hospitalizations 2_Time series.csv')
+be.whosp <- read.csv('Belgium COVID-19 Dashboard - Sciensano_Hospitalizations 2_Tijdreeks.csv')
 
 be.whosp$y = (be.whosp$AgeGroup == '00–05' | be.whosp$AgeGroup == '06–19' | be.whosp$AgeGroup == '20–39' | be.whosp$AgeGroup == '40–59')
 
-whosp_age_aggr = aggregate(be.whosp$Hospitalisations, by=list(y=be.whosp$y, Week=be.whosp$Week), FUN=sum, drop=FALSE)
+be.whosp$year = as.numeric(sapply(be.whosp$Jaar.week, function(x) { strsplit(as.character(x), " ")[[1]][3] }))
+be.whosp$week = as.numeric(sub("([0-9]+).", "\\1", sapply(be.whosp$Jaar.week, function(x) { strsplit(as.character(x), " ")[[1]][9] })))
+be.whosp$ws <- be.whosp$year*53 + be.whosp$week
+
+whosp_age_aggr = aggregate(be.whosp$Hospitalisations, by=list(y=be.whosp$y, Week=be.whosp$ws), FUN=sum, drop=FALSE)
 
 ds <- seq(dstartdate, dstartdate+length(dhospi)-1, by=1)
-ws <- as.numeric(format(ds, "%W"))
+ws.raw <- as.numeric(format(ds, "%V"))
+y.raw <- as.numeric(format(ds, "%Y"))
+y.raw[ws.raw == 53] = 2020
+ws <- ws.raw + 53 * y.raw
 whospi = data.frame(week = ws, count = dhospi)
 
 lwc <- length(whospi$week[whospi$week == max(whospi$week)])
-if (lwc < 6) {
+if (lwc < 4) {
+    print(paste("Removing incomplete week of length", lwc))
     whospi = subset(whospi, whospi$week != max(whospi$week))
 }
+
+print(paste("Hosp week statistics :", max(whosp_age_aggr$Week), "of", max(whospi$week)))
 
 while (max(whosp_age_aggr$Week) < max(whospi$week)) {
     w <- max(whosp_age_aggr$Week) + 1
@@ -71,7 +83,7 @@ while (max(whosp_age_aggr$Week) < max(whospi$week)) {
 
 whosp_aggr = aggregate(whospi$count, by=list(week=whospi$week), FUN=sum, drop=FALSE)
 
-whosp_aggr1 <- merge(whosp_age_aggr, whosp_aggr, by.x=c("Week"), by.y=c("week"), all=TRUE)
+whosp_aggr1 <- merge(whosp_age_aggr, whosp_aggr, by.x=c("Week"), by.y=c("week"), all.y=TRUE)
 names(whosp_aggr1) <- c("Week", "y", "frac", "hosp")
 
 whosp_aggr1$f.hosp = whosp_aggr1$frac * whosp_aggr1$hosp
@@ -81,6 +93,10 @@ owhosp <- subset(whosp_aggr1, y==FALSE)
 
 y.whospi <- round(ywhosp$f.hosp)
 o.whospi <- round(owhosp$f.hosp)
+
+print(paste("Last week: ", length(whospi$week[whospi$week == max(whospi$week)]), "days"))
+print(y.whospi)
+print(o.whospi)
 
 ws <- whospi$week
 
@@ -135,15 +151,23 @@ print(paste("last day morti: ", dstartdate + length(o.dmorti) - 1))
 dmort <- y.dmort + o.dmort
 dmorti <- y.dmorti + o.dmorti
 
+##
+## time series of S-dropout
+##
+be.Sdrop <- read.csv("S_dropout_belgium.csv")
 
+dSdrop <- as.numeric(as.Date(be.Sdrop$sample_date[1]) - dstartdate)
+dSdropC <- be.Sdrop$sgtf
+dSdropN <- be.Sdrop$total
 
 ##
 ## time series of IFR estimates per group
 
-be.mort$week = format(as.Date(be.mort$DATE), "%Y-%V")
+be.mort$week = date2week(as.Date(be.mort$DATE), floor_day=TRUE)
 
 lastweek <- be.mort$week[length(be.mort$week)]
-if (length(be.mort$week[be.mort$week == lastweek]) < 10) {
+if (length(be.mort$week[be.mort$week == lastweek]) < 30) {
+    print("Removing last week")
     be.mort = subset(be.mort, week != lastweek)
 }
 
@@ -182,9 +206,9 @@ all.weekifr = aggregate(weekgroup$x, by=list(week=weekgroup$week), FUN=calcifr, 
 weekifr <- data.frame(y.weekifr$week, y.weekifr$x, o.weekifr$x, all.weekifr$x)
 weekifr$index = (seq(3,length(o.dmorti) + 7,7))[1:(length(y.weekifr$week))]
 
-l.ifr <- length(o.dmorti) + 30 ## extrapolate 1 month further
+l.ifr <- length(o.dmorti) + 0 ## extrapolate 10 days further
 
-m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=7)
+m.yifr <- smooth.spline(weekifr$index, weekifr$y.weekifr.x, df=6)
 yf <- data.frame(index=seq(1:l.ifr))
 y.ifr <- as.numeric(unlist(predict(m.yifr, yf)$y))
 

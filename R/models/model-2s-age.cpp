@@ -1,7 +1,7 @@
 #include <iostream>
 #include <R.h>
 
-static const int PARAM_N = 60;
+static const int PARAM_N = 62;
 static double parms[PARAM_N];
 
 #define Ny         parms[0]
@@ -64,17 +64,25 @@ static double parms[PARAM_N];
 #define betay12    parms[57]
 #define betao12    parms[58]
 #define betayo12   parms[59]
+#define mt_t0      parms[60]
+#define mt_f       parms[61]
 
 #define Sy y[0]
-#define E1y y[1]
-#define E2y y[2]
-#define Iy y[3]
-#define Ry y[4]
-#define So y[5]
-#define E1o y[6]
-#define E2o y[7]
-#define Io y[8]
-#define Ro y[9]
+#define wt_E1y y[1]
+#define wt_E2y y[2]
+#define wt_Iy y[3]
+#define mt_E1y y[4]
+#define mt_E2y y[5]
+#define mt_Iy y[6]
+#define Ry y[7]
+#define So y[8]
+#define wt_E1o y[9]
+#define wt_E2o y[10]
+#define wt_Io y[11]
+#define mt_E1o y[12]
+#define mt_E2o y[13]
+#define mt_Io y[14]
+#define Ro y[15]
 
 /* initializer */
 extern "C" {
@@ -135,27 +143,21 @@ extern "C" {
   void derivs (int *neq, double *t, double *y, double *ydot,
 	       double *yout, int *ip)
   {
-    if (ip[0] < 9) error("nout should be at least 9");
-    
-    if (Sy < 0  || E1y < 0  || E2y < 0  || Iy < 0  || Ry < 0  ||
-	Sy > Ny || E1y > Ny || E2y > Ny || Iy > Ny || Ry > Ny ||
-	So < 0  || E1o < 0  || E2o < 0  || Io < 0  || Ro < 0  ||
-	So > No || E1o > No || E2o > No || Io > No || Ro > No) {
-      /* dSy  */ ydot[0] = 0;
-      /* dE1y */ ydot[1] = 0;
-      /* dE2y */ ydot[2] = 0;
-      /* dIy  */ ydot[3] = 0;
-      /* dRy  */ ydot[4] = 0;
-      /* dSo  */ ydot[5] = 0;
-      /* dE1o */ ydot[6] = 0;
-      /* dE2o */ ydot[7] = 0;
-      /* dIo  */ ydot[8] = 0;
-      /* dRo  */ ydot[9] = 0;
-      return;
-    }
+    if (ip[0] < 11) error("nout should be at least 11");
 
-    // std::cerr << "derivs t=" << *t << std::endl;
+    for (int i = 0; i < 8; ++i)
+      if (y[i] < 0 || y[i] > Ny) {
+	memset(ydot, 0, sizeof(double) * 16);
+	return;
+      }
 
+    for (int i = 8; i < 16; ++i)
+      if (y[i] < 0 || y[i] > No) {
+	memset(ydot, 0, sizeof(double) * 16);
+	return;
+      }
+	
+ 
     const double mbetay = interpolate(*t,
 				      betay0, betay1, betay2, betay3, betay4,
 				      betay5, betay6, betay7, betay8, betay9,
@@ -175,40 +177,71 @@ extern "C" {
    
     const double Syeff = std::max(0.0, Ny * 0.8 - (Ny - Sy));
 
-    const double ygot_infected = (betay * Iy) / Ny * Syeff;
-    const double ygot_latent2 = a1 * E1y;
-    const double ygot_infectious = a2 * E2y;
-    const double ygot_removed = gamma * Iy;
+    const double wt_ygot_infected = (betay * wt_Iy) / Ny * Syeff;
+    const double wt_ygot_latent2 = a1 * wt_E1y;
+    const double wt_ygot_infectious = a2 * wt_E2y;
+    const double wt_ygot_removed = gamma * wt_Iy;
+
+    double mt_ygot_infected = 0;
+    if ((*t >= mt_t0) && (*t < mt_t0 + 1))
+      mt_ygot_infected = 10;
+    else
+      mt_ygot_infected = (mt_f * betay * mt_Iy) / Ny * Syeff;
+
+    const double mt_ygot_latent2 = a1 * mt_E1y;
+    const double mt_ygot_infectious = a2 * mt_E2y;
+    const double mt_ygot_removed = gamma * mt_Iy;
+
     const double ygot_reverted = eta * Ry;
 
-    const double ogot_infected = ((betao * Io) / No + (betayo * Iy) / Ny) * So;
-    const double ogot_latent2 = a1 * E1o;
-    const double ogot_infectious = a2 * E2o;
-    const double ogot_removed = gamma * Io;
+    const double wt_ogot_infected = ((betao * wt_Io) / No + (betayo * wt_Iy) / Ny) * So;
+    const double wt_ogot_latent2 = a1 * wt_E1o;
+    const double wt_ogot_infectious = a2 * wt_E2o;
+    const double wt_ogot_removed = gamma * wt_Io;
+
+    const double mt_ogot_infected = ((mt_f * betao * mt_Io) / No + (mt_f * betayo * mt_Iy) / Ny) * So;
+    const double mt_ogot_latent2 = a1 * mt_E1o;
+    const double mt_ogot_infectious = a2 * mt_E2o;
+    const double mt_ogot_removed = gamma * mt_Io;
+
     const double ogot_reverted = eta * Ro;
 
-    /* dSy  */ ydot[0] = -ygot_infected + ygot_reverted;
-    /* dE1y */ ydot[1] = ygot_infected - ygot_latent2;
-    /* dE2y */ ydot[2] = ygot_latent2 - ygot_infectious;
-    /* dIy  */ ydot[3] = ygot_infectious - ygot_removed;
-    /* dRy  */ ydot[4] = ygot_removed - ygot_reverted;
+    /* dSy  */    ydot[0] = -wt_ygot_infected - mt_ygot_infected + ygot_reverted;
+    /* dwt_E1y */ ydot[1] = wt_ygot_infected - wt_ygot_latent2;
+    /* dwt_E2y */ ydot[2] = wt_ygot_latent2 - wt_ygot_infectious;
+    /* dwt_Iy  */ ydot[3] = wt_ygot_infectious - wt_ygot_removed;
+    /* dmt_E1y */ ydot[4] = mt_ygot_infected - mt_ygot_latent2;
+    /* dmt_E2y */ ydot[5] = mt_ygot_latent2 - mt_ygot_infectious;
+    /* dmt_Iy  */ ydot[6] = mt_ygot_infectious - mt_ygot_removed;
+    /* dRy  */    ydot[7] = wt_ygot_removed + mt_ygot_removed - ygot_reverted;
 
-    /* dSo  */ ydot[5] = -ogot_infected + ogot_reverted;
-    /* dE1o */ ydot[6] = ogot_infected - ogot_latent2;
-    /* dE2o */ ydot[7] = ogot_latent2 - ogot_infectious;
-    /* dIo  */ ydot[8] = ogot_infectious - ogot_removed;
-    /* dRo  */ ydot[9] = ogot_removed - ogot_reverted;
+    /* dSo  */    ydot[8]  = -wt_ogot_infected - mt_ogot_infected + ogot_reverted;
+    /* dwt_E1o */ ydot[9]  = wt_ogot_infected - wt_ogot_latent2;
+    /* dwt_E2o */ ydot[10] = wt_ogot_latent2 - wt_ogot_infectious;
+    /* dwt_Io  */ ydot[11] = wt_ogot_infectious - wt_ogot_removed;
+    /* dmt_E1o */ ydot[12] = mt_ogot_infected - mt_ogot_latent2;
+    /* dmt_E2o */ ydot[13] = mt_ogot_latent2 - mt_ogot_infectious;
+    /* dmt_Io  */ ydot[14] = mt_ogot_infectious - mt_ogot_removed;
+    /* dRy  */    ydot[15] = wt_ogot_removed + mt_ogot_removed - ogot_reverted;
 
+    const double ygot_infected = wt_ygot_infected + mt_ygot_infected;
+    const double ogot_infected = wt_ogot_infected + mt_ogot_infected;
+
+    const double Iy = wt_Iy + mt_Iy;
+    const double Io = wt_Io + mt_Io;
+    
     yout[0] = 1/gamma * (ygot_infected + ogot_infected) / (Iy + Io);
     yout[1] = yout[0] * (Ny + No) / (Sy + So);
 
-    yout[2] = 1/gamma * ((betay * Iy) / Ny * Sy + (betayo * Iy) / Ny * So) / Iy;
-    yout[3] = 1/gamma *                            (betao * Io) / No * So / Io;
+    yout[2] = 1/gamma * ((betay * wt_Iy + mt_f * betay * mt_Iy) / Ny * Sy + (betayo * wt_Iy + mt_f * betayo * mt_Iy) / Ny * So) / (wt_Iy + mt_Iy);
+    yout[3] = 1/gamma *                                                     ( betao * wt_Io + mt_f * betao * mt_Io ) / No * So  / (wt_Io + mt_Io);
 
-    yout[4] = ygot_infected;
-    yout[5] = ogot_infected;
-    yout[6] = betay;
-    yout[7] = betao;
-    yout[8] = betayo;
+    yout[4] = wt_ygot_infected;
+    yout[5] = mt_ygot_infected;
+    yout[6] = wt_ogot_infected;
+    yout[7] = mt_ogot_infected;
+    yout[8] = betay;
+    yout[9] = betao;
+    yout[10] = betayo;
   }
 }

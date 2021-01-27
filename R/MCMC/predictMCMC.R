@@ -333,24 +333,33 @@ all_plots_age <- function(date_markers) {
 
 
     if (zoom == 0) {
-        p4 <- p4 + theme(legend.position = c(0.2, 0.85))
+        p4 <- p4 + theme(legend.position = c(0.2, 0.75))
     } else if (zoom == 2) {
         p4 <- p4 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
-                                   ylim = c(0, 6))
-        p4 <- p4 + theme(legend.position = c(0.8, 0.85))
+                                   ylim = c(0, 5))
+        p4 <- p4 + theme(legend.position = c(0.4, 0.75))
     } else if (zoom == 3) {
         p4 <- p4 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 1))
-        p4 <- p4 + theme(legend.position = c(0.8, 0.85))
+        p4 <- p4 + theme(legend.position = c(0.8, 0.75))
     }
 
     ## p4 <- p4 + geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
+
+    p4 <- addExtraPlotQ2(p4, data_sample, dateRange,
+                         function(state, params) { (state$mt.E + state$mt.I)/N * 100 },
+                         "#581845", "solid")
+
+    p4 <- p4 + guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+                      colour=guide_legend(keywidth = 3, keyheight = 1))
 
     ## Add y/o curves
     p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$y.E + state$y.I)/y.N * 100 }, "#A67514", "dashed")
     p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$o.E + state$o.I)/o.N * 100 }, "#A67514", "dotted")
 
-    p4 <- p4 + scale_colour_manual(values = c("#A67514"), guide=FALSE) +
+    p4 <- p4 + scale_colour_manual(name = 'Strain',
+                                   values=c("#A67514"="#A67514", "#581845"="#581845"),
+                                   labels=c("Variant B.1.1.7")) +
         scale_linetype_manual(name = 'Age group',
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
@@ -644,29 +653,38 @@ date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
                            color=c("orange", "red", "orange", "orange", "red", "black"))
 dates <- date_markers
 
-est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 300, c(0.05, 0.5, 0.95)))
+est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 360, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
+
+maxRe <- marginalizeData(data_sample, function(state, params) { state$Re }, 0, 400,
+                         function(d) {
+                             max(d[(Sys.Date() - dstartdate):(Sys.Date() - dstartdate + 60)])
+                         })
+quantile(maxRe, c(0.05, 0.5, 0.95))
 
 print("Re Today")
 print(unlist(est.Re[Sys.Date() - dstartdate + 1,]))
 print("Re @ d10")
 print(unlist(est.Re[d10,]))
 
-y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 300, c(0.05, 0.5, 0.95)))
+y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
 
-o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 300, c(0.05, 0.5, 0.95)))
+o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
 
-est.case <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + 300, c(0.05, 0.5, 0.95)))
+mt.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$mt.E + state$mt.I }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
 
-est.hosp <- data.frame(quantileData(data_sample, function(state, params) { state$y.hospi + state$o.hospi }, 0, lockdown_offset + 300, c(0.05, 0.5, 0.95)))
+est.case <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
 
-sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/12/25")),
+est.hosp <- data.frame(quantileData(data_sample, function(state, params) { state$y.hospi + state$o.hospi }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
+
+sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/12/25"), as.Date("2021/1/1")),
        function(d) {
            do = as.numeric(d - dstartdate)
            ds = as.character(d)
            print(paste(" === Infected young/old on :", ds))
            print(y.est.infected[do,])
            print(o.est.infected[do,])
+           print(mt.est.infected[do,])
            print("Hosp :")
            print(est.hosp[do,])
            print("Cases :")
@@ -676,8 +694,7 @@ sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/
 pdf("current-state-2.pdf", width=25, height=10)
 ##pdf("current-state-2.pdf", width=15, height=10)
 
-##plot_end_date <- as.Date("2021/3/1")
-plot_end_date <- as.Date("2021/2/1")
+plot_end_date <- as.Date("2021/4/1")
 zoom <- 0
 all_plots(dates)
 ##zoomStartDate <- as.Date("2020/12/15")
@@ -710,7 +727,7 @@ dev.off()
 
 ## Population group Re values
 
-plot_end_date <- as.Date("2021/1/1")
+plot_end_date <- as.Date("2021/4/1")
 dateRange <- c(plot_start_date, plot_end_date)
 fair_cols <- c("#38170B","#BF1B0B", "#FFC465", "#66ADE5", "#252A52")
 
