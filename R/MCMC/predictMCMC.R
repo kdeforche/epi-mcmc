@@ -653,29 +653,30 @@ date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
                            color=c("orange", "red", "orange", "orange", "red", "black"))
 dates <- date_markers
 
-est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 360, c(0.05, 0.5, 0.95)))
+est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 400, c(0.05, 0.5, 0.95)))
 colnames(est.Re) <- c("q5", "q50", "q95")
 
 maxRe <- marginalizeData(data_sample, function(state, params) { state$Re }, 0, 400,
                          function(d) {
                              max(d[(Sys.Date() - dstartdate):(Sys.Date() - dstartdate + 60)])
                          })
-quantile(maxRe, c(0.05, 0.5, 0.95))
+print("Maximum Re in next 2 months")
+print(quantile(maxRe, c(0.05, 0.5, 0.95)))
 
 print("Re Today")
 print(unlist(est.Re[Sys.Date() - dstartdate + 1,]))
 print("Re @ d10")
 print(unlist(est.Re[d10,]))
 
-y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
+y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
 
-o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
+o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
 
-mt.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$mt.E + state$mt.I }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
+mt.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$mt.E + state$mt.I }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
 
-est.case <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
+est.case <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
 
-est.hosp <- data.frame(quantileData(data_sample, function(state, params) { state$y.hospi + state$o.hospi }, 0, lockdown_offset + 360, c(0.05, 0.5, 0.95)))
+est.hosp <- data.frame(quantileData(data_sample, function(state, params) { state$y.hospi + state$o.hospi }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
 
 sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/12/25"), as.Date("2021/1/1")),
        function(d) {
@@ -694,7 +695,7 @@ sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/
 pdf("current-state-2.pdf", width=25, height=10)
 ##pdf("current-state-2.pdf", width=15, height=10)
 
-plot_end_date <- as.Date("2021/4/1")
+plot_end_date <- as.Date("2021/5/1")
 zoom <- 0
 all_plots(dates)
 ##zoomStartDate <- as.Date("2020/12/15")

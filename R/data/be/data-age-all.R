@@ -360,6 +360,12 @@ o.N <- N - y.N
 ##
 ###################
 
+y.ifr = c(y.ifr, rep(y.ifr[length(y.ifr-1)], 200))
+o.ifr = c(o.ifr, rep(o.ifr[length(o.ifr-1)], 200))
+y.hr = c(y.hr, rep(y.hr[length(y.hr-1)], 200))
+o.hr = c(o.hr, rep(o.hr[length(o.hr-1)], 200))
+x <-seq(dstartdate, dstartdate+length(y.ifr)-1, by=1)
+
 vs <- 1:length(y.ifr)
 
 g <- glogis(vs, 0, 1, 1, 0.5, 0.1,
@@ -369,3 +375,19 @@ gtrimp <- glogis(vs, 0, 1, 1, 0.5, 0.1,
 
 plot(x, y.ifr, type='l', ylim=c(0, 1E-3))
 points(x, y.ifr * (1 - 0.5 * g) * (1 - 0.4 * gtrimp))
+
+vacc.d1.wzc = as.numeric(as.Date("2021-01-22") - dstartdate)
+vacc.d2.wzc = as.numeric(as.Date("2021-02-22") - dstartdate)
+vacc.wzc.fifr = 0.603
+vacc.wzc.fhr = 0.93
+
+vacc.o.fifr = rep(1, length(o.ifr))
+vacc.o.fifr[vacc.d1.wzc:vacc.d2.wzc] = seq(1, vacc.wzc.fifr, length.out = vacc.d2.wzc - vacc.d1.wzc + 1)
+vacc.o.fifr[vacc.d2.wzc:length(vacc.o.fifr)] = vacc.wzc.fifr
+
+vacc.o.fhr = rep(1, length(o.hr))
+vacc.o.fhr[vacc.d1.wzc:vacc.d2.wzc] = seq(1, vacc.wzc.fhr, length.out = vacc.d2.wzc - vacc.d1.wzc + 1)
+vacc.o.fhr[vacc.d2.wzc:length(vacc.o.fhr)] = vacc.wzc.fhr
+
+o.ifr = o.ifr * vacc.o.fifr
+o.hr = o.hr * vacc.o.fhr

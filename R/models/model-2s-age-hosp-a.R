@@ -221,7 +221,7 @@ calculateModel <- function(params, period)
         t11 <- data_offset + t11o
         t12 <- data_offset + t12o
         mt.t0 <- data_offset + mt.t0o
-        
+
         tuncertain <- data_offset + duncertain
         funcertain <- 1 ## rlnorm(1, meanlog=0, sdlog=log(1.1))
 
@@ -557,7 +557,7 @@ calclogp <- function(params, misc) {
     logPriorP <- logPriorP + dnorm(t11o, mean=d11, sd=7, log=T)
     logPriorP <- logPriorP + dnorm(t12o, mean=(duncertain - 7), sd=7, log=T)
     logPriorP <- logPriorP + dnorm(mt.t0o, mean=mt.d0, sd=30, log=T)
-    logPriorP <- logPriorP + dlnorm(mt.f, log(mt.f.prior), log(1.2), log=T)
+    logPriorP <- logPriorP + dlnorm(mt.f, log(mt.f.prior), log(1.05), log=T)
 
     SD <- log(2) ## SD = */ 2
     lSD <- log(1.3) ## SD = */ 1.3

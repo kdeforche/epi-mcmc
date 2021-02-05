@@ -67,6 +67,14 @@ static double parms[PARAM_N];
 #define mt_t0      parms[60]
 #define mt_f       parms[61]
 
+const int wzc_vacc_start = 306; // 2021-01-22
+const int wzc_vacc_end = 336;   // 2021-02-22
+const double wzc_vacc_rate = 8387.1;
+
+const int o_vacc_start = 365;   // 2021-03-22
+const int o_vacc_end = 396;     // 2021-04-22
+const double o_vacc_rate = 75048.39;
+
 #define Sy y[0]
 #define wt_E1y y[1]
 #define wt_E2y y[2]
@@ -206,23 +214,33 @@ extern "C" {
 
     const double ogot_reverted = eta * Ro;
 
-    /* dSy  */    ydot[0] = -wt_ygot_infected - mt_ygot_infected + ygot_reverted;
+    const double ygot_vaccinated = 0;
+
+    // Not S0 / N0...
+    
+    double ogot_vaccinated = 0;
+    if (*t >= t2 + wzc_vacc_start && *t < t2 + wzc_vacc_end)
+      ogot_vaccinated = wzc_vacc_rate * 0.93; // 7% already immune
+    else if (*t >= t2 + o_vacc_start && *t < t2 + o_vacc_end)
+      ogot_vaccinated = o_vacc_rate * 0.93; 
+    
+    /* dSy  */    ydot[0] = -wt_ygot_infected - mt_ygot_infected + ygot_reverted - ygot_vaccinated;
     /* dwt_E1y */ ydot[1] = wt_ygot_infected - wt_ygot_latent2;
     /* dwt_E2y */ ydot[2] = wt_ygot_latent2 - wt_ygot_infectious;
     /* dwt_Iy  */ ydot[3] = wt_ygot_infectious - wt_ygot_removed;
     /* dmt_E1y */ ydot[4] = mt_ygot_infected - mt_ygot_latent2;
     /* dmt_E2y */ ydot[5] = mt_ygot_latent2 - mt_ygot_infectious;
     /* dmt_Iy  */ ydot[6] = mt_ygot_infectious - mt_ygot_removed;
-    /* dRy  */    ydot[7] = wt_ygot_removed + mt_ygot_removed - ygot_reverted;
+    /* dRy  */    ydot[7] = wt_ygot_removed + mt_ygot_removed - ygot_reverted + ygot_vaccinated;
 
-    /* dSo  */    ydot[8]  = -wt_ogot_infected - mt_ogot_infected + ogot_reverted;
+    /* dSo  */    ydot[8]  = -wt_ogot_infected - mt_ogot_infected + ogot_reverted - ogot_vaccinated;
     /* dwt_E1o */ ydot[9]  = wt_ogot_infected - wt_ogot_latent2;
     /* dwt_E2o */ ydot[10] = wt_ogot_latent2 - wt_ogot_infectious;
     /* dwt_Io  */ ydot[11] = wt_ogot_infectious - wt_ogot_removed;
     /* dmt_E1o */ ydot[12] = mt_ogot_infected - mt_ogot_latent2;
     /* dmt_E2o */ ydot[13] = mt_ogot_latent2 - mt_ogot_infectious;
     /* dmt_Io  */ ydot[14] = mt_ogot_infectious - mt_ogot_removed;
-    /* dRy  */    ydot[15] = wt_ogot_removed + mt_ogot_removed - ogot_reverted;
+    /* dRy  */    ydot[15] = wt_ogot_removed + mt_ogot_removed - ogot_reverted + ogot_vaccinated;
 
     const double ygot_infected = wt_ygot_infected + mt_ygot_infected;
     const double ogot_infected = wt_ogot_infected + mt_ogot_infected;
@@ -240,8 +258,20 @@ extern "C" {
     yout[5] = mt_ygot_infected;
     yout[6] = wt_ogot_infected;
     yout[7] = mt_ogot_infected;
-    yout[8] = betay;
-    yout[9] = betao;
-    yout[10] = betayo;
+
+    if (wt_Iy + mt_Iy > 0)
+      yout[8] = (betay * wt_Iy + mt_f * betay * mt_Iy) / (wt_Iy + mt_Iy);
+    else
+      yout[8] = betay;
+
+    if (wt_Io + mt_Io > 0)
+      yout[9] = (betao * wt_Io + mt_f * betao * mt_Io) / (wt_Io + mt_Io);
+    else
+      yout[9] = betao;
+
+    if (wt_Iy + mt_Iy > 0)
+      yout[10] = (betayo * wt_Iy + mt_f * betayo * mt_Iy) / (wt_Iy + mt_Iy);
+    else
+      yout[10] = betayo;
   }
 }
