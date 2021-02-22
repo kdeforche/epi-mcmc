@@ -172,11 +172,12 @@ sourceR <- function(file) {
 sourceR("lib/libMCMC.R")
 
 annotateF <- function(plot) {
-    plot +
-        annotate("rect", xmin = d2 + dstartdate, xmax = d3 + dstartdate - 30,
-                 ymin = 0, ymax = Inf, alpha = .05, fill='red') +
-        annotate("rect", xmin = dls2, xmax = dle2,
-                 ymin = 0, ymax = Inf, alpha = .05, fill='red')
+    plot
+    ##+
+    ##    annotate("rect", xmin = d2 + dstartdate, xmax = d3 + dstartdate - 30,
+    ##             ymin = 0, ymax = Inf, alpha = .05, fill='red') +
+    ##    annotate("rect", xmin = dls2, xmax = dle2,
+    ##             ymin = 0, ymax = Inf, alpha = .05, fill='red')
 }
 
 all_plots_age <- function(date_markers) {
@@ -208,8 +209,8 @@ all_plots_age <- function(date_markers) {
         p1 <- p1 + coord_cartesian(ylim = c(0, 200))
         p1 <- p1 + theme(legend.position = c(0.8, 0.85))
     } else if (zoom == 2) {
-        p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 200))
-        p1 <- p1 + theme(legend.position = c(0.8, 0.85))
+        p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 100))
+        p1 <- p1 + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 3) {
         p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 50))
         p1 <- p1 + theme(legend.position = c(0.8, 0.85))
@@ -277,8 +278,8 @@ all_plots_age <- function(date_markers) {
         p3 <- p3 + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 2) {
         p3 <- p3 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
-                                   ylim = c(0, 10000))
-        p3 <- p3 + theme(legend.position = c(0.8, 0.85))
+                                   ylim = c(0, 7500))
+        p3 <- p3 + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 3) {
         p3 <- p3 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 5000))
@@ -305,8 +306,8 @@ all_plots_age <- function(date_markers) {
         p3b <- p3b + coord_cartesian(ylim = c(0, 900))
         p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 900))
-        p3b <- p3b + theme(legend.position = c(0.8, 0.85))
+        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 400))
+        p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 3) {
         p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 150))
         p3b <- p3b + theme(legend.position = c(0.8, 0.85))
@@ -336,19 +337,26 @@ all_plots_age <- function(date_markers) {
         p4 <- p4 + theme(legend.position = c(0.2, 0.75))
     } else if (zoom == 2) {
         p4 <- p4 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
-                                   ylim = c(0, 5))
-        p4 <- p4 + theme(legend.position = c(0.4, 0.75))
+                                   ylim = c(0, 3))
+        p4 <- p4 + theme(legend.position = c(0.2, 0.75))
     } else if (zoom == 3) {
         p4 <- p4 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 1))
         p4 <- p4 + theme(legend.position = c(0.8, 0.75))
     }
 
-    ## p4 <- p4 + geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
+    p4 <- addExtraPlotQ2(p4, data_sample, dateRange,
+                         function(state, params) {
+                             d <- (state$mt.E + state$mt.I)/N * 100
+                             ifelse(d > 0.001, d, NA)
+                         },
+                         "#581845")
 
     p4 <- addExtraPlotQ2(p4, data_sample, dateRange,
-                         function(state, params) { (state$mt.E + state$mt.I)/N * 100 },
-                         "#581845", "solid")
+                         function(state, params) {
+                             (state$y.E + state$y.I + state$o.E + state$o.I - state$mt.E - state$mt.I)/N * 100
+                         },
+                         "#185815")
 
     p4 <- p4 + guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
                       colour=guide_legend(keywidth = 3, keyheight = 1))
@@ -358,8 +366,9 @@ all_plots_age <- function(date_markers) {
     p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$o.E + state$o.I)/o.N * 100 }, "#A67514", "dotted")
 
     p4 <- p4 + scale_colour_manual(name = 'Strain',
-                                   values=c("#A67514"="#A67514", "#581845"="#581845"),
-                                   labels=c("Variant B.1.1.7")) +
+                                   values=c("#A67514"="#A67514", "#581845"="#581845", "#185815"="#185815"),
+                                   labels=c("All", "B.1.1.7", "Other"),
+                                   breaks=c("#A67514", "#581845", "#185815")) +
         scale_linetype_manual(name = 'Age group',
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
@@ -383,12 +392,25 @@ all_plots_age <- function(date_markers) {
     if (zoom == 2) {
         p5 <- p5 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date))
     }
+
+    ## Plot 6 : Re
     
     p6 <- makePlotAnnotate(data_sample, dateRange,
                            function(state, params) { state$Re }, "#33FFFF",
                            c("Re", "Effective reproduction number (Re)"), date_markers, NULL,
                            annotateF)
 
+    p6 <- addExtraPlotQ2(p6, data_sample, dateRange,
+                         function(state, params) { ifelse(state$mt.Re == 0, NA, state$mt.Re) }, "#581845")
+
+    p6 <- addExtraPlotQ2(p6, data_sample, dateRange,
+                         function(state, params) { state$wt.Re }, "#185815")
+
+    p6 <- p6 + scale_colour_manual(name = 'Strain',
+                                   values=c("#185815"="#185815", "#33FFFF"="33FFFF", "#581845"="#581845"),
+                                   labels=c("All", "B.1.1.7", "Other"),
+                                   breaks=c("#33FFFF", "#581845", "#185815"))
+    
     if (zoom == 1) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
     } else if (zoom == 2) {
@@ -403,6 +425,22 @@ all_plots_age <- function(date_markers) {
 
     p6 <- p6 +  geom_hline(yintercept=1, linetype="solid", color="gray", size=0.5)
 
+    p7 <- makePlotAnnotate(data_sample, dateRange,
+                           function(state, params) {
+                               d <- (state$mt.y.i + state$mt.o.i)/(state$y.i + state$o.i) * 100
+                               ifelse(d > 0.001, d, NA)
+                           },
+                           "#33FFFF",
+                           c("Percentage (%)", "Percentage infections by B.1.1.7 variant"), date_markers, NULL,
+                           annotateF)
+    p7 <- p7 + theme(legend.position = "none")
+
+    if (zoom == 1) {
+    } else if (zoom == 2) {
+        p7 <- p7 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
+                                   ylim = c(0, NA))
+    }
+    
     pifr <- makePlot(data_sample, dateRange, est.ifr,
                      "#333333", c("IFR (%)", "Infection fatality rate of infected population"), dates, 'solid')
     pifr <- pifr + theme(legend.position = "none")
@@ -439,7 +477,7 @@ all_plots_age <- function(date_markers) {
 
     pbeds <- pbeds + scale_colour_identity(guide = "legend",
                                            labels = c(lbeds, licu)) +
-        theme(legend.position = c(0.8, 0.85)) +
+        theme(legend.position = c(0.2, 0.85)) +
         theme(legend.title = element_blank())
 
     if (zoom == 0) {
@@ -478,11 +516,11 @@ all_plots_age <- function(date_markers) {
 
     if (zoom == 2) {
         pifr <- pifr + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
-                                       ylim = c(0, 1.0))
+                                       ylim = c(0, 0.5))
         page <- page + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                        ylim = c(0, 50))
         pbeds <- pbeds + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
-                                         ylim = c(0, 8000))
+                                         ylim = c(0, 4000))
     } else if (zoom == 3) {
         pifr <- pifr + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                        ylim = c(0, 1.0))
@@ -552,6 +590,8 @@ other_plots_age <- function(date_markers) {
                            c("Rt", "Time-varying reproduction number (Rt)"), date_markers, NULL,
                            annotateF)
 
+    p7 <- p7 + scale_colour_manual(values = c("#33FFFF"), guide=FALSE)
+
     if (zoom == 1) {
         p7 <- p7 + coord_cartesian(ylim = c(0, 2))
     } else if (zoom == 2) {
@@ -577,11 +617,11 @@ other_plots_age <- function(date_markers) {
 
     pbeta <- addExtraPlotQ2(pbeta, data_sample, dateRange,
                             function(state, params) { state$o.beta },
-                            col.o, NULL)
+                            col.o)
 
     pbeta <- addExtraPlotQ2(pbeta, data_sample, dateRange,
                             function(state, params) { state$yo.beta },
-                            col.yo, NULL)
+                            col.yo)
 
     pbeta <- pbeta + scale_colour_identity(guide = "legend",
                                   labels = c("<65 to <65", ">65 to >65", "<65 to >65")) +
@@ -654,7 +694,12 @@ date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
 dates <- date_markers
 
 est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 400, c(0.05, 0.5, 0.95)))
+
 colnames(est.Re) <- c("q5", "q50", "q95")
+
+wt.est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$wt.Re }, 0, 400, c(0.05, 0.5, 0.95)))
+
+mt.est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$mt.Re }, 0, 400, c(0.05, 0.5, 0.95)))
 
 maxRe <- marginalizeData(data_sample, function(state, params) { state$Re }, 0, 400,
                          function(d) {
@@ -682,10 +727,14 @@ sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/
        function(d) {
            do = as.numeric(d - dstartdate)
            ds = as.character(d)
-           print(paste(" === Infected young/old on :", ds))
+           print(paste(" === Infected young/old/B.1.1.7 on :", ds))
            print(y.est.infected[do,])
            print(o.est.infected[do,])
            print(mt.est.infected[do,])
+           print("Re all/wt/B.1.1.7:")
+           print(est.Re[do,])
+           print(wt.est.Re[do,])
+           print(mt.est.Re[do,])
            print("Hosp :")
            print(est.hosp[do,])
            print("Cases :")
@@ -699,7 +748,8 @@ plot_end_date <- as.Date("2021/5/1")
 zoom <- 0
 all_plots(dates)
 ##zoomStartDate <- as.Date("2020/12/15")
-zoomStartDate <- as.Date("2020/10/1")
+zoomStartDate <- as.Date("2021/1/1")
+plot_end_date <- as.Date("2021/4/1")
 zoom <- 2
 ##zoom <- 3
 all_plots(dates)
@@ -710,6 +760,7 @@ all_plots(dates)
 
 dev.off()
 
+plot_end_date <- as.Date("2021/5/1")
 pdf("other-plots.pdf", width=19, height=6)
 zoom <- 0
 other_plots_age(dates)

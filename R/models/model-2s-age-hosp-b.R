@@ -1,6 +1,6 @@
 library("deSolve")
 
-cppname <- "model-2s-age"
+cppname <- "model-2s-age-b"
 
 system(paste("R CMD SHLIB ", cppname, ".cpp", sep=""))
 dyn.load(paste(cppname, ".so", sep=""))
@@ -119,6 +119,10 @@ calculateModel <- function(params, period)
     betayo12 <- params[57]
     mt.t0o <- params[58]
     mt.f <- params[59]
+    t13o <- params[60]
+    betay13 <- params[61]
+    betao13 <- params[62]
+    betayo13 <- params[63]
 
     ## convolution profiles
     y.case_cv_profile = caseProfile(ycase_latency, CLsd)
@@ -178,7 +182,8 @@ calculateModel <- function(params, period)
                t10 = 1E10, betay10 = betay10, betao10 = betao10, betayo10 = betayo10,
                t11 = 1E10, betay11 = betay11, betao11 = betao11, betayo11 = betayo11,
                t12 = 1E10, betay12 = betay12, betao12 = betao12, betayo12 = betayo12,
-               mt.t0 = 1E10, mt.f = mt.f)
+               mt.t0 = 1E10, mt.f = mt.f,
+               t13 = 1E10, betay13 = betay13, betao13 = betao13, betayo13 = betayo13)
 
     Y <- c(Sy = y.N - Initial, wt_E1y = Initial, wt_E2y = 0, wt_Iy = 0, mt_E1y =0, mt_E2y = 0, mt_Iy = 0, Ry = 0,
            So = o.N, wt_E1o = 0, wt_E2o = 0, wt_Io = 0, mt_E1o = 0, mt_E2o = 0, mt_Io = 0, Ro = 0)
@@ -222,6 +227,7 @@ calculateModel <- function(params, period)
         t10 <- data_offset + t10o
         t11 <- data_offset + t11o
         t12 <- data_offset + t12o
+        t13 <- data_offset + t13o
         mt.t0 <- data_offset + mt.t0o
 
         tuncertain <- data_offset + duncertain
@@ -246,7 +252,8 @@ calculateModel <- function(params, period)
                    t10 = t10, betay10 = betay10, betao10 = betao10, betayo10 = betayo10,
                    t11 = t11, betay11 = betay11, betao11 = betao11, betayo11 = betayo11,
                    t12 = t12, betay12 = betay12, betao12 = betao12, betayo12 = betayo12,
-                   mt.t0 = mt.t0, mt.f = mt.f)
+                   mt.t0 = mt.t0, mt.f = mt.f,
+                   t13 = t13, betay13 = betay13, betao13 = betao13, betayo13 = betayo13)
 
         times <- (padding + 1):(padding + period)
         
@@ -546,6 +553,10 @@ calclogp <- function(params, misc) {
     betayo12 <- params[57]
     mt.t0o <- params[58]
     mt.f <- params[59]
+    t13o <- params[60]
+    betay13 <- params[61]
+    betao13 <- params[62]
+    betayo13 <- params[63]
 
     logPriorP <- 0
 
@@ -559,9 +570,10 @@ calclogp <- function(params, misc) {
     logPriorP <- logPriorP + dnorm(d5 + t6o + t7o, mean=d7, sd=2, log=T)
     logPriorP <- logPriorP + dnorm(t10o, mean=d10, sd=7, log=T)
     logPriorP <- logPriorP + dnorm(t11o, mean=d11, sd=7, log=T)
-    logPriorP <- logPriorP + dnorm(t12o, mean=(duncertain - 7), sd=7, log=T)
+    logPriorP <- logPriorP + dnorm(t12o, mean=d12, sd=7, log=T)
+    logPriorP <- logPriorP + dnorm(t13o, mean=(duncertain - 7), sd=7, log=T)
     logPriorP <- logPriorP + dnorm(mt.t0o, mean=mt.d0, sd=30, log=T)
-    logPriorP <- logPriorP + dlnorm(mt.f, log(mt.f.prior), log(1.1), log=T)
+    logPriorP <- logPriorP + dlnorm(mt.f, log(mt.f.prior), log(1.05), log=T)
 
     SD <- log(2) ## SD = */ 2
     lSD <- log(1.3) ## SD = */ 1.3
@@ -595,6 +607,9 @@ calclogp <- function(params, misc) {
     logPriorP <- logPriorP + dlnorm(betay11/betay12, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betao11/betao12, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo11/betayo12, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay12/betay13, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao12/betao13, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo12/betayo13, 0, lSD, log=T)
    
     logPriorP <- logPriorP + dnorm(HLsd, mean=4, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
@@ -823,7 +838,8 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t10o",
                     "t11o", "betay11", "betao11", "betayo11",
                     "t12o", "betay12", "betao12", "betayo12",
-                    "mt.t0o", "mt.f")
+                    "mt.t0o", "mt.f",
+                    "t13o", "betay13", "betao13", "betayo13")
 keyparamnames <- c("betay6", "betao6", "betayo6",
                    "betay7", "betao7", "betayo7",
                    "betay9", "betao9", "betayo9",
@@ -846,7 +862,8 @@ init <- c(3.1, 0.52, 0.50,
           245,
           260, 1.9, 0.3, 0.04,
           d12, 1.9, 0.2, 0.04,
-          mt.d0, mt.f.prior)
+          mt.d0, mt.f.prior,
+          d13, 1.9, 0.2, 0.04)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,
@@ -864,8 +881,9 @@ df_params <- data.frame(name = fit.paramnames,
                                 0.1, 4, 4,
                                 d10 - 10,
                                 d11 - 10, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                d12 - 10, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                mt.d0 - 50, 1.0),
+                                d12 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                mt.d0 - 50, 1.0,
+                                d13 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma),
                         max = c(8 * gamma, 5 * gamma, 5 * gamma,
                                 5 * gamma, 3 * gamma, 3 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
@@ -880,10 +898,11 @@ df_params <- data.frame(name = fit.paramnames,
                                 50, 4 * gamma, 3 * gamma, 0.5 * gamma,
                                     3 * gamma, 3 * gamma, 0.5 * gamma,
                                 0.7, 14, 17,
-                                duncertain - 14,
+                                duncertain - 28,
+                                duncertain - 14, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                 duncertain - 7, 3 * gamma, 3 * gamma, 0.5 * gamma,
-                                duncertain, 3 * gamma, 3 * gamma, 0.5 * gamma,
-                                mt.d0 + 50, 2.0),
+                                mt.d0 + 50, 2.0,
+                                duncertain, 3 * gamma, 3 * gamma, 0.5 * gamma),
                         init = init,
                         stringsAsFactors=FALSE)
 

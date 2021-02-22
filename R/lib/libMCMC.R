@@ -218,9 +218,9 @@ makePlotAnnotate <- function(sample, dateRange, fun, colour, titles, date_marker
         geom_ribbon(aes(ymin = q25, ymax=q75, fill=grey75), alpha=0.4)
 
     if (is.null(lty))
-        result <- result + geom_line(aes(y = q50), size = 0.5, colour=colour)
+        result <- result + geom_line(aes(y = q50, colour=colour), size = 0.5)
     else
-        result <- result + geom_line(aes(y = q50, linetype = lty), size = 0.5, colour=colour)
+        result <- result + geom_line(aes(y = q50, colour=colour, linetype=lty), size = 0.5)
 
     result <- result +
         labs(x="Date") +
@@ -322,7 +322,7 @@ makePlot2 <- function(sample, dateRange, fun, colour, titles, date_markers, lty)
     result
 }
 
-addExtraPlotQ2 <- function(plot, sample, dateRange, fun, colour2, lty)
+addExtraPlotQ2 <- function(plot, sample, dateRange, fun, colour2)
 {
     period <- as.numeric(dateRange[2] - dateRange[1])
     startoffset <- as.numeric(dstartdate - dateRange[1])
