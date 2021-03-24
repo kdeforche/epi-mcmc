@@ -1,7 +1,7 @@
 #include <iostream>
 #include <R.h>
 
-static const int PARAM_N = 66;
+static const int PARAM_N = 70;
 static double parms[PARAM_N];
 
 #define Ny         parms[0]
@@ -70,6 +70,10 @@ static double parms[PARAM_N];
 #define betay13    parms[63]
 #define betao13    parms[64]
 #define betayo13   parms[65]
+#define t14        parms[66]      // linear change point
+#define betay14    parms[67]
+#define betao14    parms[68]
+#define betayo14   parms[69]
 
 const int wzc_vacc_start = 306; // 2021-01-22
 const int wzc_vacc_end = 336;   // 2021-02-22
@@ -110,9 +114,11 @@ static double interpolate(double t,
 			  double vt0, double vt1, double vt2, double vt3,
 			  double vt4, double vt5, double vt6, double vt7,
 			  double vt8, double vt9, double vt10, double vt11,
-			  double vt12, double vt13)
+			  double vt12, double vt13, double vt14)
 {
-  if (t > t13)
+  if (t > t14)
+    return vt14;
+  else if (t > t13)
     return vt13;
   else if (t > t12)
     return vt12 + (t - t12) / (t13 - t12) * (vt13 - vt12);
@@ -175,15 +181,18 @@ extern "C" {
     const double mbetay = interpolate(*t,
 				      betay0, betay1, betay2, betay3, betay4,
 				      betay5, betay6, betay7, betay8, betay9,
-				      betay10, betay11, betay12, betay13);
+				      betay10, betay11, betay12, betay13,
+				      betay14);
     const double mbetao = interpolate(*t,
 				      betao0, betao1, betao2, betao3, betao4,
 				      betao5, betao6, betao7, betao8, betao9,
-				      betao10, betao11, betao12, betao13);
+				      betao10, betao11, betao12, betao13,
+				      betao14);
     const double mbetayo = interpolate(*t,
 				       betayo0, betayo1, betayo2, betayo3, betayo4,
 				       betayo5, betayo6, betayo7, betayo8, betayo9,
-				       betayo10, betayo11, betayo12, betayo13);
+				       betayo10, betayo11, betayo12, betayo13,
+				       betayo14);
 
     const double betay = uncertain(*t, mbetay);
     const double betao = uncertain(*t, mbetao);

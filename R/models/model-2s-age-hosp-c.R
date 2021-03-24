@@ -123,11 +123,11 @@ calculateModel <- function(params, period)
     betay13 <- params[61]
     betao13 <- params[62]
     betayo13 <- params[63]
+    t14o <- params[64]
+    betay14 <- params[65]
+    betao14 <- params[66]
+    betayo14 <- params[67]
 
-    betay14 <- betay13 * 1.2
-    betao14 <- betao13
-    betayo14 <- betayo13 * 1.05
-    
     ## convolution profiles
     y.case_cv_profile = caseProfile(ycase_latency, CLsd)
     o.case_cv_profile = caseProfile(ocase_latency, CLsd)
@@ -233,7 +233,7 @@ calculateModel <- function(params, period)
         t11 <- data_offset + t11o
         t12 <- data_offset + t12o
         t13 <- data_offset + t13o
-        t14 <- data_offset + d14
+        t14 <- data_offset + t14o
         mt.t0 <- data_offset + mt.t0o
 
         tuncertain <- data_offset + duncertain
@@ -263,7 +263,7 @@ calculateModel <- function(params, period)
                    t14 = t14, betay14 = betay14, betao14 = betao14, betayo14 = betayo14)
 
         times <- (padding + 1):(padding + period)
-
+        
         out <- ode(Y, times, func = "derivs", parms = parms,
                    dllname = cppname,
                    initfunc = "initmod", nout = length(outnames),
@@ -298,11 +298,11 @@ calculateModel <- function(params, period)
     state$mt.E[(padding + 1):(padding + l.out)] = out[,6] + out[,7] + out[,14] + out[,15]
     state$mt.I[(padding + 1):(padding + l.out)] = out[,8] + out[,16]
 
-    gycr <- pmin(1, ycase_rate * y.ifr * (1 + (fyifr - 1) * g))     ## fyifr: age reduction
+    gycr <- pmin(1, ycase_rate * y.hr * (1 + (fyifr - 1) * g))     ## fyifr: age reduction
     gyifr <- y.ifr * (1 + (fyifr - 1) * g) * (1 - ifrred * gtrimp)  ## ifrred: treatment improvement -> on lowers IFR 
     gyhr <- yhosp_rate * y.hr * (1 + (fyhr - 1) * g)
 
-    gocr <- pmin(1, ocase_rate * o.ifr)
+    gocr <- pmin(1, ocase_rate * o.hr)
     goifr <- o.ifr                         * (1 - ifrred * gtrimp)
     gohr <- ohosp_rate * o.hr
 
@@ -478,9 +478,10 @@ invTransformParams <- function(posterior)
     posterior$o.ld2 = posterior$betao11 / posterior$betao9
     posterior$yo.ld2 = posterior$betayo11 / posterior$betayo9
 
-    posterior$contacts12.y = posterior$betay13 / posterior$betay12
-    posterior$contacts11.y = posterior$betay13 / posterior$betay11
-    posterior$contacts10.y = posterior$betay13 / posterior$betay9
+    posterior$contacts13.y = posterior$betay14 / posterior$betay13
+    posterior$contacts12.y = posterior$betay14 / posterior$betay12
+    posterior$contacts11.y = posterior$betay14 / posterior$betay11
+    posterior$contacts10.y = posterior$betay14 / posterior$betay9
     
     posterior
 }
@@ -568,6 +569,10 @@ calclogp <- function(params, misc) {
     betay13 <- params[61]
     betao13 <- params[62]
     betayo13 <- params[63]
+    t14o <- params[64]
+    betay14 <- params[65]
+    betao14 <- params[66]
+    betayo14 <- params[67]
 
     logPriorP <- 0
 
@@ -582,17 +587,18 @@ calclogp <- function(params, misc) {
     logPriorP <- logPriorP + dnorm(t10o, mean=d10, sd=21, log=T)
     logPriorP <- logPriorP + dnorm(t11o, mean=d11, sd=21, log=T)
     logPriorP <- logPriorP + dnorm(t12o, mean=d12, sd=21, log=T)
-    logPriorP <- logPriorP + dnorm(t13o, mean=(duncertain - 7), sd=21, log=T)
+    logPriorP <- logPriorP + dnorm(t13o, mean=d13, sd=21, log=T)
+    logPriorP <- logPriorP + dnorm(t14o, mean=d14, sd=21, log=T)
     logPriorP <- logPriorP + dnorm(mt.t0o, mean=mt.d0, sd=30, log=T)
     logPriorP <- logPriorP + dlnorm(mt.f, log(mt.f.prior), log(1.08), log=T)
 
     SD <- log(2) ## SD = */ 2
     lSD <- log(1.3) ## SD = */ 1.3
-    llSD <- log(1.2) ## SD = */ 1.2
+    llSD <- log(1.1) ## SD = */ 1.1
 
-    logPriorP <- logPriorP + dlnorm(betay0/betay1, 0, llSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao0/betao1, 0, llSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo0/betayo1, 0, llSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay0/betay1, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao0/betao1, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo0/betayo1, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betay1/betay2, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betao1/betao2, 0, SD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo1/betayo2, 0, SD, log=T)
@@ -619,8 +625,11 @@ calclogp <- function(params, misc) {
     logPriorP <- logPriorP + dlnorm(betao11/betao12, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo11/betayo12, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betay12/betay13, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao12/betao13, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo12/betayo13, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao12/betao13, 0, llSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo12/betayo13, 0, llSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay13/betay14, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao13/betao14, 0, llSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo13/betayo14, 0, llSD, log=T)
    
     logPriorP <- logPriorP + dnorm(HLsd, mean=4, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
@@ -666,7 +675,7 @@ calclogl <- function(params, x) {
         dend <- dstart + length(y.dcasei) - 1
     }
 
-    last <- 21
+    last <- 14
     
     y.loglC <- sum(dnbinom(y.dcasei[1:(d.reliable.cases-1)],
                            mu=pmax(0.1, state$y.casei[dstart:(dstart + d.reliable.cases)]),
@@ -850,7 +859,8 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t11o", "betay11", "betao11", "betayo11",
                     "t12o", "betay12", "betao12", "betayo12",
                     "mt.t0o", "mt.f",
-                    "t13o", "betay13", "betao13", "betayo13")
+                    "t13o", "betay13", "betao13", "betayo13",
+                    "t14o", "betay14", "betao14", "betayo14")
 keyparamnames <- c("betay6", "betao6", "betayo6",
                    "betay7", "betao7", "betayo7",
                    "betay9", "betao9", "betayo9",
@@ -874,14 +884,15 @@ init <- c(3.1, 0.52, 0.50,
           260, 1.9, 0.3, 0.04,
           d12, 1.9, 0.2, 0.04,
           mt.d0, mt.f.prior,
-          d13, 1.9, 0.2, 0.04)
+          d13, 1.9, 0.2, 0.04,
+          d14, 1.9, 0.2, 0.04)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,
                                 1 * gamma, 0.5 * gamma, 0.5 * gamma,
                                 0.1 * gamma, 0.1 * gamma, 0.01 * gamma,
-                                500, 0.5, 9, 14,
-                                3, 0.5, 9, 14,
+                                10, 0.5, 9, 14,
+                                1, 0.5, 9, 14,
                                 0, -20, 2, 2, 0.05, 0.05,
                                 60, 0.5 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 10, 0.5 * gamma, 0.01 * gamma, 0.002 * gamma,
@@ -894,12 +905,13 @@ df_params <- data.frame(name = fit.paramnames,
                                 d11 - 10, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 d12 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 mt.d0 - 50, 1.0,
-                                d13 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma),
+                                d13 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                duncertain - 30, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma),
                         max = c(8 * gamma, 5 * gamma, 5 * gamma,
                                 5 * gamma, 3 * gamma, 3 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
-                                5000, 2, 18, 25,
-                                100, 6, 18, 25,
+                                500, 2, 18, 25,
+                                10, 6, 18, 25,
                                 max(dmort[length(dmort)] / 10, total_deaths_at_lockdown * 10),
                                 10, 9, 9, 1, 1,
                                 100, 3 * gamma, 1 * gamma, 0.5 * gamma,
@@ -910,10 +922,11 @@ df_params <- data.frame(name = fit.paramnames,
                                     3 * gamma, 3 * gamma, 0.5 * gamma,
                                 0.7, 14, 17,
                                 duncertain - 28,
+                                duncertain - 21, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                 duncertain - 14, 3 * gamma, 3 * gamma, 0.5 * gamma,
-                                duncertain - 7, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                 mt.d0 + 50, 2.0,
-                                duncertain, 3 * gamma, 3 * gamma, 0.5 * gamma),
+                                duncertain - 7, 3 * gamma, 3 * gamma, 0.5 * gamma,
+                                d14 + 10, 3 * gamma, 3 * gamma, 0.5 * gamma),
                         init = init,
                         stringsAsFactors=FALSE)
 

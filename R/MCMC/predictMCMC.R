@@ -3,6 +3,7 @@ library(ggplot2)
 library(scales)
 require(mcmcse)
 require(bayestestR)
+library(grid)
 require(gridExtra)
 
 source("settings.R")
@@ -123,11 +124,17 @@ est.beds <- function(state, params) {
 est.icubeds <- function(state, params) {
     beds <- est.beds(state, params)
 
-    icu1 <- c(rep(0, 5), beds[1:(length(beds) - 5)] / 4)
-    t0 <- as.numeric(state$offset + (as.Date("2020/10/01") - dstartdate))
+    ## change to 3 and 3.5 -> -25%
+    ## with a logis ?
     s1 <- seq(1:length(beds))
-    logis <- (1 - 0.3 / (1 + exp(-(s1 - t0) * 0.070)))
-    icu2 <- beds / 4.5 * logis
+    t0 <- as.numeric(state$offset + (as.Date("2020/10/01") - dstartdate))
+    logis1 <- (1 - 0.3 / (1 + exp(-(s1 - t0) * 0.070)))
+    t0 <- as.numeric(state$offset + (as.Date("2021/03/01") - dstartdate))
+    logis2 <- (1 - 0.25 / (1 + exp(-(s1 - t0) * 0.070)))
+    
+    icu1 <- c(rep(0, 5),
+              beds[1:(length(beds) - 5)] / (4 * logis2[6:length(logis2)]))
+    icu2 <- beds / (4.5 * logis2) * logis1
 
     (icu1 + icu2) / 2
 }
@@ -306,7 +313,7 @@ all_plots_age <- function(date_markers) {
         p3b <- p3b + coord_cartesian(ylim = c(0, 900))
         p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 400))
+        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 500))
         p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 3) {
         p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 150))
@@ -415,7 +422,7 @@ all_plots_age <- function(date_markers) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
     } else if (zoom == 2) {
         p6 <- p6 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
-                                   ylim = c(0, 2))
+                                   ylim = c(0, 1.5))
     } else if (zoom == 3) {
         p6 <- p6 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, NA))
@@ -533,8 +540,8 @@ all_plots_age <- function(date_markers) {
         page <- page + coord_cartesian(ylim = c(0, 50))
     }
 
-    grid.arrange(p1, p3b, p3, pbeds, p4, p6, p5, pifr, nrow=2)
-    ##grid.arrange(p1, p3b, pbeds, p6, nrow=2)
+    grid.arrange(p1, p3b, p3, pbeds, p4, p6, p5, pifr, ncol=4,
+                 top=textGrob("Estimated evolution of the Belgian epidemic assuming a 5% reduction in transmission starting at Mar 20", gp=gpar(fontsize=20)))
 }
 
 other_plots_age <- function(date_markers) {
@@ -693,15 +700,16 @@ date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
                            color=c("orange", "red", "orange", "orange", "red", "black"))
 dates <- date_markers
 
-est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, 400, c(0.05, 0.5, 0.95)))
+Range <- 600
+
+est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$Re }, 0, Range, c(0.05, 0.5, 0.95)))
 
 colnames(est.Re) <- c("q5", "q50", "q95")
+wt.est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$wt.Re }, 0, Range, c(0.05, 0.5, 0.95)))
 
-wt.est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$wt.Re }, 0, 400, c(0.05, 0.5, 0.95)))
+mt.est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$mt.Re }, 0, Range, c(0.05, 0.5, 0.95)))
 
-mt.est.Re <- data.frame(quantileData(data_sample, function(state, params) { state$mt.Re }, 0, 400, c(0.05, 0.5, 0.95)))
-
-maxRe <- marginalizeData(data_sample, function(state, params) { state$Re }, 0, 400,
+maxRe <- marginalizeData(data_sample, function(state, params) { state$Re }, 0, Range,
                          function(d) {
                              max(d[(Sys.Date() - dstartdate):(Sys.Date() - dstartdate + 60)])
                          })
@@ -713,17 +721,18 @@ print(unlist(est.Re[Sys.Date() - dstartdate + 1,]))
 print("Re @ d10")
 print(unlist(est.Re[d10,]))
 
-y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
 
-o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
+y.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$y.E + state$y.I }, 0, lockdown_offset + Range, c(0.05, 0.5, 0.95)))
 
-mt.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$mt.E + state$mt.I }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
+o.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$o.E + state$o.I }, 0, lockdown_offset + Range, c(0.05, 0.5, 0.95)))
 
-est.case <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
+mt.est.infected <- data.frame(quantileData(data_sample, function(state, params) { state$mt.E + state$mt.I }, 0, lockdown_offset + Range, c(0.05, 0.5, 0.95)))
 
-est.hosp <- data.frame(quantileData(data_sample, function(state, params) { state$y.hospi + state$o.hospi }, 0, lockdown_offset + 400, c(0.05, 0.5, 0.95)))
+est.case <- data.frame(quantileData(data_sample, function(state, params) { state$y.casei + state$o.casei }, 0, lockdown_offset + Range, c(0.05, 0.5, 0.95)))
 
-sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/12/25"), as.Date("2021/1/1")),
+est.hosp <- data.frame(quantileData(data_sample, function(state, params) { state$y.hospi + state$o.hospi }, 0, lockdown_offset + Range, c(0.05, 0.5, 0.95)))
+
+sapply(c(Sys.Date(), as.Date("2021/4/1"), as.Date("2021/5/1"), as.Date("2021/6/1")),
        function(d) {
            do = as.numeric(d - dstartdate)
            ds = as.character(d)
@@ -741,15 +750,18 @@ sapply(c(Sys.Date(), as.Date("2020/12/1"), as.Date("2020/12/15"), as.Date("2020/
            print(est.case[do,])
        })
 
+## est.hosp$ds <- dstartdate + (1:602 - 1)
+## ss <- subset(est.hosp, ds > as.Date("2021-03-01"))
+## plot(ss$ds, ss$X2)
+
+plot_end_date <- as.Date("2021/6/1")
+zoom <- 0
+
 pdf("current-state-2.pdf", width=25, height=10)
 ##pdf("current-state-2.pdf", width=15, height=10)
-
-plot_end_date <- as.Date("2021/5/1")
-zoom <- 0
 all_plots(dates)
-##zoomStartDate <- as.Date("2020/12/15")
 zoomStartDate <- as.Date("2021/1/1")
-plot_end_date <- as.Date("2021/4/1")
+plot_end_date <- as.Date("2021/5/1")
 zoom <- 2
 ##zoom <- 3
 all_plots(dates)
@@ -760,13 +772,13 @@ all_plots(dates)
 
 dev.off()
 
-plot_end_date <- as.Date("2021/5/1")
+plot_end_date <- as.Date("2021/6/1")
 pdf("other-plots.pdf", width=19, height=6)
 zoom <- 0
 other_plots_age(dates)
 dev.off()
 
-est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, 400, c(0.05, 0.5, 0.95)))
+est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, Range, c(0.05, 0.5, 0.95)))
 colnames(est.died) <- c("q5", "q50", "q95")
 print(est.died[plot_end_date - dstartdate,])
 

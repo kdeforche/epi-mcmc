@@ -45,6 +45,16 @@ o.dcase <- cumsum(o.dcasei)
 dcase <- y.dcase + o.dcase
 dcasei <- y.dcasei + o.dcasei
 
+## data to fit: 7-day moving averages
+ma <- function(x, n = 5){filter(x, rep(1 / n, n), sides = 2)}
+
+y.fcasei <- round(ma(y.dcasei, n=7))
+y.fcasei[1:3] = y.dcasei[1:3]
+y.fcasei <- y.fcasei[1:(length(y.fcasei) - 3)]
+o.fcasei <- round(ma(o.dcasei, n=7))
+o.fcasei[1:3] = o.dcasei[1:3]
+o.fcasei <- o.fcasei[1:(length(o.fcasei) - 3)]
+
 ##
 ## y.dhospw, o.dhospw
 ##
@@ -96,6 +106,7 @@ o.whospi <- round(owhosp$f.hosp)
 
 print(paste("Last week: ", length(whospi$week[whospi$week == max(whospi$week)]), "days"))
 print(y.whospi)
+barplot(y.whospi)
 print(o.whospi)
 
 ws <- whospi$week
@@ -378,7 +389,7 @@ points(x, y.ifr * (1 - 0.5 * g) * (1 - 0.4 * gtrimp))
 
 vacc.d1.wzc = as.numeric(as.Date("2021-01-22") - dstartdate)
 vacc.d2.wzc = as.numeric(as.Date("2021-02-22") - dstartdate)
-vacc.wzc.fifr = 0.603
+vacc.wzc.fifr = 0.553
 vacc.wzc.fhr = 0.93
 
 vacc.o.fifr = rep(1, length(o.ifr))
