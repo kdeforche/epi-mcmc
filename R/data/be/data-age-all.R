@@ -389,7 +389,7 @@ points(x, y.ifr * (1 - 0.5 * g) * (1 - 0.4 * gtrimp))
 
 vacc.d1.wzc = as.numeric(as.Date("2021-01-22") - dstartdate)
 vacc.d2.wzc = as.numeric(as.Date("2021-02-22") - dstartdate)
-vacc.wzc.fifr = 0.553
+vacc.wzc.fifr = 0.503
 vacc.wzc.fhr = 0.93
 
 vacc.o.fifr = rep(1, length(o.ifr))

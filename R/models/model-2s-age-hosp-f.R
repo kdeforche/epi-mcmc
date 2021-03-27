@@ -1,6 +1,6 @@
 library("deSolve")
 
-cppname <- "model-2s-age-d"
+cppname <- "model-2s-age-f"
 
 system(paste("R CMD SHLIB ", cppname, ".cpp", sep=""))
 dyn.load(paste(cppname, ".so", sep=""))
@@ -130,6 +130,14 @@ calculateModel <- function(params, period)
     betay15 <- params[68]
     betao15 <- params[69]
     betayo15 <- params[70]
+
+    betay16 <- betay15 * rlnorm(1, meanlog=log(0.95), sdlog=log(1.02))
+    betao16 <- betao15
+    betayo16 <- betayo15
+
+    betay17 <- betay16 * rlnorm(1, meanlog=log(0.95), sdlog=log(1.02))
+    betao17 <- betao16
+    betayo17 <- betayo16
     
     ## convolution profiles
     y.case_cv_profile = caseProfile(ycase_latency, CLsd)
@@ -192,7 +200,9 @@ calculateModel <- function(params, period)
                mt.t0 = 1E10, mt.f = mt.f,
                t13 = 1E10, betay13 = betay13, betao13 = betao13, betayo13 = betayo13,
                t14 = 1E10, betay14 = betay14, betao14 = betao14, betayo14 = betayo14,
-               t15 = 1E10, betay15 = betay15, betao15 = betao15, betayo15 = betayo15)
+               t15 = 1E10, betay15 = betay15, betao15 = betao15, betayo15 = betayo15,
+               t16 = 1E10, betay16 = betay16, betao16 = betao16, betayo16 = betayo16,
+               t17 = 1E10, betay17 = betay17, betao17 = betao17, betayo17 = betayo17)
 
     Y <- c(Sy = y.N - Initial, wt_E1y = Initial, wt_E2y = 0, wt_Iy = 0, mt_E1y =0, mt_E2y = 0, mt_Iy = 0, Ry = 0,
            So = o.N, wt_E1o = 0, wt_E2o = 0, wt_Io = 0, mt_E1o = 0, mt_E2o = 0, mt_Io = 0, Ro = 0)
@@ -238,7 +248,9 @@ calculateModel <- function(params, period)
         t12 <- data_offset + t12o
         t13 <- data_offset + t13o
         t14 <- data_offset + t14o
-        t15 <- data_offset + duncertain - 7
+        t15 <- data_offset + duncertain - 3
+        t16 <- data_offset + d16
+        t17 <- data_offset + d17
         mt.t0 <- data_offset + mt.t0o
 
         tuncertain <- data_offset + duncertain
@@ -266,7 +278,9 @@ calculateModel <- function(params, period)
                    mt.t0 = mt.t0, mt.f = mt.f,
                    t13 = t13, betay13 = betay13, betao13 = betao13, betayo13 = betayo13,
                    t14 = t14, betay14 = betay14, betao14 = betao14, betayo14 = betayo14,
-                   t15 = t15, betay15 = betay15, betao15 = betao15, betayo15 = betayo15)
+                   t15 = t15, betay15 = betay15, betao15 = betao15, betayo15 = betayo15,
+                   t16 = t16, betay16 = betay16, betao16 = betao16, betayo16 = betayo16,
+                   t17 = t17, betay17 = betay17, betao17 = betao17, betayo17 = betayo17)
 
         times <- (padding + 1):(padding + period)
         
@@ -638,7 +652,7 @@ calclogp <- function(params, misc) {
     logPriorP <- logPriorP + dlnorm(betay13/betay14, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betao13/betao14, 0, llSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo13/betayo14, 0, llSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betay14/betay15, 0, llSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay14/betay15, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betao14/betao15, 0, llSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo14/betayo15, 0, llSD, log=T)
    

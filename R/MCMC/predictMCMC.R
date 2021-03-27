@@ -541,7 +541,7 @@ all_plots_age <- function(date_markers) {
     }
 
     grid.arrange(p1, p3b, p3, pbeds, p4, p6, p5, pifr, ncol=4,
-                 top=textGrob("Estimated evolution of the Belgian epidemic assuming a 5% reduction in transmission starting at Mar 20", gp=gpar(fontsize=20)))
+                 top=textGrob(title, gp=gpar(fontsize=20)))
 }
 
 other_plots_age <- function(date_markers) {

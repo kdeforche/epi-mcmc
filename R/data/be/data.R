@@ -85,6 +85,8 @@ d12 <- as.numeric(as.Date("2021/1/1") - dstartdate)
 d13 <- as.numeric(as.Date("2021/02/1") - dstartdate)
 d14 <- as.numeric(as.Date("2021/03/1") - dstartdate)
 d15 <- as.numeric(as.Date("2021/03/20") - dstartdate)
+d16 <- as.numeric(as.Date("2021/03/20") - dstartdate)
+d17 <- as.numeric(as.Date("2021/03/27") - dstartdate)
 dls2 <- as.Date("2020/11/1")
 dle2 <- as.Date("2021/2/15")
 
@@ -99,7 +101,7 @@ d.symp.cases <- as.numeric(as.Date("2020/10/21") - dstartdate)
 d.all.cases <- as.numeric(as.Date("2020/11/23") - dstartdate) + 21
 y.symp.cases.factor <- 0.5
 o.symp.cases.factor <- 0.9
-duncertain <- as.numeric(Sys.Date() - 12 - dstartdate)
+duncertain <- as.numeric(Sys.Date() - 15 - dstartdate)
 
 trans.1 <- 14
 trans.2 <- 14
