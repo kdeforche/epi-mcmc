@@ -636,11 +636,11 @@ calclogp <- function(params, misc) {
     logPriorP <- logPriorP + dlnorm(betao12/betao13, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo12/betayo13, 0, lSD, log=T)
     logPriorP <- logPriorP + dlnorm(betay13/betay14, 0, lSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao13/betao14, 0, llSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo13/betayo14, 0, llSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betay14/betay15, 0, llSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betao14/betao15, 0, llSD, log=T)
-    logPriorP <- logPriorP + dlnorm(betayo14/betayo15, 0, llSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao13/betao14, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo13/betayo14, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay14/betay15, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betao14/betao15, 0, lSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betayo14/betayo15, 0, lSD, log=T)
    
     logPriorP <- logPriorP + dnorm(HLsd, mean=4, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
@@ -735,29 +735,29 @@ calclogl <- function(params, x) {
                     size=whosp_nbinom_size, log=T))
 
     dstart <- state$offset
-    dend <- state$offset + length(dhospi) - 1
+    dend <- state$offset + length(fhospi) - 1
 
     if (dend > length(state$y.hospi)) {
         ##print("=========================== Increase FitTotalPeriod ===================")
         dend <- length(state$y.hospi)
-        dstart <- dend - length(dhospi) + 1
+        dstart <- dend - length(fhospi) + 1
     }
 
     if (dstart < 1) {
         ##print("=========================== Increase Padding ? ===================")
         dstart <- 1
-        dend <- dstart + length(dhospi) - 1
+        dend <- dstart + length(fhospi) - 1
     }
     
-    loglH.2 <- sum(dnbinom(dhospi[1:(d.reliable.hosp-1)],
+    loglH.2 <- sum(dnbinom(fhospi[1:(d.reliable.hosp-1)],
                            mu=pmax(0.1, (state$y.hospi + state$o.hospi)
                                    [dstart:(dstart + d.reliable.hosp)]),
                            size=hosp_nbinom_size1, log=T)) +
-        sum(dnbinom(dhospi[d.reliable.hosp:length(dhosp)],
+        sum(dnbinom(fhospi[d.reliable.hosp:length(fhospi)],
                     mu=pmax(0.1, (state$y.hospi + state$o.hospi)
                             [(dstart + d.reliable.hosp + 1):dend]),
                     size=hosp_nbinom_size2, log=T)) +
-        sum(dnbinom(dhospi[(length(dhosp) - last):length(dhosp)],
+        sum(dnbinom(fhospi[(length(fhospi) - last):length(fhospi)],
                     mu=pmax(0.1, (state$y.hospi + state$o.hospi)[(dend - last):dend]),
                     size=hosp_nbinom_size2 * f_last7, log=T))
 

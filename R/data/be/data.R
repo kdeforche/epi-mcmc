@@ -21,8 +21,15 @@ dhospi <- c(3, 12, 47, 50, 50, dhospi)
 dbeds <- c(rep(NA, 5), dbeds)
 dicu <- c(rep(NA, 5), dicu)
 
-## remove latest data point, seems to be an incomplete day
-## dhospi <- dhospi[1:(length(dhospi) - 1)]
+## data to fit: 7-day moving averages
+ma <- function(x, n = 5){filter(x, rep(1 / n, n), sides = 2)}
+
+fhospi <- round(ma(dhospi, n=7))
+fhospi[1:3] = dhospi[1:3]
+fhospi <- fhospi[1:(length(fhospi) - 3)]
+
+print(dhospi)
+print(fhospi)
 
 dhosp <- cumsum(dhospi)
 

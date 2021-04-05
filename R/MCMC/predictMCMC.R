@@ -755,6 +755,21 @@ sapply(c(Sys.Date(), as.Date("2021/4/1"), as.Date("2021/5/1"), as.Date("2021/6/1
 ## plot(ss$ds, ss$X2)
 
 plot_end_date <- as.Date("2021/6/1")
+
+est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, Range, c(0.05, 0.5, 0.95)))
+colnames(est.died) <- c("q5", "q50", "q95")
+print(est.died[plot_end_date - dstartdate,])
+
+dmortn <- dmort[length(dmort)]
+
+print(paste("Deaths at date, ", plot_end_date))
+print(est.died[plot_end_date - dstartdate,] - dmortn)
+
+est.totalhosp <- data.frame(quantileData(data_sample, function(state, params) { cumsum(state$y.hosp + state$o.hosp) }, 0, lockdown_offset + Range, c(0.05, 0.5, 0.95)))
+
+print(paste("Total hospitalized at date, ", plot_end_date))
+print(est.totalhosp[plot_end_date - dstartdate,])
+
 zoom <- 0
 
 pdf("current-state-2.pdf", width=25, height=10)
@@ -776,17 +791,6 @@ plot_end_date <- as.Date("2021/6/1")
 pdf("other-plots.pdf", width=19, height=6)
 zoom <- 0
 other_plots_age(dates)
-dev.off()
-
-est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, Range, c(0.05, 0.5, 0.95)))
-colnames(est.died) <- c("q5", "q50", "q95")
-print(est.died[plot_end_date - dstartdate,])
-
-dmortn <- dmort[length(dmort)]
-
-print(paste("Deaths at date, ", plot_end_date))
-print(est.died[plot_end_date - dstartdate,] - dmortn)
-
 dev.off()
 
 ## Population group Re values

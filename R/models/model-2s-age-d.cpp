@@ -83,8 +83,8 @@ const int wzc_vacc_start = 306; // 2021-01-22
 const int wzc_vacc_end = 336;   // 2021-02-22
 const double wzc_vacc_rate = 8387.1;
 
-const int o_vacc_start = 386;   // 2021-03-22
-const int o_vacc_end = 417;     // 2021-04-22
+const int o_vacc_start = 386;   // 2021-03-31
+const int o_vacc_end = 417;     // 2021-05-01
 const double o_vacc_rate = 75048.39;
 
 #define Sy y[0]
