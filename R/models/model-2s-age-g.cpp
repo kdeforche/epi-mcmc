@@ -1,7 +1,7 @@
 #include <iostream>
 #include <R.h>
 
-static const int PARAM_N = 82;
+static const int PARAM_N = 74;
 static double parms[PARAM_N];
 
 #define Ny         parms[0]
@@ -60,13 +60,13 @@ static double parms[PARAM_N];
 #define betay11    parms[53]
 #define betao11    parms[54]
 #define betayo11   parms[55]
-#define t12        parms[56]      // linear change point
+#define t12        parms[56]      // step change point
 #define betay12    parms[57]
 #define betao12    parms[58]
 #define betayo12   parms[59]
 #define mt_t0      parms[60]
 #define mt_f       parms[61]
-#define t13        parms[62]      // linear change point
+#define t13        parms[62]      // step change point
 #define betay13    parms[63]
 #define betao13    parms[64]
 #define betayo13   parms[65]
@@ -78,14 +78,6 @@ static double parms[PARAM_N];
 #define betay15    parms[71]
 #define betao15    parms[72]
 #define betayo15   parms[73]
-#define t16        parms[74]      // step change point
-#define betay16    parms[75]
-#define betao16    parms[76]
-#define betayo16   parms[77]
-#define t17        parms[78]      // step change point
-#define betay17    parms[79]
-#define betao17    parms[80]
-#define betayo17   parms[81]
 
 const int wzc_vacc_start = 306; // 2021-01-22
 const int wzc_vacc_end = 336;   // 2021-02-22
@@ -126,23 +118,18 @@ static double interpolate(double t,
 			  double vt0, double vt1, double vt2, double vt3,
 			  double vt4, double vt5, double vt6, double vt7,
 			  double vt8, double vt9, double vt10, double vt11,
-			  double vt12, double vt13, double vt14, double vt15,
-			  double vt16, double vt17)
+			  double vt12, double vt13, double vt14, double vt15)
 {
-  if (t > t17)
-    return vt17;
-  else if (t > t16)
-    return vt16;
-  else if (t > t15)
+  if (t > t15)
     return vt15;
   else if (t > t14)
     return vt14;
   else if (t > t13)
     return vt13;
   else if (t > t12)
-    return vt12 + (t - t12) / (t13 - t12) * (vt13 - vt12);
+    return vt12;
   else if (t > t11)
-    return vt11 + (t - t11) / (t12 - t11) * (vt12 - vt11);
+    return vt11;
   else if (t > t10)
     return vt10 + (t - t10) / (t11 - t10) * (vt11 - vt10);
   else if (t > t9)
@@ -201,17 +188,17 @@ extern "C" {
 				      betay0, betay1, betay2, betay3, betay4,
 				      betay5, betay6, betay7, betay8, betay9,
 				      betay10, betay11, betay12, betay13,
-				      betay14, betay15, betay16, betay17);
+				      betay14, betay15);
     const double mbetao = interpolate(*t,
 				      betao0, betao1, betao2, betao3, betao4,
 				      betao5, betao6, betao7, betao8, betao9,
 				      betao10, betao11, betao12, betao13,
-				      betao14, betao15, betao16, betao17);
+				      betao14, betao15);
     const double mbetayo = interpolate(*t,
 				       betayo0, betayo1, betayo2, betayo3, betayo4,
 				       betayo5, betayo6, betayo7, betayo8, betayo9,
 				       betayo10, betayo11, betayo12, betayo13,
-				       betayo14, betayo15, betayo16, betayo17);
+				       betayo14, betayo15);
 
     const double betay = uncertain(*t, mbetay);
     const double betao = uncertain(*t, mbetao);

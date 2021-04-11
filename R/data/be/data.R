@@ -88,12 +88,12 @@ d8 <- as.numeric(as.Date("2020/10/16") - dstartdate)
 d9 <- as.numeric(as.Date("2020/10/19") - dstartdate)
 d10 <- as.numeric(as.Date("2020/11/15") - dstartdate)
 d11 <- as.numeric(as.Date("2020/11/29") - dstartdate)
-d12 <- as.numeric(as.Date("2021/1/1") - dstartdate)
+d12 <- as.numeric(as.Date("2021/01/20") - dstartdate)
 d13 <- as.numeric(as.Date("2021/02/1") - dstartdate)
-d14 <- as.numeric(as.Date("2021/03/1") - dstartdate)
+d14 <- as.numeric(as.Date("2021/03/01") - dstartdate)
 d15 <- as.numeric(as.Date("2021/03/20") - dstartdate)
-d16 <- as.numeric(as.Date("2021/03/20") - dstartdate)
-d17 <- as.numeric(as.Date("2021/03/27") - dstartdate)
+d16 <- as.numeric(as.Date("2021/03/27") - dstartdate)
+##d17 <- as.numeric(as.Date("2021/03/27") - dstartdate)
 dls2 <- as.Date("2020/11/1")
 dle2 <- as.Date("2021/2/15")
 
@@ -110,6 +110,8 @@ y.symp.cases.factor <- 0.5
 o.symp.cases.factor <- 0.9
 duncertain <- as.numeric(Sys.Date() - 15 - dstartdate)
 
+d.easter.cases <- as.numeric(as.Date("2021/03/27") - dstartdate)
+
 trans.1 <- 14
 trans.2 <- 14
 symp.profile <- rep(y.symp.cases.factor, d.all.cases - d.symp.cases)
@@ -118,3 +120,4 @@ symp.profile[(length(symp.profile) - trans.2):length(symp.profile)] = seq(y.symp
 
 y.symp.profile = symp.profile
 o.symp.profile = 1 - (1 - y.symp.profile) * (1 - o.symp.cases.factor) / (1 - y.symp.cases.factor)
+

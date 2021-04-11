@@ -25,6 +25,8 @@ source("settings.R")
 
 print(fit.paramnames)
 
+print(init < df_params$max)
+
 print(c("initial logl: ", calcloglMCMC(init), " logl prior: ", calclogp(transformParams(init))))
 
 cl <- NULL

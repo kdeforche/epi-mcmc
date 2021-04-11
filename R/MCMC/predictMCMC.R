@@ -133,8 +133,8 @@ est.icubeds <- function(state, params) {
     logis2 <- (1 - 0.25 / (1 + exp(-(s1 - t0) * 0.070)))
     
     icu1 <- c(rep(0, 5),
-              beds[1:(length(beds) - 5)] / (4 * logis2[6:length(logis2)]))
-    icu2 <- beds / (4.5 * logis2) * logis1
+              beds[1:(length(beds) - 5)] / (3.75 * logis2[6:length(logis2)]))
+    icu2 <- beds / (4.25 * logis2) * logis1
 
     (icu1 + icu2) / 2
 }
@@ -216,7 +216,7 @@ all_plots_age <- function(date_markers) {
         p1 <- p1 + coord_cartesian(ylim = c(0, 200))
         p1 <- p1 + theme(legend.position = c(0.8, 0.85))
     } else if (zoom == 2) {
-        p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 100))
+        p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 75))
         p1 <- p1 + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 3) {
         p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 50))
@@ -313,7 +313,7 @@ all_plots_age <- function(date_markers) {
         p3b <- p3b + coord_cartesian(ylim = c(0, 900))
         p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 500))
+        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 400))
         p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 3) {
         p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 150))
@@ -521,7 +521,9 @@ all_plots_age <- function(date_markers) {
         annotate("text", x=labelDate, y=2000, label = "Phase 2B",
                  vjust = -0.3, color=colicu)
 
-    if (zoom == 2) {
+    if (zoom == 0) {
+        pbeds <- pbeds + coord_cartesian(ylim = c(0, 10000))
+    } else if (zoom == 2) {
         pifr <- pifr + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                        ylim = c(0, 0.5))
         page <- page + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
