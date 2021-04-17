@@ -345,7 +345,7 @@ calculateModel <- function(params, period)
             state$y.casei[t.symp:min(t.all, length(state$y.casei))] * y.symp.profile
 
         t.easter.cases <- data_offset + d.easter.cases
-        state$y.casei[t.easter.cases:length(state$y.casei)] = f.easter.cases * state$y.casei[t.easter.cases:length(state$y.casei)]
+        state$y.casei[t.easter.cases:(min(t.easter.cases + 21,length(state$y.casei)))] = f.easter.cases * state$y.casei[t.easter.cases:(min(t.easter.cases + 21,length(state$y.casei)))]
     } else {
         state$y.casei[(padding + 1):(padding + period)] = s2i * gycr[1]
     }

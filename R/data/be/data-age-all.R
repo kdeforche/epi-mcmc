@@ -265,6 +265,8 @@ mort.june14 <- aggregate(mortaggr.3$x, by=list(group=mortaggr.3$group), FUN=sum,
 g.hr <- hosppct.6 / (mort.june14$x / g.ifr)
 g.hr / g.ifr
 
+print(g.hr * 100)
+
 require(ggplot2)
 require(reshape2)
 
