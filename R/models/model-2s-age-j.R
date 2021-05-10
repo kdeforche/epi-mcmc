@@ -789,10 +789,10 @@ calclogl <- function(params, x) {
 
     y.loglD <- sum(dnbinom(y.dmorti,
                            mu=pmax(0.001, state$y.deadi[dstart:dend]),
-                           size=mort_nbinom_size * 2, log=T)) +
+                           size=mort_nbinom_size, log=T)) +
                sum(dnbinom(y.dmorti[(length(y.dmorti) - last):length(y.dmorti)],
                            mu=pmax(0.001, state$y.deadi[(dend - last):dend]),
-                           size=mort_nbinom_size * 2 * f_last7, log=T))
+                           size=mort_nbinom_size * f_last7, log=T))
 
     o.loglD <- sum(dnbinom(o.dmorti,
                            mu=pmax(0.001, state$o.deadi[dstart:dend]),
@@ -878,7 +878,7 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t13o", "betay13", "betao13", "betayo13",
                     "t14o", "betay14", "betao14", "betayo14",
                             "betay15", "betao15", "betayo15",
-                             "betay16", "betao16", "betayo16",
+                    "t16o", "betay16", "betao16", "betayo16",
                     "f.easter")
 keyparamnames <- c("betay6", "betao6", "betayo6",
                    "betay7", "betao7", "betayo7",
@@ -906,7 +906,7 @@ init <- c(3.1, 0.52, 0.50,
           d13, 1.9, 0.2, 0.04,
           d14, 1.9, 0.2, 0.04,
                1.9, 0.2, 0.04,
-               1.9, 0.2, 0.04,
+          d16, 1.9, 0.2, 0.04,
           1)
 
 df_params <- data.frame(name = fit.paramnames,
@@ -930,7 +930,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 d13 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 d14 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                           0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                          0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                d16 - 2,  0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 0.5),
                         max = c(8 * gamma, 5 * gamma, 5 * gamma,
                                 5 * gamma, 3 * gamma, 3 * gamma,
@@ -953,7 +953,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 d13 + 30, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                 d14 + 30, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                           3 * gamma, 3 * gamma, 0.5 * gamma,
-                                          3 * gamma, 3 * gamma, 0.5 * gamma,
+                                duncertain, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                 1.5),
                         init = init,
                         stringsAsFactors=FALSE)

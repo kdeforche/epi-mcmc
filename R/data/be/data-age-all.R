@@ -101,11 +101,14 @@ whosp_aggr1$f.hosp = whosp_aggr1$frac * whosp_aggr1$hosp
 ywhosp <- subset(whosp_aggr1, y==TRUE)
 owhosp <- subset(whosp_aggr1, y==FALSE)
 
-y.whospi <- round(ywhosp$f.hosp)
-o.whospi <- round(owhosp$f.hosp)
+hosp60frac <- 0.15
+
+y.whospi <- round(ywhosp$f.hosp + hosp60frac * owhosp$f.hosp)
+o.whospi <- round(owhosp$f.hosp - hosp60frac * owhosp$f.hosp)
 
 print(paste("Last week: ", length(whospi$week[whospi$week == max(whospi$week)]), "days"))
 print(y.whospi)
+print(ywhosp$frac)
 barplot(y.whospi)
 print(o.whospi)
 

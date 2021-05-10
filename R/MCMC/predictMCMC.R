@@ -178,6 +178,8 @@ sourceR <- function(file) {
 
 sourceR("lib/libMCMC.R")
 
+## Make this for vacation periods
+
 annotateF <- function(plot) {
     plot
     ##+
@@ -352,31 +354,32 @@ all_plots_age <- function(date_markers) {
         p4 <- p4 + theme(legend.position = c(0.8, 0.75))
     }
 
-    p4 <- addExtraPlotQ2(p4, data_sample, dateRange,
-                         function(state, params) {
-                             d <- (state$mt.E + state$mt.I)/N * 100
-                             ifelse(d > 0.001, d, NA)
-                         },
-                         "#581845")
+    ## p4 <- addExtraPlotQ2(p4, data_sample, dateRange,
+    ##                      function(state, params) {
+    ##                          d <- (state$mt.E + state$mt.I)/N * 100
+    ##                          ifelse(d > 0.001, d, NA)
+    ##                      },
+    ##                      "#581845")
 
-    p4 <- addExtraPlotQ2(p4, data_sample, dateRange,
-                         function(state, params) {
-                             (state$y.E + state$y.I + state$o.E + state$o.I - state$mt.E - state$mt.I)/N * 100
-                         },
-                         "#185815")
+    ## p4 <- addExtraPlotQ2(p4, data_sample, dateRange,
+    ##                      function(state, params) {
+    ##                          (state$y.E + state$y.I + state$o.E + state$o.I - state$mt.E - state$mt.I)/N * 100
+    ##                      },
+    ##                      "#185815")
 
-    p4 <- p4 + guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
-                      colour=guide_legend(keywidth = 3, keyheight = 1))
+    ## p4 <- p4 + guides(linetype=guide_legend(keywidth = 3, keyheight = 1),
+    ##                   colour=guide_legend(keywidth = 3, keyheight = 1))
 
     ## Add y/o curves
     p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$y.E + state$y.I)/y.N * 100 }, "#A67514", "dashed")
     p4 <- addExtraPlot(p4, data_sample, dateRange, function(state, params) { (state$o.E + state$o.I)/o.N * 100 }, "#A67514", "dotted")
 
-    p4 <- p4 + scale_colour_manual(name = 'Strain',
-                                   values=c("#A67514"="#A67514", "#581845"="#581845", "#185815"="#185815"),
-                                   labels=c("All", "B.1.1.7", "Other"),
-                                   breaks=c("#A67514", "#581845", "#185815")) +
-        scale_linetype_manual(name = 'Age group',
+    ## p4 <- p4 + scale_colour_manual(name = 'Strain',
+    ##                                values=c("#A67514"="#A67514", "#581845"="#581845", "#185815"="#185815"),
+    ##                                labels=c("All", "B.1.1.7", "Other"),
+    ##                                breaks=c("#A67514", "#581845", "#185815"))
+    p4 <- p4 + scale_colour_manual(values = c("#A67514"), guide=FALSE)    
+    p4 <- p4 + scale_linetype_manual(name = 'Age group',
                               values=c('solid'='solid','dashed'='dashed','dotted'='dotted'),
                               labels = ageGroupLabels)
     
@@ -407,16 +410,18 @@ all_plots_age <- function(date_markers) {
                            c("Re", "Effective reproduction number (Re)"), date_markers, NULL,
                            annotateF)
 
-    p6 <- addExtraPlotQ2(p6, data_sample, dateRange,
-                         function(state, params) { ifelse(state$mt.Re == 0, NA, state$mt.Re) }, "#581845")
+    p6 <- p6 + scale_colour_manual(values = c("#33FFFF"), guide=FALSE)
 
-    p6 <- addExtraPlotQ2(p6, data_sample, dateRange,
-                         function(state, params) { state$wt.Re }, "#185815")
+    ## p6 <- addExtraPlotQ2(p6, data_sample, dateRange,
+    ##                      function(state, params) { ifelse(state$mt.Re == 0, NA, state$mt.Re) }, "#581845")
 
-    p6 <- p6 + scale_colour_manual(name = 'Strain',
-                                   values=c("#185815"="#185815", "#33FFFF"="33FFFF", "#581845"="#581845"),
-                                   labels=c("All", "B.1.1.7", "Other"),
-                                   breaks=c("#33FFFF", "#581845", "#185815"))
+    ## p6 <- addExtraPlotQ2(p6, data_sample, dateRange,
+    ##                      function(state, params) { state$wt.Re }, "#185815")
+
+    ## p6 <- p6 + scale_colour_manual(name = 'Strain',
+    ##                                values=c("#185815"="#185815", "#33FFFF"="33FFFF", "#581845"="#581845"),
+    ##                                labels=c("All", "B.1.1.7", "Other"),
+    ##                                breaks=c("#33FFFF", "#581845", "#185815"))
     
     if (zoom == 1) {
         p6 <- p6 + coord_cartesian(ylim = c(0, 2))
@@ -734,7 +739,7 @@ est.case <- data.frame(quantileData(data_sample, function(state, params) { state
 
 est.hosp <- data.frame(quantileData(data_sample, function(state, params) { state$y.hospi + state$o.hospi }, 0, lockdown_offset + Range, c(0.05, 0.5, 0.95)))
 
-sapply(c(Sys.Date(), as.Date("2021/4/1"), as.Date("2021/5/1"), as.Date("2021/6/1")),
+sapply(c(Sys.Date(), as.Date("2021/5/1"), as.Date("2021/6/1"), as.Date("2021/7/1")),
        function(d) {
            do = as.numeric(d - dstartdate)
            ds = as.character(d)
@@ -756,8 +761,6 @@ sapply(c(Sys.Date(), as.Date("2021/4/1"), as.Date("2021/5/1"), as.Date("2021/6/1
 ## ss <- subset(est.hosp, ds > as.Date("2021-03-01"))
 ## plot(ss$ds, ss$X2)
 
-plot_end_date <- as.Date("2021/6/1")
-
 est.died <- data.frame(quantileData(data_sample, function(state, params) { state$y.died + state$o.died }, 0, Range, c(0.05, 0.5, 0.95)))
 colnames(est.died) <- c("q5", "q50", "q95")
 print(est.died[plot_end_date - dstartdate,])
@@ -777,19 +780,13 @@ zoom <- 0
 pdf("current-state-2.pdf", width=25, height=10)
 ##pdf("current-state-2.pdf", width=15, height=10)
 all_plots(dates)
-zoomStartDate <- as.Date("2021/1/1")
-plot_end_date <- as.Date("2021/5/1")
+zoomStartDate <- as.Date("2021/2/1")
 zoom <- 2
 ##zoom <- 3
 all_plots(dates)
 
-## zoom <- 0
-## plot_end_date <- Sys.Date()
-## all_plots(dates)
-
 dev.off()
 
-plot_end_date <- as.Date("2021/6/1")
 pdf("other-plots.pdf", width=19, height=6)
 zoom <- 0
 other_plots_age(dates)
@@ -797,7 +794,6 @@ dev.off()
 
 ## Population group Re values
 
-plot_end_date <- as.Date("2021/4/1")
 dateRange <- c(plot_start_date, plot_end_date)
 fair_cols <- c("#38170B","#BF1B0B", "#FFC465", "#66ADE5", "#252A52")
 

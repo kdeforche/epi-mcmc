@@ -1,6 +1,6 @@
 library("deSolve")
 
-cppname <- "model-2s-age-f"
+cppname <- "model-2s-age-i"
 
 system(paste("R CMD SHLIB ", cppname, ".cpp", sep=""))
 dyn.load(paste(cppname, ".so", sep=""))
@@ -136,10 +136,14 @@ calculateModel <- function(params, period)
     betayo16 <- params[74]
     f.easter.cases <- params[75]
 
-    betay17 <- betay16
-    betao17 <- betao16
-    betayo17 <- betayo16
-    
+    betay17 <- betay16 * rlnorm(1, meanlog=log(1.15), sdlog=log(1.075)) ## 8 mei
+    betao17 <- betao16 * rlnorm(1, meanlog=log(1.15), sdlog=log(1.075)) ## 8 mei
+    betayo17 <- betayo16 * rlnorm(1, meanlog=log(1.15), sdlog=log(1.075)) ## 8 mei
+
+    betay18 <- betay17 * rlnorm(1, meanlog=log(1.3), sdlog=log(1.15)) ## horeca
+    betao18 <- betao17 * rlnorm(1, meanlog=log(1.3), sdlog=log(1.15)) ## horeca
+    betayo18 <- betayo17 * rlnorm(1, meanlog=log(1.3), sdlog=log(1.15)) ## horeca
+
     ## convolution profiles
     y.case_cv_profile = caseProfile(ycase_latency, CLsd)
     o.case_cv_profile = caseProfile(ocase_latency, CLsd)
@@ -203,7 +207,8 @@ calculateModel <- function(params, period)
                t14 = 1E10, betay14 = betay14, betao14 = betao14, betayo14 = betayo14,
                t15 = 1E10, betay15 = betay15, betao15 = betao15, betayo15 = betayo15,
                t16 = 1E10, betay16 = betay16, betao16 = betao16, betayo16 = betayo16,
-               t17 = 1E10, betay17 = betay17, betao17 = betao17, betayo17 = betayo17)
+               t17 = 1E10, betay17 = betay17, betao17 = betao17, betayo17 = betayo17,
+               t18 = 1E10, betay18 = betay18, betao18 = betao18, betayo18 = betayo18)
 
     Y <- c(Sy = y.N - Initial, wt_E1y = Initial, wt_E2y = 0, wt_Iy = 0, mt_E1y =0, mt_E2y = 0, mt_Iy = 0, Ry = 0,
            So = o.N, wt_E1o = 0, wt_E2o = 0, wt_Io = 0, mt_E1o = 0, mt_E2o = 0, mt_Io = 0, Ro = 0)
@@ -251,7 +256,8 @@ calculateModel <- function(params, period)
         t14 <- data_offset + t14o
         t15 <- data_offset + d15
         t16 <- data_offset + t16o
-        t17 <- 1E1000
+        t17 <- data_offset + d17
+        t18 <- data_offset + d18
         mt.t0 <- data_offset + mt.t0o
 
         tuncertain <- data_offset + duncertain
@@ -281,7 +287,8 @@ calculateModel <- function(params, period)
                    t14 = t14, betay14 = betay14, betao14 = betao14, betayo14 = betayo14,
                    t15 = t15, betay15 = betay15, betao15 = betao15, betayo15 = betayo15,
                    t16 = t16, betay16 = betay16, betao16 = betao16, betayo16 = betayo16,
-                   t17 = t17, betay17 = betay17, betao17 = betao17, betayo17 = betayo17)
+                   t17 = t17, betay17 = betay17, betao17 = betao17, betayo17 = betayo17,
+                   t18 = t18, betay18 = betay18, betao18 = betao18, betayo18 = betayo18)
 
         times <- (padding + 1):(padding + period)
         
@@ -597,7 +604,6 @@ calclogp <- function(params, misc) {
     logPriorP <- logPriorP + dnorm(t12o, mean=d12, sd=21, log=T)
     logPriorP <- logPriorP + dnorm(t13o, mean=d13, sd=21, log=T)
     logPriorP <- logPriorP + dnorm(t14o, mean=d14, sd=21, log=T)
-    logPriorP <- logPriorP + dnorm(t16o, mean=d16, sd=14, log=T)
     logPriorP <- logPriorP + dnorm(mt.t0o, mean=mt.d0, sd=30, log=T)
     logPriorP <- logPriorP + dlnorm(mt.f, log(mt.f.prior), log(1.08), log=T)
     logPriorP <- logPriorP + dlnorm(f.easter.cases, log(0.85), log(1.1), log=T)
@@ -878,7 +884,7 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t13o", "betay13", "betao13", "betayo13",
                     "t14o", "betay14", "betao14", "betayo14",
                             "betay15", "betao15", "betayo15",
-                             "betay16", "betao16", "betayo16",
+                    "t16o", "betay16", "betao16", "betayo16",
                     "f.easter")
 keyparamnames <- c("betay6", "betao6", "betayo6",
                    "betay7", "betao7", "betayo7",
@@ -906,7 +912,7 @@ init <- c(3.1, 0.52, 0.50,
           d13, 1.9, 0.2, 0.04,
           d14, 1.9, 0.2, 0.04,
                1.9, 0.2, 0.04,
-               1.9, 0.2, 0.04,
+          d16, 1.9, 0.2, 0.04,
           1)
 
 df_params <- data.frame(name = fit.paramnames,
@@ -930,7 +936,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 d13 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 d14 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                           0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                          0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                d16 - 2, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 0.5),
                         max = c(8 * gamma, 5 * gamma, 5 * gamma,
                                 5 * gamma, 3 * gamma, 3 * gamma,
@@ -953,7 +959,7 @@ df_params <- data.frame(name = fit.paramnames,
                                 d13 + 30, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                 d14 + 30, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                           3 * gamma, 3 * gamma, 0.5 * gamma,
-                                          3 * gamma, 3 * gamma, 0.5 * gamma,
+                                duncertain, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                 1.5),
                         init = init,
                         stringsAsFactors=FALSE)
