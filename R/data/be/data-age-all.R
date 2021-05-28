@@ -85,10 +85,10 @@ if (lwc < 4) {
 print(paste("Hosp week statistics :", max(whosp_age_aggr$Week), "of", max(whospi$week)))
 
 while (max(whosp_age_aggr$Week) < max(whospi$week)) {
-    w <- max(whosp_age_aggr$Week) + 1
-    toadd <- whosp_age_aggr[whosp_age_aggr$Week==max(whosp_age_aggr$Week),]
-    toadd$Week = toadd$Week+1
-    whosp_age_aggr = rbind(whosp_age_aggr, toadd)
+     w <- max(whosp_age_aggr$Week) + 1
+     toadd <- whosp_age_aggr[whosp_age_aggr$Week==max(whosp_age_aggr$Week),]
+     toadd$Week = toadd$Week+1
+     whosp_age_aggr = rbind(whosp_age_aggr, toadd)
 }
 
 whosp_aggr = aggregate(whospi$count, by=list(week=whospi$week), FUN=sum, drop=FALSE)

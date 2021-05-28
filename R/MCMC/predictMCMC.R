@@ -218,8 +218,8 @@ all_plots_age <- function(date_markers) {
         p1 <- p1 + coord_cartesian(ylim = c(0, 200))
         p1 <- p1 + theme(legend.position = c(0.8, 0.85))
     } else if (zoom == 2) {
-        p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 75))
-        p1 <- p1 + theme(legend.position = c(0.2, 0.85))
+        p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 50))
+        p1 <- p1 + theme(legend.position = c(0.8, 0.85))
     } else if (zoom == 3) {
         p1 <- p1 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 50))
         p1 <- p1 + theme(legend.position = c(0.8, 0.85))
@@ -287,8 +287,8 @@ all_plots_age <- function(date_markers) {
         p3 <- p3 + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 2) {
         p3 <- p3 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
-                                   ylim = c(0, 7500))
-        p3 <- p3 + theme(legend.position = c(0.2, 0.85))
+                                   ylim = c(0, 5000))
+        p3 <- p3 + theme(legend.position = c(0.8, 0.85))
     } else if (zoom == 3) {
         p3 <- p3 + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                    ylim = c(0, 5000))
@@ -315,8 +315,8 @@ all_plots_age <- function(date_markers) {
         p3b <- p3b + coord_cartesian(ylim = c(0, 900))
         p3b <- p3b + theme(legend.position = c(0.2, 0.85))
     } else if (zoom == 2) {
-        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 400))
-        p3b <- p3b + theme(legend.position = c(0.2, 0.85))
+        p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 300))
+        p3b <- p3b + theme(legend.position = c(0.8, 0.85))
     } else if (zoom == 3) {
         p3b <- p3b + coord_cartesian(xlim = c(zoomStartDate, plot_end_date), ylim = c(0, 150))
         p3b <- p3b + theme(legend.position = c(0.8, 0.85))
@@ -530,11 +530,11 @@ all_plots_age <- function(date_markers) {
         pbeds <- pbeds + coord_cartesian(ylim = c(0, 10000))
     } else if (zoom == 2) {
         pifr <- pifr + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
-                                       ylim = c(0, 0.5))
+                                       ylim = c(0, 0.3))
         page <- page + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                        ylim = c(0, 50))
         pbeds <- pbeds + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
-                                         ylim = c(0, 4000))
+                                         ylim = c(0, 3000))
     } else if (zoom == 3) {
         pifr <- pifr + coord_cartesian(xlim = c(zoomStartDate, plot_end_date),
                                        ylim = c(0, 1.0))
@@ -698,13 +698,8 @@ all_plots <- all_plots_age
 
 plot_start_date <- as.Date("2020/2/13")
 
-date_markers <- data.frame(pos=c(dstartdate + lockdown_offset,
-                                 dstartdate + lockdown_offset + lockdown_transition_period,
-                                 dstartdate + d5,
-                                 dstartdate + d9,
-                                 as.Date("2020/11/1"),
-                                 Sys.Date()),
-                           color=c("orange", "red", "orange", "orange", "red", "black"))
+date_markers <- data.frame(pos=c(Sys.Date()),
+                           color=c("black"))
 dates <- date_markers
 
 Range <- 600
@@ -780,7 +775,7 @@ zoom <- 0
 pdf("current-state-2.pdf", width=25, height=10)
 ##pdf("current-state-2.pdf", width=15, height=10)
 all_plots(dates)
-zoomStartDate <- as.Date("2021/2/1")
+zoomStartDate <- as.Date("2021/3/1")
 zoom <- 2
 ##zoom <- 3
 all_plots(dates)

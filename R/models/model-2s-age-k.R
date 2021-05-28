@@ -1,6 +1,6 @@
 library("deSolve")
 
-cppname <- "model-2s-age-f"
+cppname <- "model-2s-age-i"
 
 system(paste("R CMD SHLIB ", cppname, ".cpp", sep=""))
 dyn.load(paste(cppname, ".so", sep=""))
@@ -135,11 +135,14 @@ calculateModel <- function(params, period)
     betao16 <- params[73]
     betayo16 <- params[74]
     f.easter.cases <- params[75]
+    betay17 <- params[76]
+    betao17 <- params[77]
+    betayo17 <- params[78]
 
-    betay17 <- betay16
-    betao17 <- betao16
-    betayo17 <- betayo16
-    
+    betay18 <- betay17 * rlnorm(1, meanlog=log(1.3), sdlog=log(1.15)) ## horeca
+    betao18 <- betao17 * rlnorm(1, meanlog=log(1.3), sdlog=log(1.15)) ## horeca
+    betayo18 <- betayo17 * rlnorm(1, meanlog=log(1.3), sdlog=log(1.15)) ## horeca
+
     ## convolution profiles
     y.case_cv_profile = caseProfile(ycase_latency, CLsd)
     o.case_cv_profile = caseProfile(ocase_latency, CLsd)
@@ -203,7 +206,8 @@ calculateModel <- function(params, period)
                t14 = 1E10, betay14 = betay14, betao14 = betao14, betayo14 = betayo14,
                t15 = 1E10, betay15 = betay15, betao15 = betao15, betayo15 = betayo15,
                t16 = 1E10, betay16 = betay16, betao16 = betao16, betayo16 = betayo16,
-               t17 = 1E10, betay17 = betay17, betao17 = betao17, betayo17 = betayo17)
+               t17 = 1E10, betay17 = betay17, betao17 = betao17, betayo17 = betayo17,
+               t18 = 1E10, betay18 = betay18, betao18 = betao18, betayo18 = betayo18)
 
     Y <- c(Sy = y.N - Initial, wt_E1y = Initial, wt_E2y = 0, wt_Iy = 0, mt_E1y =0, mt_E2y = 0, mt_Iy = 0, Ry = 0,
            So = o.N, wt_E1o = 0, wt_E2o = 0, wt_Io = 0, mt_E1o = 0, mt_E2o = 0, mt_Io = 0, Ro = 0)
@@ -251,7 +255,8 @@ calculateModel <- function(params, period)
         t14 <- data_offset + t14o
         t15 <- data_offset + d15
         t16 <- data_offset + t16o
-        t17 <- 1E1000
+        t17 <- data_offset + d17
+        t18 <- data_offset + d18
         mt.t0 <- data_offset + mt.t0o
 
         tuncertain <- data_offset + duncertain
@@ -281,7 +286,8 @@ calculateModel <- function(params, period)
                    t14 = t14, betay14 = betay14, betao14 = betao14, betayo14 = betayo14,
                    t15 = t15, betay15 = betay15, betao15 = betao15, betayo15 = betayo15,
                    t16 = t16, betay16 = betay16, betao16 = betao16, betayo16 = betayo16,
-                   t17 = t17, betay17 = betay17, betao17 = betao17, betayo17 = betayo17)
+                   t17 = t17, betay17 = betay17, betao17 = betao17, betayo17 = betayo17,
+                   t18 = t18, betay18 = betay18, betao18 = betao18, betayo18 = betayo18)
 
         times <- (padding + 1):(padding + period)
         
@@ -480,10 +486,10 @@ transformParams <- function(params)
 
 invTransformParams <- function(posterior)
 {
-    posterior$easter.1 = posterior$betay15 / posterior$betay14
-    posterior$easter.2 = posterior$betay16 / posterior$betay15
-    posterior$easter = posterior$betay16 / posterior$betay14
-    
+    posterior$easter = posterior$betay15 / posterior$betay14
+    posterior$exit.1 = posterior$betay16 / posterior$betay15
+    posterior$exit.2 = posterior$betay17 / posterior$betay16
+
     posterior
 }
 
@@ -581,6 +587,9 @@ calclogp <- function(params, misc) {
     betao16 <- params[73]
     betayo16 <- params[74]
     f.easter.cases <- params[75]
+    betay17 <- params[76]
+    betao17 <- params[77]
+    betayo17 <- params[78]
 
     logPriorP <- 0
 
@@ -646,6 +655,9 @@ calclogp <- function(params, misc) {
     logPriorP <- logPriorP + dlnorm(betay15/betay16, 0, llSD, log=T)
     logPriorP <- logPriorP + dlnorm(betao15/betao16, 0, llSD, log=T)
     logPriorP <- logPriorP + dlnorm(betayo15/betayo16, 0, llSD, log=T)
+    logPriorP <- logPriorP + dlnorm(betay17/betay16, log(1.15), log(1.075), log=T)
+    logPriorP <- logPriorP + dlnorm(betao17/betao16, log(1.15), log(1.075), log=T)
+    logPriorP <- logPriorP + dlnorm(betayo17/betayo16, log(1.15), log(1.075), log=T)
    
     logPriorP <- logPriorP + dnorm(HLsd, mean=4, sd=1, log=T)
     logPriorP <- logPriorP + dnorm(DLsd, mean=5, sd=1, log=T)
@@ -789,10 +801,10 @@ calclogl <- function(params, x) {
 
     y.loglD <- sum(dnbinom(y.dmorti,
                            mu=pmax(0.001, state$y.deadi[dstart:dend]),
-                           size=mort_nbinom_size, log=T)) +
+                           size=mort_nbinom_size * 2, log=T)) +
                sum(dnbinom(y.dmorti[(length(y.dmorti) - last):length(y.dmorti)],
                            mu=pmax(0.001, state$y.deadi[(dend - last):dend]),
-                           size=mort_nbinom_size * f_last7, log=T))
+                           size=mort_nbinom_size * 2 * f_last7, log=T))
 
     o.loglD <- sum(dnbinom(o.dmorti,
                            mu=pmax(0.001, state$o.deadi[dstart:dend]),
@@ -879,7 +891,8 @@ fit.paramnames <- c("betay0", "betao0", "betayo0",
                     "t14o", "betay14", "betao14", "betayo14",
                             "betay15", "betao15", "betayo15",
                     "t16o", "betay16", "betao16", "betayo16",
-                    "f.easter")
+                    "f.easter",
+                            "betay17", "betao17", "betayo17")
 keyparamnames <- c("betay6", "betao6", "betayo6",
                    "betay7", "betao7", "betayo7",
                    "betay9", "betao9", "betayo9",
@@ -907,7 +920,8 @@ init <- c(3.1, 0.52, 0.50,
           d14, 1.9, 0.2, 0.04,
                1.9, 0.2, 0.04,
           d16, 1.9, 0.2, 0.04,
-          1)
+          1,
+               1.9, 0.2, 0.04)
 
 df_params <- data.frame(name = fit.paramnames,
                         min = c(2 * gamma, 0.5 * gamma, 0.5 * gamma,
@@ -930,8 +944,9 @@ df_params <- data.frame(name = fit.paramnames,
                                 d13 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                 d14 - 20, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
                                           0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                d16 - 2,  0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
-                                0.5),
+                                d16 - 2, 0.2 * gamma, 0.01 * gamma, 0.002 * gamma,
+                                0.5,
+                                          0.2 * gamma, 0.01 * gamma, 0.002 * gamma),
                         max = c(8 * gamma, 5 * gamma, 5 * gamma,
                                 5 * gamma, 3 * gamma, 3 * gamma,
                                 2 * gamma, 2 * gamma, 2 * gamma,
@@ -954,7 +969,8 @@ df_params <- data.frame(name = fit.paramnames,
                                 d14 + 30, 3 * gamma, 3 * gamma, 0.5 * gamma,
                                           3 * gamma, 3 * gamma, 0.5 * gamma,
                                 duncertain, 3 * gamma, 3 * gamma, 0.5 * gamma,
-                                1.5),
+                                1.5,
+                                          3 * gamma, 3 * gamma, 0.5 * gamma),
                         init = init,
                         stringsAsFactors=FALSE)
 
